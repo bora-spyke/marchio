@@ -1,5 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:VisualElement name="hud" class="hud" picking-mode="Ignore">
+        <ui:VisualElement name="safe" class="safe" picking-mode="Ignore">
         <ui:VisualElement name="top-left" class="top-left" picking-mode="Ignore">
             <ui:VisualElement name="hp-bar" class="bar hp-bar" picking-mode="Ignore">
                 <ui:VisualElement name="hp-fill" class="bar-fill hp-fill" picking-mode="Ignore" />
@@ -27,6 +28,7 @@
         </ui:VisualElement>
         <ui:VisualElement name="toast" class="toast" picking-mode="Ignore">
             <ui:Label name="toast-text" class="toast-text" text="UNLOCKED" picking-mode="Ignore" />
+        </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="damage-layer" class="damage-layer" picking-mode="Ignore" />
         <ui:VisualElement name="joystick" class="joystick" picking-mode="Ignore">

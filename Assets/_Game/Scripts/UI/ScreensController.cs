@@ -23,6 +23,7 @@ namespace Marchio
             power = root.Q("power");
             fail = root.Q("fail");
             victory = root.Q("victory");
+            foreach (var overlay in new[] { main, clear, fill, power, fail, victory }) SafeArea.Apply(overlay);
 
             mainTrophy = UiKit.TrophyBar(root.Q("main-trophy"));
             mainRoad = root.Q("main-road");

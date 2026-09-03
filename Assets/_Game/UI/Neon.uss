@@ -437,7 +437,14 @@
 
 .overlay--main {
     justify-content: flex-start;
-    padding-top: 60px;
+}
+
+.overlay--main > .title {
+    margin-top: 60px;
+}
+
+.safe {
+    flex-grow: 1;
 }
 
 .subtitle--tight {

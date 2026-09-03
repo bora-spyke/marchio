@@ -22,6 +22,7 @@ namespace Marchio
         {
             var doc = GetComponent<UIDocument>();
             root = doc.rootVisualElement.Q("hud");
+            SafeArea.Apply(root);
             hpBar = root.Q("hp-bar");
             hpFill = root.Q("hp-fill");
             hpText = root.Q<Label>("hp-text");
