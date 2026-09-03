@@ -55,7 +55,7 @@ namespace Marchio
             if (dir.sqrMagnitude < 1e-6f) dir = Vector2.right;
             dir.Normalize();
             var p = gm.PlayerProjectiles.Get();
-            p.Init(from, dir * cfg.autoAttackProjectileSpeed, cfg.playerProjectileRadius, cfg.autoAttackDamage * gm.DamageMult, false, false, 0f, cfg.playerProjectile);
+            p.Init(from, dir * cfg.autoAttackProjectileSpeed, cfg.playerProjectileRadius, cfg.autoAttackDamage * gm.DamageMult);
             p.SetBounces(gm.Upgrades.Level(PowerId.Ricochet));
             cooldown = cfg.autoAttackCooldownMs / gm.FireRateMult;
         }

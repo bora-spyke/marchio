@@ -39,15 +39,5 @@ namespace Marchio.Tests
         {
             Assert.AreEqual(5f, PolygonMath.DistToBoundary(new Vector2(15f, 5f), Square(10f)), 1e-4f);
         }
-
-        [Test]
-        public void BossNeverRepeatsAttack()
-        {
-            for (int i = 0; i < 200; i++)
-            {
-                var prev = (BossAttack)(i % 3);
-                Assert.AreNotEqual(prev, BossController.PickNextAttack(prev));
-            }
-        }
     }
 }

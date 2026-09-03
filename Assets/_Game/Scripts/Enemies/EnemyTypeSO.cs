@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Marchio
 {
-    public enum EnemyBehavior { Chase, KeepDistance, SeekTrail, Boss }
+    public enum EnemyBehavior { Chase, KeepDistance }
 
     [CreateAssetMenu(menuName = "Marchio/Enemy Type", fileName = "EnemyType")]
     public sealed class EnemyTypeSO : ScriptableObject
@@ -33,7 +33,5 @@ namespace Marchio
         public float preferredDist = 190f;
         public float preferredDistJitter = 40f;
         public float retreatFraction = 0.7f;
-
-        public bool IsBoss => behavior == EnemyBehavior.Boss;
     }
 }

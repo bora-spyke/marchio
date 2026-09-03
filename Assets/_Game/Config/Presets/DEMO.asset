@@ -54,31 +54,23 @@ MonoBehaviour:
     rateMult: 1.5
     weights:
     - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
-      weight: 0.55
+      weight: 0.6
     - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
-      weight: 0.15
+      weight: 0.2
     - type: {fileID: 11400000, guid: 9ed1b69b1291c444cae3e9a22b360609, type: 2}
       weight: 0.2
-    - type: {fileID: 11400000, guid: bc1e9f0f46cfa47149bf837444e8f2c2, type: 2}
-      weight: 0.1
   - startS: 30
     rateMult: 2
     weights:
     - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
-      weight: 0.35
+      weight: 0.5
     - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
-      weight: 0.15
+      weight: 0.25
     - type: {fileID: 11400000, guid: 9ed1b69b1291c444cae3e9a22b360609, type: 2}
-      weight: 0.2
-    - type: {fileID: 11400000, guid: bc1e9f0f46cfa47149bf837444e8f2c2, type: 2}
-      weight: 0.3
+      weight: 0.25
   rampPerSAfterLastPhase: 0.03
   spawnRampCapS: 90
   hpScalePerLevel: 0.06
-  eliteAtThresholdFrac: 0.8
-  eliteFromLevel: 1
-  eliteType: {fileID: 11400000, guid: 2e158c2e4c4b646bd9cdba67bfabb770, type: 2}
-  eliteHpMult: 0.4
   nodes:
   - title: Damage Boost + Skin
     threshold: 70

@@ -30,8 +30,6 @@ namespace Marchio.Editor
             BuildEnemy("Enemy_Chaser", PrimitiveType.Sphere, solid);
             BuildEnemy("Enemy_Fast", PrimitiveType.Cube, solid);
             BuildEnemy("Enemy_Ranged", PrimitiveType.Capsule, solid);
-            BuildEnemy("Enemy_Breaker", PrimitiveType.Cylinder, solid);
-            BuildBoss(cfg, solid, line);
             BuildProjectile("Projectile_Enemy", solid);
             BuildProjectile("Projectile_Player", solid);
             BuildLinePrefab<Barrier>("Barrier", line, cfg.loopEdge, 3f, true);
@@ -184,19 +182,6 @@ namespace Marchio.Editor
             SavePrefab(root);
         }
 
-        static void BuildBoss(GameConfig cfg, Material solid, Material line)
-        {
-            if (PrefabExists("Boss")) return;
-            var root = new GameObject("Boss");
-            var boss = root.AddComponent<BossController>();
-            var visual = Primitive("Visual", PrimitiveType.Sphere, solid, root.transform);
-            var ring = Line("TelegraphRing", root.transform, line, cfg.telegraph, 3f, true, false);
-            Set(boss, "visualRoot", visual.transform);
-            Set(boss, "visualRenderer", visual.GetComponent<MeshRenderer>());
-            Set(boss, "telegraphRing", ring);
-            SavePrefab(root);
-        }
-
         static void BuildProjectile(string name, Material solid)
         {
             if (PrefabExists(name)) return;
@@ -259,18 +244,6 @@ namespace Marchio.Editor
                 t.preferredDist = 190f; t.preferredDistJitter = 40f; t.retreatFraction = 0.7f;
                 t.initialFireDelayMs = new Vector2(400f, 1000f);
             }, 12f);
-            EnemyType("Breaker", "Enemy_Breaker", t =>
-            {
-                t.behavior = EnemyBehavior.SeekTrail; t.color = cfg.breaker;
-                t.hp = 35f; t.speed = 125f; t.radius = 12f; t.contactDamage = 8f; t.xp = 1;
-                t.fires = false;
-            }, 10f);
-            EnemyType("Boss", "Boss", t =>
-            {
-                t.behavior = EnemyBehavior.Boss; t.color = cfg.chaser;
-                t.hp = 1300f; t.speed = 70f; t.radius = 34f; t.contactDamage = 18f; t.xp = 0;
-                t.ignoresBarriers = true; t.fires = false;
-            }, 60f);
         }
 
         static EnemyTypeSO Type(string name) => AssetDatabase.LoadAssetAtPath<EnemyTypeSO>(Root + "/Config/Enemies/" + name + ".asset");
@@ -280,12 +253,11 @@ namespace Marchio.Editor
             var chaser = Type("Chaser");
             var fast = Type("Fast");
             var ranged = Type("Ranged");
-            var breaker = Type("Breaker");
             return new[]
             {
                 new SpawnPhase { startS = 0f, rateMult = 1f, weights = new[] { W(chaser, 1f) } },
-                new SpawnPhase { startS = 15f, rateMult = 1.5f, weights = new[] { W(chaser, 0.55f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.1f) } },
-                new SpawnPhase { startS = 30f, rateMult = 2f, weights = new[] { W(chaser, 0.35f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.3f) } }
+                new SpawnPhase { startS = 15f, rateMult = 1.5f, weights = new[] { W(chaser, 0.6f), W(fast, 0.2f), W(ranged, 0.2f) } },
+                new SpawnPhase { startS = 30f, rateMult = 2f, weights = new[] { W(chaser, 0.5f), W(fast, 0.25f), W(ranged, 0.25f) } }
             };
         }
 
@@ -306,7 +278,6 @@ namespace Marchio.Editor
             }
             so.nodes = nodes;
             so.spawnPhases = DemoSpawnPhases();
-            so.eliteType = Type("Boss");
             EditorUtility.SetDirty(so);
             return so;
         }

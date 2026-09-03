@@ -330,28 +330,6 @@
     color: rgba(234, 246, 255, 0.85);
 }
 
-.elite-bar {
-    width: 220px;
-    max-width: 70%;
-    height: 8px;
-    margin-top: 6px;
-    border-color: rgba(255, 77, 109, 0.5);
-    background-color: rgba(255, 77, 109, 0.16);
-    display: none;
-}
-
-.elite-fill {
-    background-color: #ff4d6d;
-}
-
-.elite-label {
-    font-size: 11px;
-    -unity-font-style: bold;
-    color: #ff4d6d;
-    margin-top: 2px;
-    display: none;
-}
-
 .stack-row {
     flex-direction: row;
     flex-wrap: wrap;

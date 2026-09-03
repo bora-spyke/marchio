@@ -40,19 +40,6 @@ namespace Marchio
             line.endColor = c;
         }
 
-        public bool TryNearestPoint(Vector2 from, out Vector2 point)
-        {
-            point = default;
-            if (!Drawing || points.Count < 2) return false;
-            float best = float.PositiveInfinity;
-            for (int i = 0; i < points.Count; i += 3)
-            {
-                float d2 = (points[i] - from).sqrMagnitude;
-                if (d2 < best) { best = d2; point = points[i]; }
-            }
-            return true;
-        }
-
         public bool Touches(Vector2 pos, float radius)
         {
             if (!Drawing || points.Count < 3) return false;

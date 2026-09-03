@@ -166,9 +166,9 @@ namespace Marchio
             {
                 var b = pool.Active[i];
                 var from = b.Pos;
-                b.Advance(dt, player.Pos);
+                b.Advance(dt);
                 if (b.Expired || cameraRig.IsOutside(b.Pos, config.projectileDespawnPadPx)) { pool.Release(b); continue; }
-                if (!b.FromBoss && SegmentBlockedByBarrier(from, b.Pos, out var hit))
+                if (SegmentBlockedByBarrier(from, b.Pos, out var hit))
                 {
                     fx.Burst(hit, config.loopEdge, 6);
                     pool.Release(b);
@@ -178,12 +178,6 @@ namespace Marchio
                 {
                     pool.Release(b);
                     player.TakeDamage(b.Damage);
-                    continue;
-                }
-                if (b.Homing && b.Life <= 0f)
-                {
-                    fx.Burst(b.Pos, config.enemyProjectile, 14);
-                    pool.Release(b);
                 }
             }
         }
@@ -194,7 +188,7 @@ namespace Marchio
             for (int i = pool.Active.Count - 1; i >= 0; i--)
             {
                 var b = pool.Active[i];
-                b.Advance(dt, player.Pos);
+                b.Advance(dt);
                 if (b.Expired || cameraRig.IsOutside(b.Pos, config.projectileDespawnPadPx)) { pool.Release(b); continue; }
                 for (int e = 0; e < Enemies.Count; e++)
                 {
@@ -255,11 +249,6 @@ namespace Marchio
         public void OnEnemyKilled(Enemy en)
         {
             Run.AddScore(ScoreSource.Kill, en.Type.score);
-            if (en.Type.IsBoss)
-            {
-                fx.Burst(en.Pos, en.Type.color, 32);
-                return;
-            }
             KillXP += en.Type.xp;
             UpdateMaxLoopLength();
         }
@@ -277,7 +266,7 @@ namespace Marchio
         {
             if (!enemyPools.TryGetValue(type, out var pool))
             {
-                pool = new ObjectPool<Enemy>(type.prefab, poolRoot, type.IsBoss ? 1 : 8);
+                pool = new ObjectPool<Enemy>(type.prefab, poolRoot, 8);
                 enemyPools.Add(type, pool);
             }
             return pool.Get();

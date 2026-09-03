@@ -7,8 +7,8 @@ namespace Marchio
     public sealed class HudController : MonoBehaviour
     {
         VisualElement root;
-        VisualElement hpBar, hpFill, thresholdBar, thresholdFill, eliteBar, eliteFill, trailBar, trailFill, joystick, joystickKnob, stackRow, toast;
-        Label hpText, levelText, thresholdText, comboChip, eliteLabel, drawText, toastText;
+        VisualElement hpBar, hpFill, thresholdBar, thresholdFill, trailBar, trailFill, joystick, joystickKnob, stackRow, toast;
+        Label hpText, levelText, thresholdText, comboChip, drawText, toastText;
         DamageTextLayer damageLayer;
         InputReader input;
         int lastCombo = -1;
@@ -32,9 +32,6 @@ namespace Marchio
             thresholdFill = root.Q("threshold-fill");
             thresholdText = root.Q<Label>("threshold-text");
             comboChip = root.Q<Label>("combo-chip");
-            eliteBar = root.Q("elite-bar");
-            eliteFill = root.Q("elite-fill");
-            eliteLabel = root.Q<Label>("elite-label");
             drawText = root.Q<Label>("draw-text");
             trailBar = root.Q("trail-bar");
             trailFill = root.Q("trail-fill");
@@ -132,12 +129,6 @@ namespace Marchio
                 comboChip.EnableInClassList("combo-chip--on", gm.Combo > 0);
                 if (gm.Combo > 0) Pop(comboChip);
             }
-
-            var elite = gm.Waves.ActiveElite;
-            bool eliteAlive = elite != null && !elite.Dead && elite.gameObject.activeSelf;
-            eliteBar.style.display = eliteAlive ? DisplayStyle.Flex : DisplayStyle.None;
-            eliteLabel.style.display = eliteAlive ? DisplayStyle.Flex : DisplayStyle.None;
-            if (eliteAlive) eliteFill.style.width = Length.Percent(Mathf.Clamp01(elite.Hp / elite.MaxHp) * 100f);
 
             bool drawing = gm.Trail.Drawing;
             drawText.EnableInClassList("draw-text--on", drawing);

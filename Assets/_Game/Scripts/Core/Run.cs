@@ -15,7 +15,6 @@ namespace Marchio
         public float LevelTime { get; set; }
         public int Streak { get; set; }
         public int RevivesLeft { get; set; }
-        public bool EliteSpawned { get; set; }
         public float RunScore { get; private set; }
         public float LastLevelScore { get; private set; }
         public float LastBonus { get; private set; }
@@ -49,7 +48,6 @@ namespace Marchio
             LevelScore = 0f;
             LevelTime = 0f;
             Streak = 0;
-            EliteSpawned = false;
             HealedOnClear = false;
             Threshold = IsVictoryLap ? 0f : preset.Threshold(level);
         }

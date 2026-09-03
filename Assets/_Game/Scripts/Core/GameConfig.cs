@@ -79,29 +79,9 @@ namespace Marchio
         public float enemySeparationForce = 220f;
         public float spawnPadPx = 34f;
 
-        [Header("Boss Attacks")]
-        public float bossDashContactDamage = 30f;
-        public float bossAttackCooldownMs = 2200f;
-        public float bossDashTelegraphMs = 550f;
-        public float bossDashSpeed = 480f;
-        public float bossDashDurationMs = 450f;
-        public float bossBurstTelegraphMs = 450f;
-        public int bossBurstCount = 12;
-        public float bossBurstProjSpeed = 170f;
-        public float bossBurstProjDamage = 16f;
-        public float bossBurstRecoverMs = 300f;
-        public float bossHomingTelegraphMs = 500f;
-        public float bossHomingSpeed = 210f;
-        public float bossHomingTurnRate = 2.6f;
-        public float bossHomingDamage = 16f;
-        public float bossHomingLifeS = 2f;
-        public float bossHomingRecoverMs = 350f;
-
         [Header("Projectiles")]
         public float enemyProjectileRadius = 5f;
         public float playerProjectileRadius = 4f;
-        public float bossBurstProjectileRadius = 6f;
-        public float bossHomingProjectileRadius = 7f;
         public float projectileDespawnPadPx = 40f;
         public float projectileLifeS = 4f;
         public float projectileFadeS = 0.6f;
@@ -119,7 +99,6 @@ namespace Marchio
         public Color chaser = Hex("#ff2e88");
         public Color fast = Hex("#ffb020");
         public Color ranged = Hex("#a06bff");
-        public Color breaker = Hex("#39ff88");
         public Color skin1 = Hex("#ffd84d");
         public Color cartColorVariant = Hex("#ff7ad9");
         public Color trailVariant = Hex("#b8ff5c");

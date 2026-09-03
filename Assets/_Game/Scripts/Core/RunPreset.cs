@@ -64,10 +64,6 @@ namespace Marchio
         public float rampPerSAfterLastPhase = 0.03f;
         public float spawnRampCapS = 90f;
         public float hpScalePerLevel = 0.06f;
-        public float eliteAtThresholdFrac = 0.8f;
-        public int eliteFromLevel = 1;
-        public EnemyTypeSO eliteType;
-        public float eliteHpMult = 0.4f;
 
         [Header("Trophy Road")]
         public TrophyNode[] nodes = Array.Empty<TrophyNode>();

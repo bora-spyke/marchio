@@ -6,21 +6,17 @@ namespace Marchio
     {
         float spawnAccumulator;
 
-        public Enemy ActiveElite { get; private set; }
-
         GameManager Gm => GameManager.I;
         GameConfig Cfg => GameManager.I.Config;
 
         public void ResetState()
         {
             spawnAccumulator = 0f;
-            ActiveElite = null;
         }
 
         public void BeginLevel()
         {
             spawnAccumulator = 0f;
-            ActiveElite = null;
         }
 
         float HpMult => 1f + (Gm.Run.Level - 1) * Gm.Preset.hpScalePerLevel;
@@ -38,14 +34,6 @@ namespace Marchio
                 spawnAccumulator -= 1f;
                 var type = PickType(preset, run.LevelTime);
                 if (type != null) Spawn(type, SpawnPoint(), HpMult);
-            }
-
-            if (!run.IsVictoryLap && !run.EliteSpawned && preset.eliteType != null && run.Level >= preset.eliteFromLevel && run.Progress >= preset.eliteAtThresholdFrac)
-            {
-                run.EliteSpawned = true;
-                var pos = SpawnPoint();
-                ActiveElite = Spawn(preset.eliteType, pos, HpMult * preset.eliteHpMult);
-                Gm.Fx.Burst(pos, preset.eliteType.color, 24);
             }
         }
 
@@ -100,9 +88,13 @@ namespace Marchio
             for (int i = gm.Enemies.Count - 1; i >= 0; i--)
             {
                 var en = gm.Enemies[i];
-                if (en.Dead) { gm.ReleaseEnemy(en); continue; }
+                if (en.Dead)
+                {
+                    if (en.TickDead(dt)) gm.ReleaseEnemy(en);
+                    continue;
+                }
                 en.Tick(dt);
-                if (en.Dead) { gm.ReleaseEnemy(en); continue; }
+                if (en.Dead) continue;
 
                 if (!en.IgnoresBarriers)
                 {
@@ -111,7 +103,7 @@ namespace Marchio
                     for (int b = 0; b < barriers.Count; b++)
                         if (barriers[b].PushOut(en, dt)) touching = true;
                     if (touching) en.ApplyBarrierDamage(cfg.barrierDps * dt);
-                    if (en.Dead) { gm.ReleaseEnemy(en); continue; }
+                    if (en.Dead) continue;
                 }
 
                 if (player.Invuln <= 0f && trail.Touches(en.Pos, en.Radius + cutRadius))
@@ -119,7 +111,7 @@ namespace Marchio
                     if (liveWire > 0) en.ApplyBurn(gm.Preset.liveWireBurnDps * liveWire, cfg.burnDurationS);
                     gm.Fx.Burst(en.Pos, cfg.trail, 12);
                     player.TakeDamage(cfg.trailCutDamage);
-                    if (en.Dead) { gm.ReleaseEnemy(en); continue; }
+                    if (en.Dead) continue;
                 }
 
                 if (player.Invuln <= 0f && Vector2.Distance(en.Pos, player.Pos) < en.Radius + cfg.playerRadius)
@@ -135,9 +127,11 @@ namespace Marchio
             for (int i = 0; i < n; i++)
             {
                 var a = list[i];
+                if (a.Dead) continue;
                 for (int j = i + 1; j < n; j++)
                 {
                     var b = list[j];
+                    if (b.Dead) continue;
                     var d = b.Pos - a.Pos;
                     float minDist = a.Radius + b.Radius;
                     float d2 = d.sqrMagnitude;
