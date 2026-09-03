@@ -3,7 +3,7 @@
         <ui:VisualElement name="safe" class="safe" picking-mode="Ignore">
         <ui:VisualElement name="top-row" class="top-row" picking-mode="Ignore">
             <ui:VisualElement name="stage-badge" class="stage-badge" picking-mode="Ignore">
-                <ui:Label name="stage-text" class="stage-text" text="LEVEL 1/4" picking-mode="Ignore" />
+                <ui:Label name="stage-text" class="stage-text" text="STAGE 1/4" picking-mode="Ignore" />
             </ui:VisualElement>
             <ui:VisualElement name="hp-group" class="hp-group" picking-mode="Ignore">
                 <ui:VisualElement name="hp-bar" class="hp-track" picking-mode="Ignore">

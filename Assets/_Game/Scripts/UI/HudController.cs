@@ -93,7 +93,7 @@ namespace Marchio
             {
                 lastLevel = run.Level;
                 int total = gm.Preset.levelCount;
-                stageText.text = run.IsVictoryLap ? "VICTORY LAP" : total > 0 ? $"LEVEL {run.Level}/{total}" : $"LEVEL {run.Level}";
+                stageText.text = run.IsVictoryLap ? "VICTORY LAP" : total > 0 ? $"STAGE {run.Level}/{total}" : $"STAGE {run.Level}";
             }
             if (run.IsVictoryLap)
             {

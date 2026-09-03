@@ -28,10 +28,14 @@
     -unity-slice-scale: 0.33px;
     align-items: center;
     justify-content: center;
-    padding-bottom: 3px;
 }
 
 .stage-text {
+    width: 100%;
+    -unity-text-align: middle-center;
+    translate: 0 -2px;
+    padding: 0;
+    margin: 0;
     -unity-font: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy.otf?fileID=12800000&guid=c6abca83b4e5d4904a783b871d4bae95&type=3#EigerdalsNormHeavy");
     -unity-font-definition: none;
     font-size: 19px;
