@@ -47,9 +47,10 @@ if ! gh api "repos/$REPO_SLUG/pages" >/dev/null 2>&1; then
   gh api -X POST "repos/$REPO_SLUG/pages" -f "source[branch]=$BRANCH" -f "source[path]=/" >/dev/null 2>&1 || true
 fi
 
-echo "==> waiting for Pages to serve the new build"
-for _ in $(seq 1 36); do
+LOADER="$(grep -o 'Build/[^"]*loader\.js' "$OUT/index.html" | head -1)"
+echo "==> waiting for Pages to serve $LOADER (CDN cache is 10 min)"
+for _ in $(seq 1 130); do
   sleep 5
-  if curl -fsS "$URL" 2>/dev/null | grep -q "web.loader.js"; then echo "LIVE: $URL"; exit 0; fi
+  if curl -fsS -H 'Cache-Control: no-cache' "$URL" 2>/dev/null | grep -q "$LOADER"; then echo "LIVE: $URL"; exit 0; fi
 done
 echo "Pushed; Pages still propagating. URL: $URL"
