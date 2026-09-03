@@ -6,6 +6,8 @@ namespace Marchio
     {
         [SerializeField] protected Transform visualRoot;
         [SerializeField] protected Renderer visualRenderer;
+        [SerializeField] protected ParticleSystem hitParticle;
+        [SerializeField] protected ParticleSystem deathParticle;
 
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         MaterialPropertyBlock mpb;
@@ -40,6 +42,15 @@ namespace Marchio
         {
             if (visualRoot == null) visualRoot = transform.Find("Visual") ?? (transform.childCount > 0 ? transform.GetChild(0) : null);
             if (visualRenderer == null) visualRenderer = GetComponentInChildren<Renderer>();
+            if (hitParticle == null) hitParticle = FindParticleByName("Hit");
+            if (deathParticle == null) deathParticle = FindParticleByName("Death");
+        }
+
+        ParticleSystem FindParticleByName(string contains)
+        {
+            var systems = GetComponentsInChildren<ParticleSystem>(true);
+            foreach (var ps in systems) if (ps.name.Contains(contains)) return ps;
+            return null;
         }
 
         public void Init(EnemyTypeSO type, Vector2 pos, float hpMult)
@@ -144,6 +155,12 @@ namespace Marchio
             p.Init(Pos, dir * speed, Cfg.enemyProjectileRadius, damage, false, false, 0f, Cfg.enemyProjectile);
         }
 
+        public bool ApplyProjectileHit(float dmg)
+        {
+            if (hitParticle != null) hitParticle.Play();
+            return ApplyDamage(dmg, 0.1f, true);
+        }
+
         public bool ApplyDamage(float dmg, float flash, bool showText)
         {
             Hp -= dmg;
@@ -177,6 +194,7 @@ namespace Marchio
         {
             if (Dead) return;
             Dead = true;
+            if (deathParticle != null) deathParticle.Play();
             Gm.Fx.Burst(Pos, Type.color, 10);
             Gm.OnEnemyKilled(this);
         }

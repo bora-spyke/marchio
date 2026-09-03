@@ -49,6 +49,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Marchio::Marchio.Enemy
   visualRoot: {fileID: 6611904597247506295}
   visualRenderer: {fileID: 2993678392586793575}
+  hitParticle: {fileID: 8656862066917929088}
+  deathParticle: {fileID: 2375161609302471594}
 --- !u!1001 &1556135986932869503
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -263,4 +265,14 @@ MeshRenderer:
 Transform:
   m_CorrespondingSourceObject: {fileID: 3134509964445522565, guid: ecb570d2e78b2684f932f6aab6897528, type: 3}
   m_PrefabInstance: {fileID: 8089080690152779250}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &8656862066917929088 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 8656862066917929087, guid: cd5ba9b1e1225d34f8482287ee43bbf0, type: 3}
+  m_PrefabInstance: {fileID: 1556135986932869503}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &2375161609302471594 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 2375161609302471593, guid: 1494ce42e64d66644acdb43e37b42706, type: 3}
+  m_PrefabInstance: {fileID: 1730216629750237099}
   m_PrefabAsset: {fileID: 0}

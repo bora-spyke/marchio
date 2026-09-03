@@ -202,7 +202,7 @@ namespace Marchio
                     if (en.Dead || en == b.LastHit) continue;
                     if (Vector2.Distance(b.Pos, en.Pos) < b.Radius + en.Radius)
                     {
-                        en.ApplyDamage(b.Damage, 0.1f, true);
+                        en.ApplyProjectileHit(b.Damage);
                         var next = b.Bounces > 0 ? NearestEnemyExcept(b.Pos, en, preset.ricochetRangePx) : null;
                         if (next != null) b.Redirect(en, next.Pos);
                         else pool.Release(b);
