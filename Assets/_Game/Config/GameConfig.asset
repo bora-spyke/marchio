@@ -24,6 +24,8 @@ MonoBehaviour:
   minLoopLengthMult: 3
   closeRadiusMult: 0.5
   loopFlashMs: 380
+  trailHitRadius: 6
+  trailCutDamage: 10
   maxLoopLengthMult: 18.4
   loopGrowthXPStep: 3
   loopGrowthPct: 0.06
@@ -60,16 +62,12 @@ MonoBehaviour:
   autoAttackDamage: 13
   autoAttackProjectileSpeed: 340
   spawnEnemies: 1
-  waveHpScalePerWave: 0.06
-  waveClearDelayMs: 1000
-  enemySpawnStaggerMs: 160
   enemySteerJitterRad: 0.4
   enemySpeedVariance: 0.2
   rangedPreferredDistJitter: 40
   enemySeparationForce: 220
   spawnPadPx: 34
-  upgradeEveryNWaves: 3
-  bossDashContactDamage: 30
+  bossDashContactDamage: 15
   bossAttackCooldownMs: 2200
   bossDashTelegraphMs: 550
   bossDashSpeed: 480
@@ -85,7 +83,6 @@ MonoBehaviour:
   bossHomingDamage: 16
   bossHomingLifeS: 2
   bossHomingRecoverMs: 350
-  bossArenaRadius: 820
   enemyProjectileRadius: 5
   playerProjectileRadius: 4
   bossBurstProjectileRadius: 6
@@ -101,8 +98,16 @@ MonoBehaviour:
   chaser: {r: 1, g: 0.18039216, b: 0.53333336, a: 1}
   fast: {r: 1, g: 0.6901961, b: 0.1254902, a: 1}
   ranged: {r: 0.627451, g: 0.41960785, b: 1, a: 1}
+  breaker: {r: 0.22352941, g: 1, b: 0.53333336, a: 1}
+  skin1: {r: 1, g: 0.84705883, b: 0.3019608, a: 1}
+  cartColorVariant: {r: 1, g: 0.47843137, b: 0.8509804, a: 1}
+  trailVariant: {r: 0.72156864, g: 1, b: 0.36078432, a: 1}
+  cart2: {r: 0.95686275, g: 0.96862745, b: 1, a: 1}
+  cart2ScaleMult: 1.25
   enemyProjectile: {r: 0.7882353, g: 0.54509807, b: 1, a: 1}
   playerProjectile: {r: 0.3019608, g: 0.8901961, b: 1, a: 1}
   electricBorderSpark: {r: 1, g: 0.9490196, b: 0.65882355, a: 1}
   hpBad: {r: 1, g: 0.3019608, b: 0.42745098, a: 1}
   telegraph: {r: 1, g: 0.3019608, b: 0.42745098, a: 1}
+  groundTint: {r: 1, g: 1, b: 1, a: 0.7}
+  groundTilePx: 100

@@ -78,7 +78,7 @@ namespace Marchio
         public float spawnPadPx = 34f;
 
         [Header("Boss Attacks")]
-        public float bossDashContactDamage = 30f;
+        public float bossDashContactDamage = 15f;
         public float bossAttackCooldownMs = 2200f;
         public float bossDashTelegraphMs = 550f;
         public float bossDashSpeed = 480f;
@@ -126,6 +126,8 @@ namespace Marchio
         public Color electricBorderSpark = Hex("#fff2a8");
         public Color hpBad = Hex("#ff4d6d");
         public Color telegraph = Hex("#ff4d6d");
+        public Color groundTint = new Color(1f, 1f, 1f, 0.7f);
+        public float groundTilePx = 100f;
 
         public float PlayerWidth => playerRadius * 2f;
         public float MinLoopLength => PlayerWidth * minLoopLengthMult;

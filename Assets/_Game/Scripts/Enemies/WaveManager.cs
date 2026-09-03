@@ -40,7 +40,7 @@ namespace Marchio
                 if (type != null) Spawn(type, SpawnPoint(), HpMult);
             }
 
-            if (!run.IsVictoryLap && !run.EliteSpawned && preset.eliteType != null && run.Progress >= preset.eliteAtThresholdFrac)
+            if (!run.IsVictoryLap && !run.EliteSpawned && preset.eliteType != null && run.Level >= preset.eliteFromLevel && run.Progress >= preset.eliteAtThresholdFrac)
             {
                 run.EliteSpawned = true;
                 var pos = SpawnPoint();
@@ -114,7 +114,7 @@ namespace Marchio
                     if (en.Dead) { gm.ReleaseEnemy(en); continue; }
                 }
 
-                if (player.Invuln <= 0f && trail.Touches(en.Pos, en.Radius + cutRadius))
+                if (player.Invuln <= 0f && en.Type.behavior == EnemyBehavior.SeekTrail && trail.Touches(en.Pos, en.Radius + cutRadius))
                 {
                     if (liveWire > 0) en.ApplyBurn(gm.Preset.liveWireBurnDps * liveWire, cfg.burnDurationS);
                     gm.Fx.Burst(en.Pos, cfg.trail, 12);

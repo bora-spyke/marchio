@@ -8,6 +8,30 @@ namespace Marchio
 
         public void ResetState() => cooldown = 0f;
 
+        public static Vector2 Intercept(Vector2 relPos, Vector2 targetVel, float bulletSpeed)
+        {
+            float a = Vector2.Dot(targetVel, targetVel) - bulletSpeed * bulletSpeed;
+            float b = 2f * Vector2.Dot(relPos, targetVel);
+            float c = Vector2.Dot(relPos, relPos);
+            float t;
+            if (Mathf.Abs(a) < 1e-4f)
+            {
+                if (Mathf.Abs(b) < 1e-6f) return relPos;
+                t = -c / b;
+            }
+            else
+            {
+                float disc = b * b - 4f * a * c;
+                if (disc < 0f) return relPos;
+                float root = Mathf.Sqrt(disc);
+                float t1 = (-b - root) / (2f * a);
+                float t2 = (-b + root) / (2f * a);
+                t = t1 > 0f && t2 > 0f ? Mathf.Min(t1, t2) : Mathf.Max(t1, t2);
+            }
+            if (t <= 0f) return relPos;
+            return relPos + targetVel * t;
+        }
+
         public void Tick(float dt)
         {
             var gm = GameManager.I;
@@ -27,7 +51,7 @@ namespace Marchio
             if (nearest == null) return;
 
             var cfg = gm.Config;
-            var dir = nearest.Pos - from;
+            var dir = Intercept(nearest.Pos - from, nearest.Velocity, cfg.autoAttackProjectileSpeed);
             if (dir.sqrMagnitude < 1e-6f) dir = Vector2.right;
             dir.Normalize();
             var p = gm.PlayerProjectiles.Get();

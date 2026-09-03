@@ -133,5 +133,18 @@ namespace Marchio.Tests
             Assert.AreEqual(1, pool.Choices.Count);
             Assert.AreEqual(3, pool.Choices[0]);
         }
+
+        [Test]
+        public void InterceptLeadsMovingTargetAndFallsBackToDirect()
+        {
+            var still = AutoAttack.Intercept(new Vector2(200f, 0f), Vector2.zero, 340f);
+            Assert.AreEqual(new Vector2(200f, 0f), still);
+            var lead = AutoAttack.Intercept(new Vector2(200f, 0f), new Vector2(0f, 90f), 340f);
+            float t = lead.magnitude / 340f;
+            Assert.AreEqual(90f * t, lead.y, 1e-2f, "aim point equals where the target will be when the bullet arrives");
+            Assert.AreEqual(200f, lead.x, 1e-3f);
+            var tooFast = AutoAttack.Intercept(new Vector2(200f, 0f), new Vector2(500f, 0f), 340f);
+            Assert.AreEqual(new Vector2(200f, 0f), tooFast, "target outrunning the bullet falls back to direct aim");
+        }
     }
 }

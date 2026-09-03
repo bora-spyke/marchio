@@ -240,14 +240,14 @@ namespace Marchio.Editor
             var chaser = EnemyType("Chaser", "Enemy_Chaser", t =>
             {
                 t.behavior = EnemyBehavior.Chase; t.color = cfg.chaser;
-                t.hp = 50f; t.speed = 90f; t.radius = 14f; t.contactDamage = 10f; t.xp = 1;
+                t.hp = 50f; t.speed = 90f; t.radius = 14f; t.contactDamage = 10f; t.xp = 1; t.fires = false;
                 t.fireIntervalMs = 1900f; t.projectileSpeed = 130f; t.projectileDamage = 5f; t.fireMinDist = 70f;
                 t.initialFireDelayMs = new Vector2(300f, 1100f);
             }, 8f);
             EnemyType("Fast", "Enemy_Fast", t =>
             {
                 t.behavior = EnemyBehavior.Chase; t.color = cfg.fast;
-                t.hp = 30f; t.speed = 150f; t.radius = 12f; t.contactDamage = 10f; t.xp = 1;
+                t.hp = 30f; t.speed = 150f; t.radius = 12f; t.contactDamage = 10f; t.xp = 1; t.fires = false;
                 t.fireIntervalMs = 1700f; t.projectileSpeed = 150f; t.projectileDamage = 5f; t.fireMinDist = 70f;
                 t.initialFireDelayMs = new Vector2(300f, 1100f);
             }, 8f);
@@ -283,9 +283,9 @@ namespace Marchio.Editor
             var breaker = Type("Breaker");
             return new[]
             {
-                new SpawnPhase { startS = 0f, rateMult = 1f, weights = new[] { W(chaser, 1f) } },
-                new SpawnPhase { startS = 15f, rateMult = 1.5f, weights = new[] { W(chaser, 0.55f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.1f) } },
-                new SpawnPhase { startS = 30f, rateMult = 2f, weights = new[] { W(chaser, 0.35f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.3f) } }
+                new SpawnPhase { startS = 2f, rateMult = 1f, weights = new[] { W(chaser, 1f) } },
+                new SpawnPhase { startS = 15f, rateMult = 1.3f, weights = new[] { W(chaser, 0.55f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.1f) } },
+                new SpawnPhase { startS = 30f, rateMult = 1.7f, weights = new[] { W(chaser, 0.35f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.3f) } }
             };
         }
 
@@ -403,6 +403,7 @@ namespace Marchio.Editor
             urpCam.renderShadows = false;
             urpCam.renderPostProcessing = false;
             var rig = camGo.AddComponent<CameraRig>();
+            BuildGround(cfg);
 
             var game = new GameObject("Game");
             var gm = game.AddComponent<GameManager>();
@@ -483,6 +484,32 @@ namespace Marchio.Editor
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             if (File.Exists("Assets/Scenes/SampleScene.unity")) AssetDatabase.DeleteAsset("Assets/Scenes");
+        }
+
+        public static GroundTiler BuildGround(GameConfig cfg)
+        {
+            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/Textures/ground_square.png");
+            var mat = Material("Ground", "Universal Render Pipeline/Unlit", cfg.groundTint);
+            mat.mainTexture = texture;
+            mat.enableInstancing = true;
+            MakeTransparent(mat);
+            EditorUtility.SetDirty(mat);
+            var go = new GameObject("Ground");
+            var tiler = go.AddComponent<GroundTiler>();
+            Set(tiler, "material", mat);
+            return tiler;
+        }
+
+        public static void MakeTransparent(Material mat)
+        {
+            mat.SetFloat("_Surface", 1f);
+            mat.SetFloat("_Blend", 0f);
+            mat.SetOverrideTag("RenderType", "Transparent");
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
         }
 
         static void ApplyPlayerSettings()

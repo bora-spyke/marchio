@@ -47,8 +47,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29edd85608a07493a938f6ac0e4ec9d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Marchio::Marchio.Enemy
-  visualRoot: {fileID: 0}
-  visualRenderer: {fileID: 0}
+  visualRoot: {fileID: 8453697630610433830}
+  visualRenderer: {fileID: 5507694007391679881}
 --- !u!1001 &4477032393127013225
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -122,6 +122,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9573feaf1d3681f45b5afdba9420540b, type: 3}
+--- !u!23 &5507694007391679881 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8236766754343247584, guid: 9573feaf1d3681f45b5afdba9420540b, type: 3}
+  m_PrefabInstance: {fileID: 4477032393127013225}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8453697630610433830 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5435857984495815759, guid: 9573feaf1d3681f45b5afdba9420540b, type: 3}

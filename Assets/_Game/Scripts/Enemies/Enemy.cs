@@ -18,6 +18,7 @@ namespace Marchio
         public float Speed { get; private set; }
         public float ContactDamage { get; protected set; }
         public bool Dead { get; private set; }
+        public Vector2 Velocity { get; private set; }
         public bool IgnoresBarriers => Type.ignoresBarriers;
 
         protected float steerJitter;
@@ -35,12 +36,19 @@ namespace Marchio
         public virtual void OnSpawn() { }
         public virtual void OnDespawn() { }
 
+        void Awake()
+        {
+            if (visualRoot == null) visualRoot = transform.Find("Visual") ?? (transform.childCount > 0 ? transform.GetChild(0) : null);
+            if (visualRenderer == null) visualRenderer = GetComponentInChildren<Renderer>();
+        }
+
         public void Init(EnemyTypeSO type, Vector2 pos, float hpMult)
         {
             var cfg = Cfg;
             Type = type;
             Pos = pos;
             Dead = false;
+            Velocity = Vector2.zero;
             hitFlash = 0f;
             slowLeft = 0f;
             burnDps = 0f;
@@ -55,7 +63,6 @@ namespace Marchio
             speedMult = boss ? 1f : Random.Range(1f - cfg.enemySpeedVariance, 1f + cfg.enemySpeedVariance);
             preferredDistJitter = Random.Range(-type.preferredDistJitter, type.preferredDistJitter);
             fireTimer = Random.Range(type.initialFireDelayMs.x, type.initialFireDelayMs.y);
-            if (visualRoot != null) visualRoot.localScale = Vector3.one * Radius * 2f;
             OnInit();
             ApplyTransform();
         }
@@ -69,6 +76,7 @@ namespace Marchio
 
         public void Tick(float dt)
         {
+            var before = Pos;
             if (hitFlash > 0f) hitFlash -= dt;
             if (burnLeft > 0f)
             {
@@ -83,6 +91,7 @@ namespace Marchio
                 slowLeft -= dt;
             }
             Behave(dt, slowFactor);
+            Velocity = (Pos - before) / dt;
             ApplyTransform();
         }
 
@@ -172,18 +181,18 @@ namespace Marchio
             Gm.OnEnemyKilled(this);
         }
 
+        void FaceVisualToPlayer()
+        {
+            if (visualRoot == null) return;
+            var toPlayer = Gm.Player.Pos - Pos;
+            if (toPlayer.sqrMagnitude < 1e-6f) return;
+            visualRoot.rotation = Quaternion.LookRotation(new Vector3(toPlayer.x, 0f, toPlayer.y), Vector3.up);
+        }
+
         protected void ApplyTransform()
         {
             transform.position = PolygonMath.ToWorld(Pos);
-            if (visualRoot != null)
-            {
-                var toPlayer = Gm.Player.Pos - Pos;
-                if (toPlayer.sqrMagnitude > 1e-6f)
-                {
-                    var dirWorld = new Vector3(toPlayer.x, 0f, toPlayer.y);
-                    visualRoot.rotation = Quaternion.LookRotation(dirWorld, Vector3.up);
-                }
-            }
+            FaceVisualToPlayer();
             if (visualRenderer != null)
             {
                 mpb ??= new MaterialPropertyBlock();
