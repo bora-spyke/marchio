@@ -51,6 +51,6 @@ LOADER="$(grep -o 'Build/[^"]*loader\.js' "$OUT/index.html" | head -1)"
 echo "==> waiting for Pages to serve $LOADER (CDN cache is 10 min)"
 for _ in $(seq 1 130); do
   sleep 5
-  if curl -fsS -H 'Cache-Control: no-cache' "$URL" 2>/dev/null | grep -q "$LOADER"; then echo "LIVE: $URL"; exit 0; fi
+  if curl -fsS -H 'Cache-Control: no-cache' "$URL" 2>/dev/null | grep -q "$LOADER"; then echo "LIVE: ${URL}?v=${SHA}"; exit 0; fi
 done
 echo "Pushed; Pages still propagating. URL: $URL"
