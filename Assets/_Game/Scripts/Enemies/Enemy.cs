@@ -27,6 +27,8 @@ namespace Marchio
         protected float speedMult;
         float preferredDistJitter;
         float fireTimer;
+        float retargetTimer;
+        Vector2 heading;
         float hitFlash;
         float slowLeft;
         float burnDps;
@@ -74,6 +76,8 @@ namespace Marchio
             speedMult = boss ? 1f : Random.Range(1f - cfg.enemySpeedVariance, 1f + cfg.enemySpeedVariance);
             preferredDistJitter = Random.Range(-type.preferredDistJitter, type.preferredDistJitter);
             fireTimer = Random.Range(type.initialFireDelayMs.x, type.initialFireDelayMs.y);
+            retargetTimer = 0f;
+            heading = Vector2.zero;
             OnInit();
             ApplyTransform();
         }
@@ -108,10 +112,23 @@ namespace Marchio
 
         protected virtual void Behave(float dt, float slowFactor)
         {
+            float d = Vector2.Distance(Gm.Player.Pos, Pos);
+            retargetTimer -= dt;
+            if (retargetTimer <= 0f)
+            {
+                retargetTimer = Cfg.enemyRetargetS;
+                heading = ComputeHeading(d);
+            }
+            Pos += heading * Speed * speedMult * slowFactor * dt;
+            if (Type.behavior == EnemyBehavior.SeekTrail) return;
+            TickFire(dt, d, Type.behavior != EnemyBehavior.KeepDistance);
+        }
+
+        Vector2 ComputeHeading(float distToPlayer)
+        {
             var type = Type;
             var toPlayer = Gm.Player.Pos - Pos;
-            float d = toPlayer.magnitude;
-            if (d < 1e-6f) d = 1f;
+            float d = distToPlayer < 1e-6f ? 1f : distToPlayer;
             float cosj = Mathf.Cos(steerJitter), sinj = Mathf.Sin(steerJitter);
             var steered = new Vector2(toPlayer.x * cosj - toPlayer.y * sinj, toPlayer.x * sinj + toPlayer.y * cosj) / d;
 
@@ -119,21 +136,16 @@ namespace Marchio
             {
                 float preferred = type.preferredDist + preferredDistJitter;
                 float dir = d > preferred ? 1f : d < preferred * type.retreatFraction ? -1f : 0f;
-                Pos += steered * dir * Speed * speedMult * slowFactor * dt;
-                TickFire(dt, d, false);
-                return;
+                return steered * dir;
             }
 
             if (type.behavior == EnemyBehavior.SeekTrail && Gm.Trail.TryNearestPoint(Pos, out var trailPoint))
             {
                 var toTrail = trailPoint - Pos;
-                float td = toTrail.magnitude;
-                if (td > 1e-6f) Pos += toTrail / td * Speed * speedMult * slowFactor * dt;
-                return;
+                return toTrail.sqrMagnitude > 1e-6f ? toTrail.normalized : steered;
             }
 
-            Pos += steered * Speed * speedMult * slowFactor * dt;
-            TickFire(dt, d, true);
+            return steered;
         }
 
         void TickFire(float dt, float distToPlayer, bool respectMinDist)
