@@ -416,6 +416,7 @@ namespace Marchio.Editor
             PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.Geometric;
             PlayerSettings.WebGL.powerPreference = WebGLPowerPreference.HighPerformance;
             PlayerSettings.WebGL.showDiagnostics = false;
+            PlayerSettings.WebGL.nameFilesAsHashes = true;
             PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
             PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Android, ManagedStrippingLevel.High);
             PlayerSettings.runInBackground = false;
