@@ -9,6 +9,8 @@ namespace Marchio
 
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         MaterialPropertyBlock mpb;
+        ParticleSystem[] particles;
+        bool fading;
 
         public Vector2 Pos { get; private set; }
         public Vector2 Velocity { get; private set; }
@@ -19,6 +21,13 @@ namespace Marchio
         public float Life { get; private set; }
         public int Bounces { get; private set; }
         public Enemy LastHit { get; private set; }
+        public float Age { get; private set; }
+        public bool Expired => Age >= GameManager.I.Config.projectileLifeS;
+
+        void Awake()
+        {
+            particles = GetComponentsInChildren<ParticleSystem>(true);
+        }
 
         public void OnSpawn() { }
         public void OnDespawn() { }
@@ -34,6 +43,10 @@ namespace Marchio
             Life = life;
             Bounces = 0;
             LastHit = null;
+            Age = 0f;
+            fading = false;
+            transform.localScale = Vector3.one;
+            for (int i = 0; i < particles.Length; i++) particles[i].Play(false);
             if (visualRoot != null) visualRoot.localScale = Vector3.one * radius * 2f;
             if (visualRenderer != null)
             {
@@ -69,7 +82,22 @@ namespace Marchio
                 Life -= dt;
             }
             Pos += Velocity * dt;
+            Age += dt;
+            TickFade();
             Apply();
+        }
+
+        void TickFade()
+        {
+            var cfg = GameManager.I.Config;
+            float left = cfg.projectileLifeS - Age;
+            if (left > cfg.projectileFadeS) return;
+            if (!fading)
+            {
+                fading = true;
+                for (int i = 0; i < particles.Length; i++) particles[i].Stop(false, ParticleSystemStopBehavior.StopEmitting);
+            }
+            transform.localScale = Vector3.one * Mathf.Clamp01(left / cfg.projectileFadeS);
         }
 
         void Apply()

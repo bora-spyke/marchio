@@ -48,9 +48,9 @@ namespace Marchio
                 float d = (en.Pos - from).sqrMagnitude;
                 if (d < best) { best = d; nearest = en; }
             }
-            if (nearest == null) return;
-
             var cfg = gm.Config;
+            if (nearest == null || best > cfg.autoAttackRangePx * cfg.autoAttackRangePx) return;
+
             var dir = Intercept(nearest.Pos - from, nearest.Velocity, cfg.autoAttackProjectileSpeed);
             if (dir.sqrMagnitude < 1e-6f) dir = Vector2.right;
             dir.Normalize();

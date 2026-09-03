@@ -68,6 +68,7 @@ namespace Marchio
         public float autoAttackCooldownMs = 450f;
         public float autoAttackDamage = 13f;
         public float autoAttackProjectileSpeed = 340f;
+        public float autoAttackRangePx = 320f;
 
         [Header("Waves")]
         public bool spawnEnemies = true;
@@ -101,6 +102,8 @@ namespace Marchio
         public float bossBurstProjectileRadius = 6f;
         public float bossHomingProjectileRadius = 7f;
         public float projectileDespawnPadPx = 40f;
+        public float projectileLifeS = 4f;
+        public float projectileFadeS = 0.6f;
 
         [Header("Juice")]
         public float hitstopBaseMs = 50f;

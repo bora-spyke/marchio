@@ -167,7 +167,7 @@ namespace Marchio
                 var b = pool.Active[i];
                 var from = b.Pos;
                 b.Advance(dt, player.Pos);
-                if (cameraRig.IsOutside(b.Pos, config.projectileDespawnPadPx)) { pool.Release(b); continue; }
+                if (b.Expired || cameraRig.IsOutside(b.Pos, config.projectileDespawnPadPx)) { pool.Release(b); continue; }
                 if (!b.FromBoss && SegmentBlockedByBarrier(from, b.Pos, out var hit))
                 {
                     fx.Burst(hit, config.loopEdge, 6);
@@ -195,7 +195,7 @@ namespace Marchio
             {
                 var b = pool.Active[i];
                 b.Advance(dt, player.Pos);
-                if (cameraRig.IsOutside(b.Pos, config.projectileDespawnPadPx)) { pool.Release(b); continue; }
+                if (b.Expired || cameraRig.IsOutside(b.Pos, config.projectileDespawnPadPx)) { pool.Release(b); continue; }
                 for (int e = 0; e < Enemies.Count; e++)
                 {
                     var en = Enemies[e];
