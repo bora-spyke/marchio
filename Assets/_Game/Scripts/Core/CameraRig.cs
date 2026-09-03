@@ -8,22 +8,17 @@ namespace Marchio
         [SerializeField] float height = 500f;
         Camera cam;
 
-        public Camera Cam => cam;
+        public Camera Cam => cam != null ? cam : cam = GetComponent<Camera>();
         public Vector2 Center { get; private set; }
-        public Vector2 HalfExtents => new Vector2(cam.orthographicSize * cam.aspect, cam.orthographicSize);
-
-        void Awake()
-        {
-            cam = GetComponent<Camera>();
-            cam.orthographic = true;
-            transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        }
+        public Vector2 HalfExtents => new Vector2(Cam.orthographicSize * Cam.aspect, Cam.orthographicSize);
 
         public void Configure(GameConfig cfg)
         {
-            cam.orthographicSize = cfg.referenceHeightPx * 0.5f;
-            cam.backgroundColor = cfg.bg;
-            cam.clearFlags = CameraClearFlags.SolidColor;
+            Cam.orthographic = true;
+            Cam.orthographicSize = cfg.referenceHeightPx * 0.5f;
+            Cam.backgroundColor = cfg.bg;
+            Cam.clearFlags = CameraClearFlags.SolidColor;
+            transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         }
 
         public void Follow(Vector2 target, float shake)
@@ -42,7 +37,7 @@ namespace Marchio
 
         public Vector2 ScreenToPlane(Vector2 screen)
         {
-            var w = cam.ScreenToWorldPoint(new Vector3(screen.x, screen.y, height));
+            var w = Cam.ScreenToWorldPoint(new Vector3(screen.x, screen.y, height));
             return new Vector2(w.x, w.z);
         }
     }
