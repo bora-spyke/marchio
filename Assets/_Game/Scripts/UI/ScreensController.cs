@@ -11,7 +11,7 @@ namespace Marchio
         VisualElement root, main, clear, fill, power, fail, victory;
         TrophyBarView mainTrophy, clearTrophy, failTrophy, victoryTrophy;
         VisualElement mainRoad, clearLines, clearStack, failStack, victoryRewards;
-        Label mainCart, mainClaimed, clearTitle, clearHp, fillTitle, powerTitle, failScore, failBonus, victoryScore;
+        Label mainClaimed, clearTitle, clearHp, fillTitle, powerTitle, failScore, failBonus, victoryScore;
         Button clearContinue, reviveBtn;
 
         GameManager Gm => GameManager.I;
@@ -29,7 +29,6 @@ namespace Marchio
 
             mainTrophy = UiKit.TrophyBar(root.Q("main-trophy"));
             mainRoad = root.Q("main-road");
-            mainCart = root.Q<Label>("main-cart");
             mainClaimed = root.Q<Label>("main-claimed");
             UiKit.Button(root.Q("main-buttons"), "PLAY", () => Gm.StartRun(), "btn--primary");
             UiKit.Button(root.Q("main-buttons"), "RESET PROGRESS", () => { Gm.ResetProgress(); BuildMain(); }, "btn--ghost");
@@ -115,10 +114,6 @@ namespace Marchio
             var gm = Gm;
             var trophy = gm.Trophy;
             mainTrophy.Set(trophy, trophy.Total);
-            mainCart.text = (trophy.CartTier > 0 ? "CART MK II" : "CART MK I")
-                + (trophy.Has(TrophyReward.DamageBoost) ? "  ·  SKIN" : "")
-                + (trophy.Has(TrophyReward.CartColor) ? "  ·  COLOR" : "")
-                + (trophy.Has(TrophyReward.TrailEffect) ? "  ·  TRAIL FX" : "");
             mainRoad.Clear();
             var nodes = trophy.Nodes;
             mainClaimed.text = $"{trophy.Claimed} / {nodes.Length} CLAIMED";
