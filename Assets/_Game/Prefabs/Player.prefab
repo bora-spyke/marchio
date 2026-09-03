@@ -322,8 +322,8 @@ LineRenderer:
     numCornerVertices: 16
     numCapVertices: 16
     alignment: 0
-    textureMode: 0
-    textureScale: {x: 1, y: 1}
+    textureMode: 1
+    textureScale: {x: 0.0035, y: 1}
     shadowBias: 0.5
     generateLightingData: 0
   m_UseWorldSpace: 1
