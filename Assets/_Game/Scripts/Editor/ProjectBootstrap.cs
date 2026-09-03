@@ -16,9 +16,10 @@ namespace Marchio.Editor
         const string PanelPath = Root + "/UI/PanelSettings.asset";
         const string WaveTablePath = Root + "/Config/WaveTable.asset";
 
-        [MenuItem("Marchio/Bootstrap Project")]
+        [MenuItem("Marchio/Bootstrap Project (creates only missing assets)")]
         public static void Build()
         {
+            if (Application.isPlaying) { Debug.LogError("[Marchio] Exit Play mode before bootstrapping."); return; }
             EnsureFolders();
             var cfg = LoadOrCreate<GameConfig>(ConfigPath);
             var solid = Material("Unlit_Solid", "Universal Render Pipeline/Unlit", Color.white);
@@ -38,7 +39,8 @@ namespace Marchio.Editor
             BuildEnemyTypes(cfg);
             AssetDatabase.SaveAssets();
 
-            BuildScene();
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) BuildScene();
+            else Debug.Log("[Marchio] Scene exists, not regenerated. Use Marchio/Regenerate Scene (DESTRUCTIVE) if you really want that.");
             ApplyPlayerSettings();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -71,13 +73,11 @@ namespace Marchio.Editor
             if (mat == null)
             {
                 mat = new Material(Shader.Find(shader));
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+                if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+                if (mat.HasProperty("_TintColor")) mat.SetColor("_TintColor", new Color(0.5f, 0.5f, 0.5f, 0.5f));
                 AssetDatabase.CreateAsset(mat, path);
             }
-            mat.shader = Shader.Find(shader);
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
-            if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
-            if (mat.HasProperty("_TintColor")) mat.SetColor("_TintColor", new Color(0.5f, 0.5f, 0.5f, 0.5f));
-            EditorUtility.SetDirty(mat);
             return mat;
         }
 
@@ -123,11 +123,24 @@ namespace Marchio.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        static bool PrefabExists(string name) => AssetDatabase.LoadAssetAtPath<GameObject>(Root + "/Prefabs/" + name + ".prefab") != null;
+
         static void SavePrefab(GameObject go)
         {
             PrefabUtility.SaveAsPrefabAsset(go, Root + "/Prefabs/" + go.name + ".prefab");
             Object.DestroyImmediate(go);
         }
+
+        [MenuItem("Marchio/Regenerate Scene (DESTRUCTIVE)")]
+        public static void RegenerateScene()
+        {
+            if (Application.isPlaying) { Debug.LogError("[Marchio] Exit Play mode first."); return; }
+            if (!EditorUtility.DisplayDialog("Regenerate Game scene?", "This overwrites Assets/_Game/Scenes/Game.unity and drops every hand-made scene change. Continue?", "Overwrite", "Cancel")) return;
+            BuildScene();
+        }
+
+        [MenuItem("Marchio/Apply Player Settings")]
+        public static void ApplyPlayerSettingsMenu() => ApplyPlayerSettings();
 
         static T Prefab<T>(string name) where T : Component
         {
@@ -136,6 +149,7 @@ namespace Marchio.Editor
 
         static void BuildPlayer(GameConfig cfg, Material solid, Material line)
         {
+            if (PrefabExists("Player")) return;
             var root = new GameObject("Player");
             var pc = root.AddComponent<PlayerController>();
             root.AddComponent<AutoAttack>();
@@ -158,6 +172,7 @@ namespace Marchio.Editor
 
         static void BuildEnemy(string name, PrimitiveType shape, Material solid)
         {
+            if (PrefabExists(name)) return;
             var root = new GameObject(name);
             var en = root.AddComponent<Enemy>();
             var visual = Primitive("Visual", shape, solid, root.transform);
@@ -168,6 +183,7 @@ namespace Marchio.Editor
 
         static void BuildBoss(GameConfig cfg, Material solid, Material line)
         {
+            if (PrefabExists("Boss")) return;
             var root = new GameObject("Boss");
             var boss = root.AddComponent<BossController>();
             var visual = Primitive("Visual", PrimitiveType.Sphere, solid, root.transform);
@@ -180,6 +196,7 @@ namespace Marchio.Editor
 
         static void BuildProjectile(string name, Material solid)
         {
+            if (PrefabExists(name)) return;
             var root = new GameObject(name);
             var p = root.AddComponent<Projectile>();
             var visual = Primitive("Visual", PrimitiveType.Sphere, solid, root.transform);
@@ -190,6 +207,7 @@ namespace Marchio.Editor
 
         static void BuildLinePrefab<T>(string name, Material line, Color color, float width, bool loop) where T : Component
         {
+            if (PrefabExists(name)) return;
             var root = new GameObject(name);
             var c = root.AddComponent<T>();
             var lr = Line("Line", root.transform, line, color, width, loop, true);
