@@ -25,7 +25,7 @@ MonoBehaviour:
   ignoresBarriers: 0
   fires: 1
   fireIntervalMs: 1700
-  projectileSpeed: 150
+  projectileSpeed: 320
   projectileDamage: 5
   fireMinDist: 70
   initialFireDelayMs: {x: 300, y: 1100}
