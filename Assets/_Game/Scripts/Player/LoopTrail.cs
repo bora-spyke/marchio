@@ -9,6 +9,9 @@ namespace Marchio
     {
         [SerializeField] LineRenderer line;
         [SerializeField] LineRenderer flashLine;
+        [SerializeField] float baseWidth = 2.5f;
+        [SerializeField] float widthPulseAmount = 0.35f;
+        [SerializeField] float widthPulseSpeed = 3.5f;
 
         readonly List<Vector2> points = new List<Vector2>(256);
         readonly List<float> lengths = new List<float>(256);
@@ -128,6 +131,7 @@ namespace Marchio
 
         void RenderLine(Vector2 head)
         {
+            line.widthMultiplier = baseWidth + widthPulseAmount * Mathf.Sin(Time.time * widthPulseSpeed);
             line.positionCount = points.Count + 1;
             for (int i = 0; i < points.Count; i++) line.SetPosition(i, PolygonMath.ToWorld(points[i], 1f));
             line.SetPosition(points.Count, PolygonMath.ToWorld(head, 1f));
