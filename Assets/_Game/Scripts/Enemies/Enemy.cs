@@ -175,6 +175,15 @@ namespace Marchio
         protected void ApplyTransform()
         {
             transform.position = PolygonMath.ToWorld(Pos);
+            if (visualRoot != null)
+            {
+                var toPlayer = Gm.Player.Pos - Pos;
+                if (toPlayer.sqrMagnitude > 1e-6f)
+                {
+                    var dirWorld = new Vector3(toPlayer.x, 0f, toPlayer.y);
+                    visualRoot.rotation = Quaternion.LookRotation(dirWorld, Vector3.up);
+                }
+            }
             if (visualRenderer != null)
             {
                 mpb ??= new MaterialPropertyBlock();
