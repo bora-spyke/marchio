@@ -406,6 +406,19 @@ namespace Marchio.Editor
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { UnityEngine.Rendering.GraphicsDeviceType.Vulkan, UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 });
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.use32BitDisplayBuffer = true;
+
+            PlayerSettings.WebGL.template = "PROJECT:Marchio";
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
+            PlayerSettings.WebGL.decompressionFallback = true;
+            PlayerSettings.WebGL.dataCaching = true;
+            PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
+            PlayerSettings.WebGL.initialMemorySize = 256;
+            PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.Geometric;
+            PlayerSettings.WebGL.powerPreference = WebGLPowerPreference.HighPerformance;
+            PlayerSettings.WebGL.showDiagnostics = false;
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Android, ManagedStrippingLevel.High);
+            PlayerSettings.runInBackground = false;
             AssetDatabase.SaveAssets();
         }
     }

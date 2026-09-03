@@ -65,7 +65,7 @@ namespace Marchio
         void Awake()
         {
             I = this;
-            Application.targetFrameRate = 60;
+            Application.targetFrameRate = Application.platform == RuntimePlatform.WebGLPlayer ? -1 : 60;
             EnemyProjectiles = new ObjectPool<Projectile>(enemyProjectilePrefab, poolRoot, 32);
             PlayerProjectiles = new ObjectPool<Projectile>(playerProjectilePrefab, poolRoot, 16);
             Barriers = new ObjectPool<Barrier>(barrierPrefab, poolRoot, 4);

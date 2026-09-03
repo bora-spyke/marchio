@@ -15,6 +15,9 @@ namespace Marchio
         readonly StringBuilder sb = new StringBuilder(128);
         int lastCombo = -1;
         int lastUpgradeHash = -1;
+        int lastHp = int.MinValue;
+        int lastWave = -1;
+        int lastEnemyCount = -1;
 
         void OnEnable()
         {
@@ -72,10 +75,22 @@ namespace Marchio
             float hpFrac = Mathf.Clamp01(gm.Player.Hp / cfg.playerMaxHP);
             hpFill.style.width = Length.Percent(hpFrac * 100f);
             hpBar.EnableInClassList("hp-bar--low", hpFrac <= 0.3f);
-            hpText.text = $"{Mathf.Max(0, Mathf.RoundToInt(gm.Player.Hp))}/{cfg.playerMaxHP:0}";
-
-            waveText.text = $"DALGA {gm.Waves.Wave}";
-            enemyText.text = $"{gm.Enemies.Count} düşman";
+            int hp = Mathf.Max(0, Mathf.RoundToInt(gm.Player.Hp));
+            if (hp != lastHp)
+            {
+                lastHp = hp;
+                hpText.text = $"{hp}/{cfg.playerMaxHP:0}";
+            }
+            if (gm.Waves.Wave != lastWave)
+            {
+                lastWave = gm.Waves.Wave;
+                waveText.text = $"DALGA {lastWave}";
+            }
+            if (gm.Enemies.Count != lastEnemyCount)
+            {
+                lastEnemyCount = gm.Enemies.Count;
+                enemyText.text = $"{lastEnemyCount} düşman";
+            }
 
             if (gm.Combo != lastCombo)
             {
