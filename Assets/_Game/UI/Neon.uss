@@ -32,11 +32,15 @@
 }
 
 .stage-text {
-    font-size: 17px;
-    -unity-font-style: bold;
+    -unity-font: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy.otf?fileID=12800000&guid=c6abca83b4e5d4904a783b871d4bae95&type=3#EigerdalsNormHeavy");
+    -unity-font-definition: none;
+    font-size: 19px;
+    -unity-font-style: normal;
     color: #ffffff;
-    letter-spacing: 1px;
-    text-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.55);
+    letter-spacing: 0;
+    -unity-text-outline-width: 0.9px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8);
 }
 
 .hp-group {
