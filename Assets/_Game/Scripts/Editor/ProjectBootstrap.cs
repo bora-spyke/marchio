@@ -510,15 +510,20 @@ namespace Marchio.Editor
         public static void BuildShade(Transform camera)
         {
             var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Textures/shdw.png");
-            var go = new GameObject("CameraShade");
-            go.transform.SetParent(camera, false);
-            go.transform.localPosition = new Vector3(0f, -42f, 784f);
-            go.transform.localRotation = Quaternion.Euler(25f, 0f, 0f);
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = sprite;
-            sr.drawMode = SpriteDrawMode.Sliced;
-            sr.size = new Vector2(600f, 600f);
-            go.AddComponent<CameraShade>();
+            var mat = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Unlit-Default.mat");
+            var root = new GameObject("CameraShade");
+            root.transform.SetParent(camera, false);
+            var shade = root.AddComponent<CameraShade>();
+            foreach (var edge in new[] { "bottom", "top", "left", "right" })
+            {
+                var go = new GameObject("Shade_" + edge);
+                go.transform.SetParent(root.transform, false);
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = sprite;
+                if (mat != null) sr.sharedMaterial = mat;
+                sr.drawMode = SpriteDrawMode.Sliced;
+                Set(shade, edge, sr);
+            }
         }
 
         public static void MakeTransparent(Material mat)
