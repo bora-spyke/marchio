@@ -32,3 +32,4 @@ MonoBehaviour:
   preferredDist: 190
   preferredDistJitter: 40
   retreatFraction: 0.7
+  projectilePrefab: {fileID: 1795060547283548827, guid: 7a3859d64be0485d8ec6f1adbcce1323, type: 3}

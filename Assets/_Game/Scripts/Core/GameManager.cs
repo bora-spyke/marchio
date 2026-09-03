@@ -42,7 +42,8 @@ namespace Marchio
         public TrophyRoad Trophy { get; private set; }
 
         readonly Dictionary<EnemyTypeSO, ObjectPool<Enemy>> enemyPools = new Dictionary<EnemyTypeSO, ObjectPool<Enemy>>();
-        public ObjectPool<Projectile> EnemyProjectiles { get; private set; }
+        readonly Dictionary<Projectile, ObjectPool<Projectile>> enemyProjectilePools = new Dictionary<Projectile, ObjectPool<Projectile>>();
+        public readonly List<ObjectPool<Projectile>> EnemyProjectilePools = new List<ObjectPool<Projectile>>();
         public ObjectPool<Projectile> PlayerProjectiles { get; private set; }
         public ObjectPool<Barrier> Barriers { get; private set; }
         public ObjectPool<DeadTrail> DeadTrails { get; private set; }
@@ -88,7 +89,6 @@ namespace Marchio
         {
             I = this;
             Application.targetFrameRate = Application.platform == RuntimePlatform.WebGLPlayer ? -1 : 60;
-            EnemyProjectiles = new ObjectPool<Projectile>(enemyProjectilePrefab, poolRoot, 32);
             PlayerProjectiles = new ObjectPool<Projectile>(playerProjectilePrefab, poolRoot, 16);
             Barriers = new ObjectPool<Barrier>(barrierPrefab, poolRoot, 4);
             DeadTrails = new ObjectPool<DeadTrail>(deadTrailPrefab, poolRoot, 4);
@@ -159,9 +159,25 @@ namespace Marchio
             NodeUnlocked?.Invoke(node);
         }
 
+        public ObjectPool<Projectile> EnemyProjectilesFor(Projectile prefab)
+        {
+            if (prefab == null) prefab = enemyProjectilePrefab;
+            if (!enemyProjectilePools.TryGetValue(prefab, out var pool))
+            {
+                pool = new ObjectPool<Projectile>(prefab, poolRoot, 16);
+                enemyProjectilePools.Add(prefab, pool);
+                EnemyProjectilePools.Add(pool);
+            }
+            return pool;
+        }
+
         void TickEnemyProjectiles(float dt)
         {
-            var pool = EnemyProjectiles;
+            for (int p = 0; p < EnemyProjectilePools.Count; p++) TickEnemyProjectiles(EnemyProjectilePools[p], dt);
+        }
+
+        void TickEnemyProjectiles(ObjectPool<Projectile> pool, float dt)
+        {
             for (int i = pool.Active.Count - 1; i >= 0; i--)
             {
                 var b = pool.Active[i];
@@ -387,7 +403,7 @@ namespace Marchio
         void ClearField()
         {
             foreach (var pool in enemyPools.Values) pool.ReleaseAll();
-            EnemyProjectiles.ReleaseAll();
+            foreach (var pool in EnemyProjectilePools) pool.ReleaseAll();
             PlayerProjectiles.ReleaseAll();
             Barriers.ReleaseAll();
             DeadTrails.ReleaseAll();

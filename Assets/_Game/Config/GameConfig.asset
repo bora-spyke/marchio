@@ -25,7 +25,6 @@ MonoBehaviour:
   closeRadiusMult: 0.5
   loopFlashMs: 380
   trailHitRadius: 6
-  trailCutDamage: 10
   maxLoopLengthMult: 18.4
   loopGrowthXPStep: 3
   loopGrowthPct: 0.06

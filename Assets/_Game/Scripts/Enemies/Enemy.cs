@@ -152,7 +152,7 @@ namespace Marchio
             var dir = Gm.Player.Pos - Pos;
             if (dir.sqrMagnitude < 1e-6f) dir = Vector2.right;
             dir.Normalize();
-            Gm.EnemyProjectiles.Get().Init(Pos, dir * speed, Cfg.enemyProjectileRadius, damage);
+            Gm.EnemyProjectilesFor(Type.projectilePrefab).Get().Init(Pos, dir * speed, Cfg.enemyProjectileRadius, damage);
         }
 
         public bool ApplyProjectileHit(float dmg) => ApplyDamage(dmg, true);

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -26,7 +27,7 @@ namespace Marchio.Tests
             while (t < 4f) { t += Time.deltaTime; yield return null; }
 
             Assert.Greater(gm.Enemies.Count, 0, "level 1 should have spawned chasers");
-            Assert.Greater(gm.PlayerProjectiles.Active.Count + gm.EnemyProjectiles.Active.Count, 0, "auto attack or enemies should have fired");
+            Assert.Greater(gm.PlayerProjectiles.Active.Count + gm.EnemyProjectilePools.Sum(p => p.Active.Count), 0, "auto attack or enemies should have fired");
 
             var enemy = gm.Enemies.Find(e => !e.Dead);
             Assert.IsNotNull(enemy, "a live enemy should exist");

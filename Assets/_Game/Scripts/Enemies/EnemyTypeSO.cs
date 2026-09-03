@@ -22,6 +22,7 @@ namespace Marchio
 
         [Header("Firing")]
         public bool fires = true;
+        public Projectile projectilePrefab;
         public float fireIntervalMs = 1900f;
         public float projectileSpeed = 130f;
         public float projectileDamage = 5f;

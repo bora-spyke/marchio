@@ -106,13 +106,9 @@ namespace Marchio
                     if (en.Dead) continue;
                 }
 
-                if (player.Invuln <= 0f && trail.Touches(en.Pos, en.Radius + cutRadius))
-                {
-                    if (liveWire > 0) en.ApplyBurn(gm.Preset.liveWireBurnDps * liveWire, cfg.burnDurationS);
-                    gm.Fx.Burst(en.Pos, cfg.trail, 12);
-                    player.TakeDamage(cfg.trailCutDamage);
-                    if (en.Dead) continue;
-                }
+                // ponytail: enemies no longer cut the open trail; touching it only applies Live Wire burn
+                if (liveWire > 0 && trail.Touches(en.Pos, en.Radius + cutRadius))
+                    en.ApplyBurn(gm.Preset.liveWireBurnDps * liveWire, cfg.burnDurationS);
 
                 if (player.Invuln <= 0f && Vector2.Distance(en.Pos, player.Pos) < en.Radius + cfg.playerRadius)
                     player.TakeDamage(en.ContactDamage);
