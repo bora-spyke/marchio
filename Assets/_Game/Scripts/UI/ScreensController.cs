@@ -6,10 +6,12 @@ namespace Marchio
     [RequireComponent(typeof(UIDocument))]
     public sealed class ScreensController : MonoBehaviour
     {
+        const int RoadWindow = 4;
+
         VisualElement root, main, clear, fill, power, fail, victory;
         TrophyBarView mainTrophy, clearTrophy, failTrophy, victoryTrophy;
         VisualElement mainRoad, clearLines, clearStack, failStack, victoryRewards;
-        Label mainCart, clearTitle, clearHp, fillTitle, powerTitle, failScore, failBonus, victoryScore;
+        Label mainCart, mainClaimed, clearTitle, clearHp, fillTitle, powerTitle, failScore, failBonus, victoryScore;
         Button clearContinue, reviveBtn;
 
         GameManager Gm => GameManager.I;
@@ -28,6 +30,7 @@ namespace Marchio
             mainTrophy = UiKit.TrophyBar(root.Q("main-trophy"));
             mainRoad = root.Q("main-road");
             mainCart = root.Q<Label>("main-cart");
+            mainClaimed = root.Q<Label>("main-claimed");
             UiKit.Button(root.Q("main-buttons"), "PLAY", () => Gm.StartRun(), "btn--primary");
             UiKit.Button(root.Q("main-buttons"), "RESET PROGRESS", () => { Gm.ResetProgress(); BuildMain(); }, "btn--ghost");
 
@@ -123,26 +126,33 @@ namespace Marchio
             UiKit.Label(header, "PREMIUM", "road-col-title");
             mainRoad.Add(header);
             var nodes = trophy.Nodes;
-            for (int i = 0; i < nodes.Length; i++)
+            mainClaimed.text = $"{trophy.Claimed} / {nodes.Length}";
+            // ponytail: no scroll; show last claimed + next few nodes. RoadWindow rows fit a 390x844 layout.
+            int first = Mathf.Clamp(trophy.Claimed - 1, 0, Mathf.Max(0, nodes.Length - RoadWindow));
+            int last = Mathf.Min(nodes.Length, first + RoadWindow);
+            for (int i = first; i < last; i++)
             {
                 var node = nodes[i];
                 var row = new VisualElement();
                 row.AddToClassList("node");
                 row.AddToClassList(node.macro ? "node--macro" : "node--micro");
                 if (i < trophy.Claimed) row.AddToClassList("node--claimed");
+                else if (i == trophy.Claimed) row.AddToClassList("node--next");
                 var free = new VisualElement();
                 free.AddToClassList("node-free");
                 var badge = new VisualElement();
                 badge.AddToClassList("node-badge");
-                badge.Add(new Label(node.macro ? "★" : "•"));
+                badge.Add(new Label(node.macro ? "\u2605" : (i + 1).ToString()));
                 var text = new VisualElement();
                 text.AddToClassList("node-text");
                 UiKit.Label(text, node.title, "node-title");
-                UiKit.Label(text, i < trophy.Claimed ? "CLAIMED" : node.threshold.ToString("0") + " TROPHY", "node-sub");
+                string sub = i < trophy.Claimed ? "CLAIMED" : i == trophy.Claimed ? $"NEXT  \u00b7  {node.threshold:0} TROPHY" : $"{node.threshold:0} TROPHY";
+                UiKit.Label(text, sub, "node-sub");
                 free.Add(badge);
                 free.Add(text);
                 var premium = new VisualElement();
                 premium.AddToClassList("node-premium");
+                UiKit.Label(premium, "SOON", "node-premium-text");
                 row.Add(free);
                 row.Add(premium);
                 mainRoad.Add(row);

@@ -1,12 +1,24 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:VisualElement name="screens" class="screens" picking-mode="Ignore">
         <ui:VisualElement name="main" class="overlay overlay--main">
-            <ui:Label class="title" text="NEONLOOP" />
-            <ui:Label class="subtitle subtitle--tight" text="TRACE · CLAIM · SURVIVE" />
-            <ui:VisualElement name="main-trophy" class="panel" />
-            <ui:ScrollView name="main-road" class="road" />
-            <ui:Label name="main-cart" class="cart-preview" text="CART MK I" />
-            <ui:VisualElement name="main-buttons" class="buttons" />
+            <ui:VisualElement class="main-hero">
+                <ui:Label class="title title--hero" text="NEONLOOP" />
+                <ui:Label class="subtitle subtitle--tight" text="TRACE  ·  CLAIM  ·  SURVIVE" />
+            </ui:VisualElement>
+            <ui:VisualElement class="card-panel">
+                <ui:VisualElement class="card-panel-head">
+                    <ui:Label class="panel-title" text="TROPHY ROAD" />
+                    <ui:Label name="main-claimed" class="panel-meta" text="0 / 10" />
+                </ui:VisualElement>
+                <ui:VisualElement name="main-trophy" />
+                <ui:VisualElement name="main-road" class="road" />
+            </ui:VisualElement>
+            <ui:VisualElement class="cart-card">
+                <ui:Label class="panel-title" text="YOUR CART" />
+                <ui:Label name="main-cart" class="cart-preview" text="CART MK I" />
+            </ui:VisualElement>
+            <ui:VisualElement class="spacer" />
+            <ui:VisualElement name="main-buttons" class="buttons buttons--main" />
         </ui:VisualElement>
         <ui:VisualElement name="clear" class="overlay">
             <ui:Label name="clear-title" class="title-small" text="LEVEL 1 COMPLETE" />
