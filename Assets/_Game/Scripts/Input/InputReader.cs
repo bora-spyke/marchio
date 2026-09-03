@@ -14,7 +14,6 @@ namespace Marchio
         float touchAutoResumeLeft;
         bool wasTouching;
         bool touchEngaged;
-        Vector2 lastTouchMove;
         Vector2 mouseOrigin;
         bool mouseHeld;
 
@@ -27,7 +26,6 @@ namespace Marchio
             touchAutoResumeLeft = 0f;
             wasTouching = false;
             touchEngaged = false;
-            lastTouchMove = Vector2.zero;
             mouseHeld = false;
             JoystickVisible = false;
         }
@@ -88,7 +86,6 @@ namespace Marchio
                     float mag = Mathf.Clamp01(d / cfg.joystickRadius);
                     move = delta / d * mag;
                 }
-                lastTouchMove = move;
                 JoystickOrigin = origin;
                 JoystickCurrent = current;
                 JoystickVisible = true;
@@ -96,7 +93,6 @@ namespace Marchio
             }
             else if (!usingKeyboard && touchEngaged)
             {
-                move = lastTouchMove;
                 if (wasTouching)
                 {
                     wasTouching = false;
