@@ -70,7 +70,7 @@ namespace Marchio
             var centroid = PolygonMath.Centroid(poly);
             float magnitude = count == 0 ? 0f : count >= 5 ? 2f : count >= 3 ? 1f : 0.5f;
             gm.AddJuice(cfg.hitstopBaseMs * (1f + magnitude), cfg.shakeBase * (1f + magnitude));
-            gm.Fx.Burst(centroid, cfg.loopEdge, 10 + count * 6);
+            gm.Fx.BurstAlongPath(poly, cfg.loopEdge, 10 + count * 6);
             for (int i = 0; i < insideBuffer.Count; i++)
                 gm.Fx.BurstToward(insideBuffer[i].Pos, centroid, cfg.loopEdge, 5);
         }
