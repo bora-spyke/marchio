@@ -10,7 +10,6 @@ namespace Marchio
         public string displayName = "Chaser";
         public Enemy prefab;
         public EnemyBehavior behavior = EnemyBehavior.Chase;
-        public Color color = Color.magenta;
 
         [Header("Stats (wave 1 base, HP scales per wave)")]
         public float hp = 50f;

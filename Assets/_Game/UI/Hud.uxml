@@ -1,15 +1,21 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:VisualElement name="hud" class="hud" picking-mode="Ignore">
         <ui:VisualElement name="safe" class="safe" picking-mode="Ignore">
-        <ui:VisualElement name="top-left" class="top-left" picking-mode="Ignore">
-            <ui:VisualElement name="hp-bar" class="bar hp-bar" picking-mode="Ignore">
-                <ui:VisualElement name="hp-fill" class="bar-fill hp-fill" picking-mode="Ignore" />
+        <ui:VisualElement name="top-row" class="top-row" picking-mode="Ignore">
+            <ui:VisualElement name="stage-badge" class="stage-badge" picking-mode="Ignore">
+                <ui:Label name="stage-text" class="stage-text" text="LEVEL 1/4" picking-mode="Ignore" />
             </ui:VisualElement>
-            <ui:Label name="hp-text" class="hp-text" text="100/100" picking-mode="Ignore" />
+            <ui:VisualElement name="hp-group" class="hp-group" picking-mode="Ignore">
+                <ui:VisualElement name="hp-bar" class="hp-track" picking-mode="Ignore">
+                    <ui:VisualElement name="hp-fill" class="hp-fill" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement name="hp-heart" class="hp-heart" picking-mode="Ignore" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="top-left" class="top-left" picking-mode="Ignore">
             <ui:VisualElement name="stack-row" class="stack-row stack-row--hud" picking-mode="Ignore" />
         </ui:VisualElement>
         <ui:VisualElement name="top-right" class="top-right" picking-mode="Ignore">
-            <ui:Label name="level-text" class="level-text" text="LEVEL 1" picking-mode="Ignore" />
             <ui:Label name="combo-chip" class="combo-chip" text="COMBO x1" picking-mode="Ignore" />
         </ui:VisualElement>
         <ui:VisualElement name="top-center" class="top-center" picking-mode="Ignore">

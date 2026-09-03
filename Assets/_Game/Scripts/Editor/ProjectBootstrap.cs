@@ -224,21 +224,21 @@ namespace Marchio.Editor
         {
             var chaser = EnemyType("Chaser", "Enemy_Chaser", t =>
             {
-                t.behavior = EnemyBehavior.Chase; t.color = cfg.chaser;
+                t.behavior = EnemyBehavior.Chase;
                 t.hp = 50f; t.speed = 90f; t.radius = 14f; t.contactDamage = 10f; t.xp = 1;
                 t.fireIntervalMs = 1900f; t.projectileSpeed = 130f; t.projectileDamage = 5f; t.fireMinDist = 70f;
                 t.initialFireDelayMs = new Vector2(300f, 1100f);
             }, 8f);
             EnemyType("Fast", "Enemy_Fast", t =>
             {
-                t.behavior = EnemyBehavior.Chase; t.color = cfg.fast;
+                t.behavior = EnemyBehavior.Chase;
                 t.hp = 30f; t.speed = 150f; t.radius = 12f; t.contactDamage = 10f; t.xp = 1;
                 t.fireIntervalMs = 1700f; t.projectileSpeed = 150f; t.projectileDamage = 5f; t.fireMinDist = 70f;
                 t.initialFireDelayMs = new Vector2(300f, 1100f);
             }, 8f);
             EnemyType("Ranged", "Enemy_Ranged", t =>
             {
-                t.behavior = EnemyBehavior.KeepDistance; t.color = cfg.ranged;
+                t.behavior = EnemyBehavior.KeepDistance;
                 t.hp = 60f; t.speed = 60f; t.radius = 15f; t.contactDamage = 10f; t.xp = 2;
                 t.fireIntervalMs = 1400f; t.projectileSpeed = 150f; t.projectileDamage = 8f;
                 t.preferredDist = 190f; t.preferredDistJitter = 40f; t.retreatFraction = 0.7f;

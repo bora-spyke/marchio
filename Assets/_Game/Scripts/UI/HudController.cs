@@ -8,12 +8,11 @@ namespace Marchio
     {
         VisualElement root;
         VisualElement hpBar, hpFill, thresholdBar, thresholdFill, trailBar, trailFill, joystick, joystickKnob, stackRow, toast;
-        Label hpText, levelText, thresholdText, comboChip, drawText, toastText;
+        Label stageText, thresholdText, comboChip, drawText, toastText;
         DamageTextLayer damageLayer;
         InputReader input;
         int lastCombo = -1;
         int lastStackHash = -1;
-        int lastHp = int.MinValue;
         int lastLevel = -1;
         int lastRemaining = -1;
         bool pulse;
@@ -25,9 +24,8 @@ namespace Marchio
             SafeArea.Apply(root);
             hpBar = root.Q("hp-bar");
             hpFill = root.Q("hp-fill");
-            hpText = root.Q<Label>("hp-text");
             stackRow = root.Q("stack-row");
-            levelText = root.Q<Label>("level-text");
+            stageText = root.Q<Label>("stage-text");
             thresholdBar = root.Q("threshold-bar");
             thresholdFill = root.Q("threshold-fill");
             thresholdText = root.Q<Label>("threshold-text");
@@ -86,22 +84,16 @@ namespace Marchio
             if (gm == null || root.resolvedStyle.display == DisplayStyle.None) return;
             var cam = gm.Cam.Cam;
 
-            float maxHp = gm.PlayerMaxHp;
-            float hpFrac = Mathf.Clamp01(gm.Player.Hp / maxHp);
+            float hpFrac = Mathf.Clamp01(gm.Player.Hp / gm.PlayerMaxHp);
             hpFill.style.width = Length.Percent(hpFrac * 100f);
-            hpBar.EnableInClassList("hp-bar--low", hpFrac <= 0.3f);
-            int hp = Mathf.Max(0, Mathf.RoundToInt(gm.Player.Hp));
-            if (hp != lastHp)
-            {
-                lastHp = hp;
-                hpText.text = $"{hp}/{maxHp:0}";
-            }
+            hpBar.EnableInClassList("hp-track--low", hpFrac <= 0.3f);
 
             var run = gm.Run;
             if (run.Level != lastLevel)
             {
                 lastLevel = run.Level;
-                levelText.text = run.IsVictoryLap ? "VICTORY LAP" : $"LEVEL {run.Level}";
+                int total = gm.Preset.levelCount;
+                stageText.text = run.IsVictoryLap ? "VICTORY LAP" : total > 0 ? $"LEVEL {run.Level}/{total}" : $"LEVEL {run.Level}";
             }
             if (run.IsVictoryLap)
             {
