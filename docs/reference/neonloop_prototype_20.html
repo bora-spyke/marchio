@@ -1,0 +1,2335 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>NeonLoop — prototip</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden; background: #05070d;
+    position: fixed; inset: 0;
+    user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+  }
+  canvas { display: block; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+'use strict';
+
+/* ================================================================
+   NEONLOOP (eski adı: Neon İlmek) — "Neon Fill + Archero" prototipi
+   Çekirdek mekanik: düşmanları kovalarken/kaçarken bir Draw düğmesi
+   basılı tutulur, oyuncu hareket ettikçe parlayan bir iz bırakır;
+   iz kendi başlangıç noktasına değince kapanır ve içindeki tüm
+   düşmanlara alan bazlı hasar verir. Paper.io'nun aksine bölge
+   KALICI DEĞİL — sadece anlık bir saldırı.
+   Modüller (tek dosyada, ama işlevsel olarak ayrık — bkz. yorum
+   başlıkları): PlayerController, TrailDrawer/LoopDetector,
+   PolygonUtility, LoopAttack, EnemyBase+Spawner, ProjectileSystem,
+   UpgradeManager, WaveManager, GameManager.
+
+   v0.7 DEĞİŞİKLİĞİ (bu dosya): Electric Border yükseltmesindeki buğ
+   düzeltildi. Eski formülde `S.upgrades.electricBorder / Math.max(1,
+   S.upgrades.electricBorder)` her zaman 1'e sadeleşiyordu — yani
+   yükseltmeyi 2. veya 3. kez alsan da HİÇBİR ŞEY değişmiyordu.
+   Design doc v1.1 kararı: her ek seviye MENZİLİ büyütsün, hasar
+   yüzdesini değil (dengeyi bozmasın diye). Bkz. CONFIG.electricBorderRadiusStep
+   ve closeLoop() içindeki Electric Border bloğu. Ayrıca HUD'daki aktif
+   yükseltme listesine Electric Border için güncel menzili (px) yazıldı,
+   ve menzil içinde kalıp da SADECE border'dan hasar alan düşmanlara
+   ayrı renkte (elektrik sarısı) bir parçacık patlaması eklendi — böylece
+   oyuncu üst üste yükseltme alınca menzilin gerçekten büyüdüğünü hem
+   HUD'dan okuyabilir hem de sahnede görebilir.
+
+   v0.8 DEĞİŞİKLİĞİ (bu dosya):
+   1) İsim: "Neon İlmek" → "NeonLoop" (başlık + menü ekranı).
+   2) Fare/dokunmatik takibi sıkılaştırıldı — "karakter mouse'un çok
+      gerisinden geliyor" geri bildirimi üzerine oyuncu hızı ve ivmesi
+      artırıldı (220→320 px/s, ivme 1600/2000→2300/2900 px/s²) ki imleç
+      hızlı hareket ettirilince aradaki boşluk gözle görülür şekilde
+      kapansın. Çekirdek ilmek/hasar sayıları DEĞİŞMEDİ — bu saf bir
+      "kontrol hissi" ayarı, dengeyi ilmek tarafında bozmuyor ama
+      oyuncu artık biraz daha çevik/kaçış gücü yüksek, playtest'te
+      hissedilirse geri ayarlanabilir (bkz. CONFIG.playerSpeed).
+   3) Ateş gücü artırıldı: autoAttackDamage 10→18, autoAttackCooldownMs
+      550→450 (daha güçlü VE daha sık ateş). Not: bu sistem tasarım
+      dokümanında bilerek "zayıf/ikincil" tutulmuştu ki ilmek asıl hasar
+      kaynağı kalsın — bu değişiklik kullanıcı talebiyle bilinçli bir
+      denge kararı, playtest'te ilmek önemini kaybediyorsa geri kısılabilir.
+
+   v0.9 DEĞİŞİKLİĞİ (bu dosya):
+   1) Ateş gücü ince ayar: autoAttackDamage 18→13 (aşağı çekildi),
+      autoAttackCooldownMs 450'de SABİT kalıyor — sadece hasar
+      değişti, ateş sıklığına dokunulmadı.
+   2) Neon iz (ilmek) uzunluk limiti %15 artırıldı: maxLoopLengthMult
+      16→18.4, yani başlangıç limiti ~480px'den ~552px'e çıktı
+      (oyuncu genişliğinin 16 katından 18.4 katına). Büyüme formülü
+      (her 3 xp'de +%6) aynı kalıyor, sadece taban değer büyüdü.
+
+   Kullanıcı isteği: "loop hem daire içine alıp öldürsün hem de tuzak
+   kursun". Artık bir ilmek kapandığında, o anlık alan hasarına EK
+   OLARAK, kapanan şeklin kendisi CONFIG.barrierDurationMs (3 sn) kadar
+   yerde SOLİD bir bariyer olarak kalıyor — düşmanlar (hem hareketleri
+   hem mermileri) bu çizgiyi geçemiyor, oyuncu serbestçe içinden geçebiliyor.
+   NOT: Bu, dosyanın en tepesindeki eski "Paper.io'nun aksine bölge
+   KALICI DEĞİL" notunu kısmen değiştiriyor — artık şekil birkaç saniye
+   kalıyor, ama Paper.io'daki gibi alan/skor SAHİPLENMİYOR, sadece
+   geçici bir fiziksel engel. Bkz. S.barriers, resolveEnemyBarrierCollision(),
+   segmentsIntersect(). Süre dolmaya yaklaşınca (son %25) çizgi yanıp
+   sönerek kaybolacağını haber veriyor.
+   Denge notu: kombo + bariyer birlikte oyuncuyu hem saldırıda hem
+   savunmada güçlendiriyor — playtest'te sonraki dalgalar çok kolaylaşırsa
+   önce bariyer süresini kısaltın (3sn→2sn), sonra aynı anda kaç bariyerin
+   aktif olabileceğine bir tavan koyun.
+
+   v0.10 DEĞİŞİKLİĞİ (bu dosya) — KOMBO SİSTEMİ (yeni):
+   S.maxLoopLength hâlâ öldürdükçe KALICI büyüyor (değişmedi). Üstüne
+   şimdi bir KOMBO sayacı eklendi: bir ilmek kapanışında içeri giren
+   her düşman kombo'yu 1 artırır (aynı count değeri multi-kill
+   bonusunda da kullanılıyor). Kombo arttıkça GEÇİCİ olarak izin
+   izin verilen uzunluğu büyütür (bkz. effectiveMaxLoopLength() —
+   %10/kombo, tavan +%150). Oyuncu HASAR ALDIĞI ANDA kombo VE bu
+   geçici uzama sıfıra döner — kalıcı (XP) büyüme etkilenmez, sadece
+   kombo bonusu sıfırlanır. HUD'da "KOMBO xN" olarak gösteriliyor,
+   kombo artışında yükselen bir "combo up" sesi, sıfırlanmasında
+   düşen bir "combo break" sesi çalıyor.
+
+   v0.12 DEĞİŞİKLİĞİ (bu dosya) — TEK ELLE MOBİL KONTROL:
+   Sorun: "double-tap ile çizimi aç/kapat" hareket ederken tek elle
+   (metroda, tek başparmakla) zamanlaması zor bir ikinci jestti. Çözüm:
+   ÇİFT DOKUNMA KALDIRILDI. Artık parmağın ekranda olduğu HER an otomatik
+   olarak çiziyor — tek sürekli sürükleme hem hareket hem çizim. Böylece
+   tek elle tek başparmakla oynanabilir. Parmağını kaldırıp (başparmağın
+   rahat ulaşamadığı bir yerden) yakın bir yere tekrar koyduğunda iz hemen
+   iptal olmasın diye CONFIG.touchReleaseGraceMs (180ms) kadar bir "af
+   süresi" var — bu pencere içinde tekrar dokunursan iz kaldığı yerden
+   devam eder, pencere dolarsa gerçekten bırakılmış sayılır ve iptal olur.
+   Bkz. computeInput(dt) — artık dt alıyor, touchReleaseGraceMsLeft modül
+   değişkeni. Masaüstü (klavye/fare) kontrolleri DEĞİŞMEDİ.
+
+   v0.13 DEĞİŞİKLİĞİ (bu dosya) — GERÇEK PLAYTEST GERİ BİLDİRİMİ:
+   "Bastığın yere gitme" (parmağın DOKUNDUĞU MUTLAK NOKTAYA gitme) kötü
+   hissettiriyordu. Dokunmatik hareket artık ARCHERO TARZI DİNAMİK JOYSTICK:
+   parmağın ekrana ilk değdiği yer joystick'in merkezi (origin) olur, oyuncu
+   parmağı o merkezden ne kadar/ne yöne uzaklaştırdığına göre hareket eder
+   (mutlak konum değil, GÖRELİ yön+mesafe). Böylece başparmak ekranın
+   HERHANGİ bir yerine rahatça konabilir — tek elle konfor sorunu da ayrıca
+   çözülmüş olur. Bkz. touches Map'teki {ox,oy} (origin) alanları,
+   CONFIG.joystickRadius, S.touchTargetVisual'ın yeni {originX,originY,curX,curY} şekli.
+   Ayrıca:
+   1) Kuyruk her zaman bırakılıyor (v0.12'den beri aynı, değişmedi).
+   2) Parmak kalkınca iz artık ANINDA değil, CONFIG.touchReleaseGraceMs
+      SÜRESİ SONUNDA kesiliyor — bu süre 180ms'den 1000ms'e (1 sn)
+      çıkarıldı: "parmağı kaldırınca 1 saniyede kessin o kuyruğu, kapanmasa
+      bile" isteği. Mekanizma aynı (bkz. v0.12 notu), sadece süre değişti.
+   3) SABİT ARENA/KENAR KALDIRILDI — artık Archero'daki gibi sınırsız bir
+      dünyada hareket ediliyor. Kamera oyuncuyu MERKEZDE tutuyor (S.camera =
+      oyuncunun dünya konumu), her şey (düşman, mermi, ilmek, bariyer) artık
+      DÜNYA koordinatında saklanıyor, render() bir kez ctx.translate ile
+      dünyayı ekrana kaydırıyor — HUD ve overlay'ler bu translate'in DIŞINDA,
+      hep ekran-sabit kalıyor. Düşman spawn'ı artık sabit arena kenarına değil,
+      oyuncuyu saran (ekranın biraz dışında) bir çembere göre hesaplanıyor
+      (bkz. spawnPointOutsideArena — mantık aynı, referans noktası "arena"
+      yerine "oyuncunun etrafındaki sanal görüş kutusu").
+   4) Arkaplana göz yormayan, kamerayla birlikte kayan ince bir nokta-grid
+      deseni eklendi (bkz. drawBackgroundPattern) — hareket hissi versin
+      diye, dikkat dağıtmasın diye çok düşük alfa ile.
+
+   v0.14 DEĞİŞİKLİĞİ (bu dosya):
+   1) KRİTİK BUĞ DÜZELTMESİ — "düşmanlar ve ben ateşi kesmişiz": mermi
+      sınır-dışı-silme kontrolü (hem oyuncu hem düşman mermileri için)
+      hâlâ ESKİ sabit-arena döneminden kalma 0..W / 0..H EKRAN aralığına
+      bakıyordu. v0.13'te sınırsız harita/kamera gelince mermiler DÜNYA
+      koordinatında saklanmaya devam etti (oyuncu merkezden uzaklaşınca
+      bu koordinatlar kolayca 0..W/0..H dışına çıkar) — sonuç: oyuncu
+      biraz hareket eder etmez HER mermi doğar doğmaz (görünmeden) siliniyor,
+      hem oyuncunun otomatik atışı hem düşman atışları "hiç ateş etmiyormuş"
+      gibi görünüyordu. Artık sınır kontrolü kameraya (oyuncuya) göre —
+      S.camera.x/y ± W/2,H/2 — hesaplanıyor.
+   2) Dokunmatik bırakma davranışı değişti: "hareketi bırakınca ilmek
+      kesilsin ve 1 saniye sonra yeniden başlasın" isteğiyle, parmak
+      kalkınca iz artık ANINDA iptal oluyor (v0.13'teki "1 sn açık tut,
+      sonra kes" modeli kaldırıldı). Bunun yerine touchAutoResumeMs (1 sn)
+      sonra parmak tekrar basılmasa BİLE iz kendiliğinden yeniden başlıyor.
+      Parmak bu süre dolmadan tekrar basarsa zaten anında devam eder.
+      Bkz. computeInput() — touchEngaged/wasTouching/touchAutoResumeCooldownLeft.
+   3) Bariyerler artık sadece itmiyor, HASAR DA VERİYOR: "duran looplar
+      hasar verecek çarparlarsa" isteğiyle resolveEnemyBarrierCollision artık
+      temas eden düşmana CONFIG.barrierDps × dt kadar sürekli hasar uyguluyor
+      (bkz. applyBarrierDamage) — 3 saniyelik bariyerin içinde/üstünde kalan
+      bir düşman zamanla ciddi hasar alır, öldürebilir.
+   4) Düşman yoğunluğu artırıldı: "düşman az geliyor sonsuz olunca ekran"
+      geri bildirimiyle waveComposition() sayıları büyütüldü ve
+      enemySpawnStaggerMs kısaltıldı (220→160ms) — sınırsız haritada dalga
+      artık daha hızlı ve daha kalabalık sahneye giriyor.
+
+   v0.15 DEĞİŞİKLİĞİ (bu dosya) — DENEME:
+   "Parmağı kaldırınca hareket devam etsin ama ipi kessin, ip bağlanmamış
+   da olsa kalsın (çizgi halinde kalsın)" isteğiyle iki ayrı davranış eklendi:
+   1) HAREKET ARTIK DURMUYOR: v0.14'te parmak kalkınca hareket girdisi (mx,my)
+      0'a dönüp oyuncu playerDecel ile yavaşlayıp duruyordu. Artık joystick'in
+      SON uyguladığı yön/hız (lastTouchMx/lastTouchMy) saklanıyor ve parmak
+      ekranda olmasa da hareket girdisi olarak kullanılmaya devam ediyor —
+      yani karakter son gittiği yönde gitmeye devam ediyor, yeni bir dokunuş
+      (veya joystick'i merkeze/deadzone'a getirip bırakmak) gelene kadar
+      durmuyor. Bkz. computeInput() — artık her iki touch dalında da mx/my
+      lastTouchMx/lastTouchMy'den besleniyor.
+   2) KAPANMAMIŞ İZ ARTIK GÖRSEL OLARAK KALIYOR: cancelLoop('release') artık
+      izi tamamen silmiyor — kesilen (bağlanmamış) iz, S.deadTrails'e salt
+      görsel bir "kalıntı" olarak ekleniyor ve CONFIG.deadTrailMs (2.5 sn)
+      boyunca sönerek ekranda kalıyor. ÖNEMLİ: bu bir bariyer DEĞİL — hasar
+      vermiyor, düşmanı durdurmuyor, kapatılamıyor; sadece "az önce buradan
+      geçtin" hissi veren dekoratif bir iz. 'limit' veya 'hit' sebebiyle
+      iptal olan izler bu davranışa dahil değil (sadece 'release').
+   NOT: Bu ikisi de bilinçli olarak "deneme" — playtest'te "hareketin hiç
+   durmaması tuhaf/kontrolsüz hissettiriyor" ya da "kalıntı izler ekranı
+   kirletiyor" gibi geri bildirim gelirse kolayca geri alınabilir/ayarlanabilir
+   (bkz. CONFIG.deadTrailMs, lastTouchMx/lastTouchMy mantığı).
+
+   v0.16 DEĞİŞİKLİĞİ (bu dosya):
+   Geri bildirim: "çevreleyince hepsi salak gibi bir yere toplanıyor üst üste,
+   sen de çevreliyorsun birden 15 kişi ölüyor — keyifli ama çok basitleştiriyor,
+   bazıları o kadar aynı hareketi yapmasın, bi randomluk olsun." Sorunun kökü:
+   chaser/fast düşmanlar oyuncuya SAF doğrusal vektörle koşuyordu — dolayısıyla
+   hepsi tam olarak aynı noktaya (oyuncunun üstüne) yığılıyordu, tek bir orta
+   loop 15 düşmanı birden yakalayabiliyordu. Çekirdek mekanik (çevrele-kapat)
+   AYNEN kalıyor, sadece düşman HAREKETİNE kişisel rastgelelik eklendi:
+   1) `steerJitter` — her düşman doğduğunda ±23° (CONFIG.enemySteerJitterRad)
+      arası SABİT bir açı sapması çekiyor; bu açı, oyuncuya giden yön
+      vektörüne her karede uygulanıyor (bkz. update() — rdx/rdy rotasyonu).
+      Sonuç: düşmanlar dümdüz değil, hafif eğri/farklı açılardan yaklaşıyor —
+      artık hepsi aynı hareketi yapmıyor, oyuncunun etrafına YAYILARAK geliyor.
+   2) `speedMult` — her düşman ±%20 (CONFIG.enemySpeedVariance) kişisel hız
+      çarpanı çekiyor; aynı anda varmıyorlar, kümelenme zamanlama açısından da azalıyor.
+   3) Ranged tipi de aynı jitter'ı VE kişisel bir `preferredDistJitter`
+      (±40px) alıyor — hepsi aynı yarıçapta durmuyor.
+   4) `applyEnemySeparation()` — üst üste binen (yarıçapları çakışan) düşmanları
+      birbirinden hafifçe iten ikinci, ucuz bir katman (klasik boid separation);
+      1-3 çoğu kümelenmeyi zaten önlüyor, bu sadece tam pixel-üstü çakışmaya
+      karşı bir güvence. O(n²) ama jam ölçeğindeki düşman sayılarında ucuz.
+   Node ile izole simülasyon testiyle doğrulandı: aynı 15 düşmanlık dalga,
+   ESKİ modelde ortalama düşmanlar-arası mesafe ~1px'e (tam üst üste) inerken,
+   YENİ modelde ~50px'e çıkıyor — hâlâ bir loop'la yakalanabilirler (mekanik
+   bozulmadı) ama artık tek bir noktada mucizevi şekilde çakışmıyorlar.
+
+   v0.17 DEĞİŞİKLİĞİ (bu dosya) — ART DIRECTION UYGULANDI:
+   Ekibe gönderilen "NeonLoop Art Direction" sayfasındaki yön etütleri koda
+   işlendi. RENKLER DEĞİŞMEDİ (hâlâ aynı CONFIG değerleri) — sadece siluetler
+   ve HUD/kart çizimleri düz dairelerden/dikdörtgenlerden gerçek şekillere geçti:
+   1) Düşmanlar artık tipe özgü siluetlerle çiziliyor: chaser 8 köşeli sivri
+      bir "diken" (drawChaserShape), fast hareket yönüne bakan uzamış bir ok
+      (drawFastShape — yönü her karede oyuncuya göre hesaplanıyor), ranged
+      altıgen bir çerçeve + yavaşça dönen bir çekirdek noktası (drawRangedShape
+      — dönüş salt görsel, performance.now()'a bağlı, gameplay'e dokunmuyor).
+   2) Oyuncu artık "kuyruklu yıldız" (art-direction sayfasındaki A yönü — en
+      garanti/en okunaklı seçenek): hıza göre uzayıp kısalan, hareket yönüne
+      dönen yumuşak bir gradyan kuyruk (drawPlayerShape). B yönü (devre
+      figürü) bilerek uygulanmadı — Spine'da gerçek iskelet gerektiriyor,
+      animatör isterse ileride o yöne geçilebilir.
+   3) HUD: can barı artık yuvarlak köşeli + neon glow dolgulu (roundRectPath
+      yardımcı fonksiyonu — ctx.roundRect yoksa düz dikdörtgene düşer, hiç
+      patlamaz). Kombo göstergesi düz metinden parlayan bir "chip"e döndü.
+   4) Yükseltme kartları: düz dikdörtgen + ortalı metin yerine ince çerçeveli
+      kart + sol tarafta parlayan bir kimlik rozeti (bkz. UPGRADE_ACCENT —
+      YENİ renk YOK, sadece var olan CONFIG renklerinin yükseltmelere ataması).
+   Hiçbir gameplay/denge sayısı değişmedi — bu turun tamamı salt görsel.
+
+   v0.18 DEĞİŞİKLİĞİ (bu dosya):
+   "Düşmanlar o şekilde olsun ama etraflarında daire olmasın ve büyükler biraz"
+   isteğiyle üç düşman siluetinden (drawChaserShape/drawFastShape/
+   drawRangedShape) yumuşak "hale" (glow halo) katmanı kaldırıldı — artık
+   sadece keskin siluet çiziliyor, etraflarında bulanık bir daire yok. Aynı
+   zamanda üçünün de görsel ölçeği ~%15-20 büyütüldü (chaser 1.55/0.62→1.85/
+   0.72, fast ok 1.7→2.0, ranged altıgen 1.35→1.55, çekirdek noktalar da
+   orantılı büyüdü). ÖNEMLİ: en.r (gerçek çarpışma/hitbox yarıçapı) DOKUNULMADI
+   — büyüme salt görsel, hiçbir denge sayısı değişmedi.
+
+   v0.19 DEĞİŞİKLİĞİ (bu dosya):
+   1) BUĞ DÜZELTMESİ — Heal Fill çalışmıyordu: eski koşul `count >= 3` idi,
+      yani "öldürünce" değil, "ilmeğin İÇİNDE en az 3 düşman OLUNCA" can
+      veriyordu — 1-2 düşmanlık normal kapanışlarda (jam'in en sık senaryosu)
+      hiç tetiklenmiyordu, bu yüzden "çalışmıyor" gibi hissettiriyordu.
+      "ip içine alıp öldürünce 5 can versin" isteğiyle artık ilmek İÇİNDE
+      en az 1 düşman GERÇEKTEN ÖLDÜRÜLÜNCE (3'ü değil) can veriyor — bkz.
+      applyLoopDamage() artık öldürüp öldürmediğini true/false döndürüyor,
+      closeLoop() bunu killedInside ile sayıyor. Miktar aynı kaldı (5 ×
+      yükseltme seviyesi), sadece tetikleyici düzeltildi. Elektrik sınırından
+      (border-only) gelen öldürmeler bu sayaca dahil değil — istek net şekilde
+      "ip İÇİNE alıp" dediği için sadece ana poligon içi öldürmeler sayılıyor.
+   2) YENİ — 3. dalga sonunda BOSS: "3. dalga sonuna bi boss tasarla kısıtlı
+      alan olsun ama çok da kısıtlı değil" isteğiyle, dalga 3'ün normal
+      düşmanları bitince (upgrade ekranından ÖNCE) tek seferlik bir boss
+      karşılaşması araya giriyor (bkz. startBossFight(), updateBoss(),
+      killEnemy()'deki boss dalı). Boss ölünce akış normale döner — dalga 3
+      zaten her 3 dalgada bir gelen yükseltme ekranını tetiklediği için
+      (CONFIG.upgradeEveryNWaves) boss sonrası doğal olarak yükseltme ekranı
+      açılıyor, ekstra bir akış eklemeye gerek kalmadı.
+      - Kısıtlı alan: S.bossArena = {x,y,r:CONFIG.bossArenaRadius} — boss
+        tetiklenince oyuncunun O ANKİ konumu merkez alınıyor, hem oyuncu hem
+        boss bu yarıçapı (820px, çap ~1640px) AŞAMIYOR (clampToBossArena).
+        "Çok da kısıtlı değil" — bu çap, oyuncu hızının (320px/s) ~5 katı ve
+        tipik ilmek çapının (~250-500px) 3-4 katı, yani manevra/kaçış için
+        bolca yer var, sadece sınırsız dünyanın "boss'tan kaçıp sonsuza kadar
+        kaçmak" seçeneği kapatılıyor. Sınır, dünya-uzayında ince kırmızımsı
+        (CONFIG.hpBad) bir halka olarak çiziliyor ki oyuncu nerede olduğunu
+        görsün.
+      - Boss davranışı basit ama okunaklı bir durum makinesi (updateBoss):
+        'chase' (yavaş takip, chaserSpeed'den daha yavaş) → attackTimer
+        dolunca 'telegraph' (saldırı türüne göre ~450-550ms önceden UYARI —
+        kırmızı büyüyen halka, kaçmaya yeten süre) → ya 'dash' (kilitlenmiş
+        noktaya hızlı hamle, playerSpeed'in üstünde, temas hasarı normalden
+        yüksek) ya da 'burst' (360° mermi patlaması, bariyerler bu mermileri
+        de durdurabiliyor — mevcut sistemle bedava uyumluluk) → 'recover' →
+        tekrar 'chase', bir dahaki sefer diğer saldırıya geçiyor (ikisi
+        sırayla dönüyor, art arda aynı saldırı gelmiyor).
+      - Boss da normal bir S.enemies elemanı (type:'boss') olduğu için ilmek
+        hasarı, bariyer hasarı, otomatik ateş, yanma/donma yükseltmeleri,
+        Heal Fill dahil HER ŞEY onun üzerinde de aynen çalışıyor — özel bir
+        hasar sistemi YOK, sadece hareket/saldırı deseni ve temas hasarı
+        (contactDamage alanı) özel.
+      - Görsel: drawBossShape() — chaser ailesinden (aynı renk, CONFIG.chaser)
+        ama büyük, 12 köşeli dönen bir "kristal", çekirdek CONFIG.hpBad
+        (tehlike kırmızısı) — yeni renk EKLENMEDİ, var olan paletten. HUD'a
+        boss canlı olduğu sürece görünen küçük bir "BOSS" can barı eklendi
+        (renderHUD).
+      - Denge notu: bossHP/bossDashSpeed/bossArenaRadius ilk tahmin — jam
+        playtestinde "çok kolay/çok zor" geri bildirimi gelirse CONFIG'deki
+        boss* değerlerinden ayarlanabilir, kod tarafı değişmez.
+
+   v0.20 DEĞİŞİKLİĞİ (bu dosya):
+   1) BUĞ DÜZELTMESİ — "İlmeğin boyutuna bir sınırlandırma getirelim, şu an
+      sonsuza kadar uzuyor": öldürdükçe (xp) KALICI büyüyen taban ilmek
+      uzunluğunun (S.maxLoopLength) hiçbir tavanı yoktu, sınırsız dalgada
+      teorik olarak sonsuza büyüyordu. Artık CONFIG.maxLoopLengthGrowthCapMult
+      (2.0×) ile taban uzunluk en fazla başlangıcının 2 katına kadar büyüyüp
+      orada kilitleniyor (bkz. updateMaxLoopLength). Kombo bonusu (geçici,
+      zaten kendi tavanına sahipti: +%150) bu tavanın üstüne hâlâ binebiliyor
+      — yani mutlak en büyük ilmek hâlâ SONLU (taban×2.0×2.5 = 5×), ama artık
+      gerçekten bir tavanı var.
+   2) YENİ — Boss artık bariyerden (yerde kalan kapalı ilmek) hiç etkilenmiyor:
+      "boss mermileri ve boss'un kendisi yerde kalan ilmekten etkilenmesin,
+      daha korkunç olsun" isteğiyle boss'un GÖVDESİ artık
+      resolveEnemyBarrierCollision()'a hiç girmiyor (ne duruyor ne hasar
+      alıyor) ve boss'un MERMİLERİ (yeni `fromBoss` bayrağı) bariyer-durdurma
+      kontrolünden muaf — düz geçip gidiyor. Normal düşmanlar/mermiler
+      (chaser/fast/ranged) bariyerden hâlâ aynen etkileniyor, sadece boss
+      istisna. Node harness ile aynı bariyerden aynı yolu geçen bir normal
+      mermi ve bir boss mermisi karşılaştırılarak doğrulandı: normal mermi
+      durduruluyor, boss mermisi aynen geçiyor.
+   3) DENGE — "ilkini çok kolay geçtim, biraz daha zor olsun, atış gücü
+      yüksek olsun": bossHP 900→1300, bossContactDamage 14→18,
+      bossDashContactDamage 24→30, bossAttackCooldownMs 2600→2200 (saldırılar
+      arası soluklanma kısaldı), bossBurstProjDamage 8→16 (2×).
+   4) YENİ — Üçüncü boss saldırısı: TAKİP EDEN MERMİ (homing): "arada bir de
+      takip eden mermi yollasın, iki saniye kadar takip edip sonra havada
+      patlasın, iki saniye içinde vurursa da vurursun" isteğiyle eklendi.
+      Boss artık üç saldırı arasında rastgele dönüyor (dash / burst / homing
+      — bkz. pickNextBossAttack), aynısı ART ARDA gelmiyor. Takip mermisi
+      CONFIG.bossHomingTurnRate (2.6 rad/s) ile SINIRLI bir açısal hızda
+      oyuncuya döner (anlık kilitlenme DEĞİL — yön değiştirerek şaşırtılabilir,
+      "fair" bir takip), CONFIG.bossHomingLifeS (2 sn) boyunca aktif kalır;
+      bu süre içinde vurursa CONFIG.bossHomingDamage (16) hasar verir, süre
+      dolunca HASARSIZ olarak havada patlar (görsel+ses, gameplay etkisi yok).
+      Ekranda tehlike-kırmızısı (CONFIG.hpBad) renginde çizilerek normal
+      mermilerden ayırt ediliyor. Node harness ile açı dönüşü, isabet-içi
+      hasar, ve isabetsiz süre-dolumunun hasarsız olduğu ayrı ayrı doğrulandı.
+   ================================================================ */
+
+/* ============ CONFIG (tüm ayarlanabilir sayılar — placeholder, kolayca değiştir) ============ */
+const CONFIG = {
+  // v0.13: sabit arena/kenar kaldırıldı — dünya artık sınırsız (Archero
+  // tarzı), kamera oyuncuyu merkezde tutuyor. spawnPointOutsideArena artık
+  // oyuncu etrafındaki sanal bir görüş kutusuna göre hesaplıyor.
+
+  // PlayerController
+  playerRadius: 15,
+  playerMaxHP: 100,
+  playerSpeed: 320,           // px/s — v0.8: 220'den yükseltildi, mouse/dokunmatik takibindeki "gerisinden geliyor" boşluğunu kapatmak için
+  playerAccel: 2300,          // px/s² — hedef hıza bu ivmeyle ulaşılır (kontrol "kötü/sert" hissetmesin diye) — v0.8: hız artışıyla orantılı büyütüldü
+  playerDecel: 2900,          // px/s² — girdi bırakılınca bu ivmeyle durur — v0.8: hız artışıyla orantılı büyütüldü
+  playerInvulnMs: 500,        // ~0.5 sn dokunulmazlık
+  playerContactDamage: 10,    // chaser/fast chaser temasında alınan hasar
+
+  // TrailDrawer / LoopDetector
+  trailMinDist: 7,            // bu kadar hareket etmeden yeni nokta eklenmez
+  minLoopLengthMult: 3,       // minimum ilmek uzunluğu = bu * oyuncu genişliği
+  closeRadiusMult: 0.5,       // kapanma yarıçapı = bu * oyuncu genişliği
+  loopFlashMs: 380,           // kapanan poligonun ekranda kalma süresi
+  maxLoopLengthMult: 18.4,    // izin üst sınırı (başlangıç) = bu * oyuncu genişliği — v0.9: 16'dan %15 artırıldı (~480px→~552px)
+  // v0.4: limit artık dalga sonunu beklemiyor — düşman öldükçe (xp) büyüyor,
+  // "az az dalga beklemek uzun" geri bildirimine karşılık daha sık/anlık büyüme.
+  loopGrowthXPStep: 3,           // bu kadar xp toplanınca limit bir kademe büyür
+  loopGrowthPct: 0.06,           // her kademede limit bu oranda büyür
+  // v0.20: "ilmek sonsuza kadar uzuyor" — sınırsız dalgada öldürdükçe (xp)
+  // KALICI büyüme hiç durmuyordu. Artık taban uzunluk en fazla bu katına
+  // kadar büyüyebiliyor, sonrası kilitleniyor (bkz. updateMaxLoopLength).
+  // Kombo bonusu (aşağıdaki comboLoopLengthCapBonus) bu tavanın ÜSTÜNE hâlâ
+  // GEÇİCİ olarak binebiliyor — yani mutlak tavan hâlâ sonlu (2.0 × 2.5 = 5x).
+  maxLoopLengthGrowthCapMult: 2.0,
+  loopGrowthXPChaser: 1, loopGrowthXPFast: 1, loopGrowthXPRanged: 2, // düşman tipine göre xp
+
+  // v0.10: Kombo — GEÇİCİ iz uzunluk bonusu (kalıcı XP büyümesinin üstüne biner)
+  comboLoopLengthStep: 0.10,     // kombo başına +%10 iz uzunluk bonusu
+  comboLoopLengthCapBonus: 1.5,  // bonus tavanı +%150 (yani taban uzunluğun en fazla 2.5 katı)
+
+  // v0.11: Bariyer — kapanan ilmek şekli bu kadar süre boyunca düşmanlar için geçilmez kalır
+  barrierDurationMs: 3000,
+  // v0.14: bariyer artık sadece itmiyor, İÇİNDE/ÜSTÜNDE duran düşmana saniyede
+  // bu kadar hasar da veriyor (dt ile çarpılarak uygulanır) — "duran looplar
+  // hasar verecek çarparlarsa" isteği. Tuning: loop kapanış hasarı (25 taban)
+  // ile karşılaştırılabilir olsun diye orta seviyede tutuldu, playtest'te
+  // gerekirse ayarlanabilir.
+  barrierDps: 30,
+
+  // v0.15 (deneme): parmak bırakınca kesilen ama KAPANMAMIŞ izin, salt görsel
+  // bir kalıntı olarak yerde ne kadar süre kalıp sönerek kaybolacağı. Bunun
+  // ne bir bariyer (hasar/engel yok) ne de tekrar kapanabilir bir loop
+  // olduğunu unutma — sadece "burada bir iz bıraktın" hissi için.
+  deadTrailMs: 2500,
+
+  // v0.12: Tek elle mobil kontrol — dokunmatikte artık çift-dokun yok,
+  // parmak ekranda olduğu sürece otomatik çiziyor.
+  // v0.14: davranış değişti — "hareketi bırakınca ilmek KESİLSİN ve 1 saniye
+  // sonra yeniden başlasın" isteği üzerine, parmak kalkar kalkmaz iz ANINDA
+  // iptal oluyor (artık açık tutulmuyor); bu sayaç artık sadece "iz ne kadar
+  // sonra KENDİLİĞİNDEN yeniden başlasın" süresi (parmak tekrar basılırsa
+  // zaten anında devam eder, bu süreyi beklemesi gerekmez).
+  touchAutoResumeMs: 1000,
+
+  // v0.13: Dinamik joystick (Archero tarzı) — parmağın ilk değdiği nokta
+  // merkez olur, bu yarıçap kadar uzaklaşınca tam hız uygulanır (ötesi klemplenir)
+  joystickRadius: 60,
+  joystickDeadzone: 4,       // bu kadar hareketten azı titreme sayılır, yön uygulanmaz
+
+  // v0.13: Arkaplan deseni — kamerayla kayan, dikkat dağıtmayan ince nokta-grid
+  bgGridCellPx: 80,
+  bgGridDotColor: 'rgba(120,180,255,0.10)',
+  bgGridDotRadius: 1.6,
+
+  // LoopAttack — alan hasarı
+  baseLoopDamage: 25,
+  areaSmallMaxPx2: 9000,      // bunun altı = küçük (1x)
+  areaMediumMaxPx2: 25000,    // bunun altı = orta (1.5x), üstü = büyük (2x)
+  areaMultSmall: 1.0,
+  areaMultMedium: 1.5,
+  areaMultLarge: 2.0,
+  multiKillThreshold1: 3, multiKillBonus1: 0.25,
+  multiKillThreshold2: 5, multiKillBonus2: 0.5,
+  electricBorderRadius: 42,        // upgrade seviye 1: sınırın bu kadar dışındaki düşmanlar da hasar alır
+  electricBorderRadiusStep: 15,    // v0.7 FIX: her ek seviye menzili bu kadar büyütür (seviye 2 = 57px, seviye 3 = 72px, ...)
+  electricBorderDamageMult: 0.5,   // sabit kalır — stacking sadece menzili büyütür, hasar yüzdesini değil
+
+  // Auto Attack (zayıf, ikincil — Archero'nun auto-fire'ının soluk versiyonu,
+  // v0.3'ten beri sürekli ateş ediyor, sadece hareketsizken değil)
+  autoAttackCooldownMs: 450,  // v0.8'den beri sabit — v0.9: "atış aralığı aynı kalsın" talebiyle dokunulmadı
+  autoAttackDamage: 13,       // v0.9: 18'den 13'e düşürüldü (kullanıcı talebi, sadece hasar — aralık sabit)
+  autoAttackProjectileSpeed: 340,
+
+  // EnemyBase — üç tip. Artık hepsi ateş ediyor: chaser/fast hâlâ üstüne
+  // koşuyor ama yaklaşırken de zayıf bir mermi atıyor, ranged tamamen
+  // mesafeden vuruyor. Herhangi bir mermi/temas oyuncuya değince
+  // damagePlayer() zaten çizimi iptal ediyor (bkz. LoopAttack/damagePlayer) —
+  // yani "ateş ederlerse iz bozulsun" isteği bunu otomatik karşılıyor.
+  chaserHP: 50, chaserSpeed: 90, chaserR: 14,
+  chaserFireIntervalMs: 1900, chaserProjectileSpeed: 130, chaserProjectileDamage: 5,
+  chaserFireMinDist: 70,       // bu mesafeden yakınsa ateş etmez, zaten temas ediyordur
+
+  fastHP: 30, fastSpeed: 150, fastR: 12,
+  fastFireIntervalMs: 1700, fastProjectileSpeed: 150, fastProjectileDamage: 5,
+  fastFireMinDist: 70,
+
+  rangedHP: 60, rangedSpeed: 60, rangedR: 15, rangedPreferredDist: 190,
+  rangedFireIntervalMs: 1400, rangedProjectileSpeed: 150, rangedProjectileDamage: 8,
+  waveHpScalePerWave: 0.06,        // dalga başına +%6 can
+  waveClearDelayMs: 1000,
+  enemySpawnStaggerMs: 160,        // bir dalgadaki düşmanlar bu aralıkla sahneye girer — v0.14: 220→160, sınırsız haritada dalga daha hızlı kalabalıklaşsın diye
+
+  // v0.16: "hepsi tek noktada üst üste toplanıyor, bir loop'a 15 düşman
+  // giriyor, çok kolaylaşıyor" geri bildirimiyle eklenen kişisel rastgelelik.
+  // Her düşman doğduğunda bu aralıklardan SABİT bir değer çeker (bkz. spawnEnemy).
+  enemySteerJitterRad: 0.40,        // ~±23° — oyuncuya giden açıya eklenen sabit kişisel sapma
+  enemySpeedVariance: 0.20,         // ±%20 kişisel hız çarpanı — aynı anda varmasınlar
+  rangedPreferredDistJitter: 40,    // px — ranged'lar hepsi aynı yarıçapta durmasın
+  // Ayrıca üst üste binen (yarıçapları çakışan) düşmanlar birbirini hafifçe
+  // iter (bkz. applyEnemySeparation) — tam kaynaşmayı engelleyen ikinci katman.
+  enemySeparationForce: 220,        // px/s — çakışma derinliğiyle orantılı itme hızı
+
+  // WaveManager / UpgradeManager
+  upgradeEveryNWaves: 3,
+
+  // v0.19: Boss (dalga 3 sonu) — bkz. startBossFight()/updateBoss(). Tek boss,
+  // waveHpMult ile diğer düşmanlarla aynı ölçekte büyür.
+  // v0.20: "ilkini çok kolay geçtim, biraz daha zor olsun, atış gücü yüksek
+  // olsun" geri bildirimiyle can/hasar/hız yukarı çekildi (v0.19'a göre).
+  bossHP: 1300,                 // 900→1300 — daha uzun soluklu bir savaş
+  bossR: 34,                    // chaser'ın (14) ~2.4 katı, "boss büyük" hissi + isabet almayı kolaylaştırır
+  bossSpeed: 70,                // chaser(90)/fast(150)'dan yavaş — 'chase' fazında kolayca mesafe açılabilir
+  bossContactDamage: 18,        // 14→18 — normal temas artık daha acıtıyor
+  bossDashContactDamage: 30,    // 24→30 — dash sırasında temas asıl tehdit
+  bossAttackCooldownMs: 2200,   // 2600→2200 — 'chase' fazı kısaldı, saldırılar arasında daha az soluklanma
+  bossDashTelegraphMs: 550,     // dash öncesi UYARI süresi — oyuncunun kaçmasına yetecek kadar
+  bossDashSpeed: 480,           // playerSpeed(320)'den hızlı — düz kaçış yetmez, konumlanma gerekir
+  bossDashDurationMs: 450,
+  bossBurstTelegraphMs: 450,    // mermi patlaması öncesi UYARI süresi
+  bossBurstCount: 12,           // 360° eşit aralıklı mermi sayısı
+  bossBurstProjSpeed: 170,
+  bossBurstProjDamage: 16,      // 8→16 — "atış gücü yüksek olsun" isteğiyle 2 katına çıkarıldı
+  bossBurstRecoverMs: 300,      // patlamadan sonra kısa toparlanma (boss saldırısız kalır)
+  // v0.20: YENİ — "arada bir de takip eden mermi yollasın, 2 sn takip edip
+  // havada patlasın, 2 sn içinde vurursa vurursun" isteğiyle üçüncü saldırı.
+  bossHomingTelegraphMs: 500,   // fırlatma öncesi UYARI süresi
+  bossHomingSpeed: 210,         // playerSpeed(320)'den yavaş — dönüş açısı sınırlı olduğu için hızın kendisi çok yüksek olmasın, kaçılabilsin
+  bossHomingTurnRate: 2.6,      // rad/s — oyuncuya dönüş açısal hızı (anlık kilitlenme DEĞİL, kaçarak/yön değiştirerek şaşırtılabilir)
+  bossHomingDamage: 16,         // isabet ederse acıtan bir vuruş — "atış gücü yüksek olsun"
+  bossHomingLifeS: 2,           // "2 sn kadar takip edip sonra havada patlasın" — bu süre dolunca hasarsız yok olur
+  bossHomingRecoverMs: 350,     // fırlatmadan sonra kısa toparlanma
+  bossArenaRadius: 820,         // "kısıtlı ama çok da kısıtlı değil" — çap ~1640px, playerSpeed'in (320px/s) ~5 katı
+
+  // Juice
+  hitstopBaseMs: 50,
+  shakeBase: 3,
+
+  // Renkler
+  bg: '#05070d',
+  arenaLine: 'rgba(120,180,255,0.18)',
+  player: '#4de3ff',
+  trail: '#7dfcff',
+  loopFill: 'rgba(125,252,255,0.22)',
+  loopEdge: '#7dfcff',
+  chaser: '#ff2e88', chaserCore: '#ffd1e8',
+  fast: '#ffb020', fastCore: '#fff0cf',
+  ranged: '#a06bff', rangedCore: '#e7d9ff',
+  enemyProjectile: '#c98bff',
+  playerProjectile: '#4de3ff',
+  electricBorderSpark: '#fff2a8',  // v0.7: border-only hasarı ana hasardan ayırt eden renk
+  text: '#eaf6ff',
+  hpGood: '#4de3ff', hpBad: '#ff4d6d'
+};
+
+/* ============ STATE ============ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+
+const S = {};
+function resetGame() {
+  S.mode = 'menu';               // 'menu' | 'play' | 'upgrade' | 'over'
+  S.player = { x: 0, y: 0, hp: CONFIG.playerMaxHP, vx: 0, vy: 0 }; // v0.13: dünya (0,0) merkezli, sabit arena yok
+  S.camera = { x: 0, y: 0 };     // v0.13: her zaman oyuncuyu merkezde tutar (bkz. update/render)
+  S.invuln = 0;
+  S.moveVec = { x: 0, y: 0 };
+  S.lastMoveAngle = 0;             // v0.17: oyuncu şeklinin kuyruğu için son bilinen hareket açısı (salt görsel)
+  S.autoCooldown = 0;
+
+  S.drawing = null;              // {points,startX,startY,pathLength,lastX,lastY}
+  // v0.12: mobil çift-dokunma anahtarı kaldırıldı — dokunmatik artık her zaman otomatik çiziyor
+  S.loopFlash = null;            // {poly, t, life}
+  S.killXP = 0;                  // izin limiti bu birikince büyür (bkz. updateMaxLoopLength)
+  S.maxLoopLength = CONFIG.playerRadius * 2 * CONFIG.maxLoopLengthMult; // öldürdükçe büyür (kalıcı)
+  S.combo = 0;                   // v0.10: bir kapanışta vurulan düşman sayısı birikir, hasar alınca sıfırlanır (bkz. effectiveMaxLoopLength)
+  S.barriers = [];                // v0.11: {poly, t, life} — kapanan ilmeklerin geçici duvara dönüşmüş hâli
+  S.deadTrails = [];              // v0.15 (deneme): {points, t, life} — parmak bırakınca kesilen, KAPANMAMIŞ izin görsel kalıntısı (hasar/duvar YOK, salt görsel)
+
+  S.enemies = [];
+  S.enemyProjectiles = [];
+  S.playerProjectiles = [];
+  S.particles = []; S.particlePool = [];
+  S.dmgTexts = [];               // {x,y,text,life}
+
+  S.wave = 0;
+  S.spawnQueue = [];
+  S.spawnTimer = 0;
+  S.waveHpMult = 1;
+  S.waveClearing = false;
+  S.waveClearTimer = 0;
+
+  // v0.19: dalga-3 boss'u — bossDone bir kez tetiklenip tetiklenmediğini
+  // tutar (yeniden tetiklenmesin), bossArena aktifken oyuncu/boss'u sınırlayan
+  // dünya-uzayı çember (bkz. clampToBossArena, startBossFight, killEnemy).
+  S.bossDone = false;
+  S.bossArena = null;
+
+  S.upgrades = { fillDamage: 0, burningFill: 0, freezeFill: 0, electricBorder: 0, healFill: 0, biggerMultiplier: 0 };
+  S.upgradeChoices = [];
+
+  S.hitstop = 0;
+  S.shake = 0;
+  S.best = 0;
+}
+
+/* ============ RESIZE (DPR-aware; oyun koordinatları CSS piksel) ============ */
+function resizeCanvas() {
+  const w = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = w; H = h;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // v0.13: sabit arena kaldırıldı — dünya sınırsız, kamera oyuncuyu merkezde tutuyor
+}
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
+
+/* ============ INPUT — PlayerController ============
+   Masaüstü (klavye): WASD/ok tuşları = hareket, Space = Draw basılı tut.
+   Masaüstü (FARE — v0.4, "sağ tıka basılı tutunca çizsin" isteği): fare
+   imleci hareket ettikçe oyuncu imleci takip eder (ayrı bir tuşa gerek
+   yok), SAĞ TIK basılı tutmak Draw'dır, bırakınca çizim hemen kesilir.
+   Sol tık sadece menü/başlangıç/yükseltme seçimi gibi arayüz tıklamaları
+   içindir, oyun içinde çizim tetiklemez (sağ tık ile karışmasın diye).
+   Mobil (dokunmatik — v0.6, "sağa basınca çizme/solda gitme kaldırılsın,
+   tüm ekran yol için olsun" isteği): artık SOL/SAĞ bölme YOK. Parmağın
+   nerede olduğu fark etmeksizin TÜM EKRAN hareket içindir — oyuncu fareyle
+   aynı mantıkla parmağı takip eder. Çizim artık bir bölgeye basılı tutmakla
+   değil, herhangi bir yere ÇİFT DOKUNMA (double tap) ile açılıp kapanan
+   bir anahtardır (toggle) — tek parmakla hem gezip hem çizim açıp
+   kapatılabiliyor. Üç girdi kaynağı da aynı S.moveVec / draw durumuna
+   indirgenir — oyun mantığı kaynağı bilmez. Öncelik: klavye > dokunmatik
+   takip > fare-takip (biri kullanılırken diğeri araya girmesin diye). */
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'Space') e.preventDefault();
+}, { passive: false });
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+const touches = new Map(); // pointerId -> {x,y} — sadece gerçek dokunmatik/kalem için
+const mouse = { x: 0, y: 0, leftDown: false, rightDown: false, active: false };
+// v0.12: çift-dokunma algılaması kaldırıldı — dokunmatik artık her zaman
+// otomatik çiziyor (bkz. computeInput).
+// v0.14: parmak kalkınca iz ANINDA kesiliyor (bkz. updateDrawing'deki
+// `!inp.draw` kontrolü); touchAutoResumeCooldownLeft ise sadece "parmak
+// tekrar basılmasa bile iz kaç ms sonra kendiliğinden yeniden başlasın"
+// sayacı — parmak bu süre dolmadan tekrar basarsa zaten anında devam eder.
+let touchAutoResumeCooldownLeft = 0;
+let wasTouching = false;  // önceki karede dokunma var mıydı (bırakma anını yakalamak için)
+let touchEngaged = false; // oyuncu en az bir kez dokunmatik kullandı mı (masaüstü/mouse akışını etkilememek için)
+// v0.15 (deneme): "parmağı kaldırınca hareket devam etsin" isteği — parmak
+// kalkınca joystick yönü sıfıra dönmüyor, en son uygulanan yön/hız burada
+// saklanıp parmak yokken de hareket girdisi olarak kullanılmaya devam ediyor
+// (yeni bir dokunuş veya farklı bir yön gelene kadar).
+let lastTouchMx = 0, lastTouchMy = 0;
+
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  ensureAudio();
+  let isMenuClick = true;
+  if (e.pointerType === 'mouse') {
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true;
+    if (e.button === 2) { mouse.rightDown = true; isMenuClick = false; }
+    else { mouse.leftDown = true; }
+  } else {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    // v0.13: {ox,oy} = joystick MERKEZİ, parmağın ilk değdiği yer — bir daha
+    // değişmez (bu parmak kalkana kadar). {x,y} güncel parmak konumu.
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY, ox: e.clientX, oy: e.clientY });
+  }
+  if (!isMenuClick) return; // sağ tık sadece çizim başlatır, menü/yükseltme tetiklemesin
+  if (S.mode === 'menu') { S.mode = 'play'; startWave(1); }
+  else if (S.mode === 'over' && performance.now() - S.overT > 350) { resetGame(); resizeCanvas(); S.mode = 'play'; startWave(1); }
+  else if (S.mode === 'upgrade') { pickUpgradeAt(e.clientX, e.clientY); }
+}, { passive: false });
+
+canvas.addEventListener('pointermove', (e) => {
+  e.preventDefault();
+  if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; }
+  else { const t = touches.get(e.pointerId); if (t) { t.x = e.clientX; t.y = e.clientY; } }
+}, { passive: false });
+
+function endTouch(e) {
+  e.preventDefault();
+  if (e.pointerType === 'mouse') {
+    if (e.type === 'pointercancel') { mouse.leftDown = false; mouse.rightDown = false; }
+    else if (e.button === 2) mouse.rightDown = false;
+    else mouse.leftDown = false;
+  } else touches.delete(e.pointerId);
+}
+canvas.addEventListener('pointerup', endTouch, { passive: false });
+canvas.addEventListener('pointercancel', endTouch, { passive: false });
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function computeInput(dt) {
+  let mx = 0, my = 0, draw = false;
+  if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
+  if (keys['KeyS'] || keys['ArrowDown']) my += 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+  if (keys['Space']) draw = true;
+  const kLen = Math.hypot(mx, my);
+  const usingKeyboard = kLen > 0;
+  if (usingKeyboard) { mx /= kLen; my /= kLen; }
+
+  S.mouseTargetVisual = null;
+  S.touchTargetVisual = null;
+
+  // v0.13: Dokunmatik artık DİNAMİK JOYSTICK (Archero tarzı) — "parmağın
+  // dokunduğu MUTLAK noktaya git" YOK. Parmağın ekrana ilk değdiği yer
+  // (t.ox,t.oy) joystick merkezi olur; oyuncu, parmağın o merkezden ne kadar
+  // uzaklaştığına göre (GÖRELİ) yönde ve hızda hareket eder. Böylece
+  // başparmak ekranın herhangi bir rahat noktasına konabilir.
+  // v0.12'den beri: parmak ekranda olduğu HER an otomatik çizer.
+  // v0.14: "hareketi bırakınca ilmek kesilsin ve 1 saniye sonra yeniden
+  // başlasın" isteğiyle davranış değişti — parmak kalkar kalkmaz iz ANINDA
+  // iptal olur (draw=false bırakılır, updateDrawing bunu görüp cancelLoop
+  // çağırır), ardından touchAutoResumeMs (1 sn) dolunca parmak basılmasa
+  // BİLE iz kendiliğinden yeniden başlar. touchEngaged bayrağı bu otomatik
+  // yeniden-başlama davranışını sadece en az bir kez dokunmuş oyuncularda
+  // aktif tutuyor — masaüstü/mouse akışını etkilemiyor.
+  let usingTouch = false;
+  if (!usingKeyboard && touches.size > 0 && S.player) {
+    const t = touches.values().next().value;
+    usingTouch = true;
+    touchEngaged = true;
+    if (!wasTouching) touchAutoResumeCooldownLeft = 0; // yeni dokunuş: bekleme sayacı iptal, hemen devam
+    wasTouching = true;
+    const dx = t.x - t.ox, dy = t.y - t.oy; // joystick merkezinden GÖRELİ uzaklık
+    const d = Math.hypot(dx, dy);
+    if (d > CONFIG.joystickDeadzone) {
+      const mag = clamp(d / CONFIG.joystickRadius, 0, 1); // merkezden joystickRadius kadar uzaklaşınca tam hız
+      mx = (dx / d) * mag; my = (dy / d) * mag;
+    }
+    lastTouchMx = mx; lastTouchMy = my; // v0.15: bırakınca devam edecek yön/hızı güncel tut
+    S.touchTargetVisual = { originX: t.ox, originY: t.oy, curX: t.x, curY: t.y };
+    draw = true;
+  } else if (!usingKeyboard && touchEngaged) {
+    // v0.15 (deneme): parmak ekranda olmasa da hareket son bilinen yönde
+    // DEVAM EDİYOR — sadece iz kesiliyor, karakter durmuyor.
+    mx = lastTouchMx; my = lastTouchMy;
+    if (wasTouching) {
+      // Bu kare parmak kalktı — iz burada ANINDA kesiliyor (draw=false
+      // kalıyor), ve kendiliğinden yeniden başlama sayacı kuruluyor.
+      wasTouching = false;
+      touchAutoResumeCooldownLeft = CONFIG.touchAutoResumeMs;
+    } else if (touchAutoResumeCooldownLeft > 0) {
+      touchAutoResumeCooldownLeft -= dt * 1000; // bekleniyor — henüz çizmesin
+    } else {
+      draw = true; // bekleme süresi doldu — parmak olmasa bile iz kendiliğinden devam eder
+    }
+  }
+
+  // Fare-takip hareketi — sadece klavye/dokunmatik takip (ve dokunmatik
+  // bırakma sonrası bekleme) aktif değilken devreye girer, tek fareyle
+  // "hareket et + çiz" aynı anda mümkün olsun diye hareket bir tuşa değil
+  // imlecin konumuna bağlı.
+  if (!usingKeyboard && !usingTouch && !(touchEngaged && touchAutoResumeCooldownLeft > 0) && mouse.active && S.player) {
+    const dx = mouse.x - S.player.x, dy = mouse.y - S.player.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 4) {
+      const t = clamp(d / 80, 0, 1); // imlece yaklaşınca yavaşla — titremeyi önler
+      mx = (dx / d) * t; my = (dy / d) * t;
+    }
+    S.mouseTargetVisual = { x: mouse.x, y: mouse.y };
+  }
+  // SAĞ TIK basılı tut = çiz (sol tık arayüz/menü içindir, karışmasın diye)
+  if (mouse.rightDown) draw = true;
+
+  return { mx: clamp(mx, -1, 1), my: clamp(my, -1, 1), draw };
+}
+
+/* ============ AUDIO (WebAudio unlock + minik synth) ============ */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function blip(freq, dur, type, vol, slide) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type || 'square';
+  o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
+  g.gain.setValueAtTime(vol || 0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+
+/* ============ PolygonUtility — izole, kolayca değiştirilebilir ============ */
+function polygonArea(poly) {
+  let a = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const p1 = poly[i], p2 = poly[(i + 1) % poly.length];
+    a += p1.x * p2.y - p2.x * p1.y;
+  }
+  return Math.abs(a) / 2;
+}
+function pointInPolygon(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
+    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi + 1e-9) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+// v0.11: bariyer çarpışması için segment üzerindeki en yakın noktayı da
+// döndüren versiyon — distToSegment bunun üstüne kuruldu (tekrar yok)
+function closestPointOnSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+  t = clamp(t, 0, 1);
+  return { x: ax + t * dx, y: ay + t * dy };
+}
+function distToSegment(px, py, ax, ay, bx, by) {
+  const cp = closestPointOnSegment(px, py, ax, ay, bx, by);
+  return Math.hypot(px - cp.x, py - cp.y);
+}
+// v0.11: iki doğru parçasının kesişip kesişmediğini bulur (mermi-bariyer
+// çarpışması için — mermi bir frame'de bariyeri "atlamasın" diye önceki ve
+// yeni konum arasındaki tüm hattı test ediyoruz, sadece nokta mesafesini değil)
+function segmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+  const d1x = x2 - x1, d1y = y2 - y1;
+  const d2x = x4 - x3, d2y = y4 - y3;
+  const denom = d1x * d2y - d1y * d2x;
+  if (Math.abs(denom) < 1e-9) return null;
+  const t = ((x3 - x1) * d2y - (y3 - y1) * d2x) / denom;
+  const u = ((x3 - x1) * d1y - (y3 - y1) * d1x) / denom;
+  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return { x: x1 + t * d1x, y: y1 + t * d1y };
+  return null;
+}
+function distToPolygonBoundary(x, y, poly) {
+  let m = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    m = Math.min(m, distToSegment(x, y, a.x, a.y, b.x, b.y));
+  }
+  return m;
+}
+function polygonCentroid(poly) {
+  let x = 0, y = 0;
+  for (const p of poly) { x += p.x; y += p.y; }
+  return { x: x / poly.length, y: y / poly.length };
+}
+
+/* ============ TrailDrawer / LoopDetector ============ */
+function playerWidth() { return CONFIG.playerRadius * 2; }
+
+// v0.10: kalıcı (XP'den gelen) taban uzunluk + kombodan gelen GEÇİCİ bonus.
+// Kombo sıfırlanınca bu fonksiyon anında tabana geri düşer — "geri dönsün" isteği.
+function effectiveMaxLoopLength() {
+  const comboBonus = Math.min(S.combo * CONFIG.comboLoopLengthStep, CONFIG.comboLoopLengthCapBonus);
+  return S.maxLoopLength * (1 + comboBonus);
+}
+
+function updateDrawing(dt, inp) {
+  if (S.mode !== 'play') return;
+
+  if (inp.draw && !S.drawing) {
+    S.drawing = {
+      points: [{ x: S.player.x, y: S.player.y, len: 0 }],
+      startX: S.player.x, startY: S.player.y,
+      pathLength: 0, lastX: S.player.x, lastY: S.player.y
+    };
+  }
+  if (!S.drawing) return;
+
+  const d = Math.hypot(S.player.x - S.drawing.lastX, S.player.y - S.drawing.lastY);
+  if (d > CONFIG.trailMinDist) {
+    S.drawing.pathLength += d;
+    S.drawing.points.push({ x: S.player.x, y: S.player.y, len: S.drawing.pathLength });
+    S.drawing.lastX = S.player.x; S.drawing.lastY = S.player.y;
+  }
+
+  // Limit — izin bir uzunluk sınırı var (öldürdükçe kalıcı büyüyor + kombo
+  // ile geçici olarak da büyüyor, bkz. effectiveMaxLoopLength). Aşılırsa
+  // "ip bitti" gibi otomatik iptal olur.
+  if (S.drawing.pathLength >= effectiveMaxLoopLength()) { cancelLoop('limit'); return; }
+
+  if (!inp.draw) { cancelLoop('release'); return; }
+
+  // v0.5: kapanma artık SADECE başlangıç noktasına değil, izin üzerindeki
+  // HERHANGİ bir noktaya değince de tetikleniyor — "kapandığı kadarı"
+  // yani sadece dokunulan noktadan buraya kadar olan kısım ilmek olur.
+  const minLen = playerWidth() * CONFIG.minLoopLengthMult;
+  const closeR = playerWidth() * CONFIG.closeRadiusMult;
+  if (S.drawing.pathLength >= minLen) {
+    const hitIndex = findSelfTouchIndex(minLen, closeR);
+    if (hitIndex >= 0) closeLoop(hitIndex);
+  }
+}
+
+// İzin, kendi geçmişindeki (yeterince eski/uzak) bir noktaya değip
+// değmediğini tarar. En yeni uygun noktadan başlayıp geriye doğru tarar —
+// böylece bulunan ilk eşleşme mümkün olan EN KÜÇÜK/EN YENİ kapanışı verir
+// ("kapandığı kadarı" isteği — sadece o an kapanan kısım ilmek olsun).
+function findSelfTouchIndex(minLen, radius) {
+  const pts = S.drawing.points;
+  const curLen = S.drawing.pathLength;
+  const r2 = radius * radius;
+  for (let i = pts.length - 1; i >= 0; i--) {
+    if (curLen - pts[i].len < minLen) continue; // çok yakın geçmiş — kendi kuyruğuna yapışmasın
+    const dx = S.player.x - pts[i].x, dy = S.player.y - pts[i].y;
+    if (dx * dx + dy * dy <= r2) return i;
+  }
+  return -1;
+}
+
+function cancelLoop(reason) {
+  if (!S.drawing) return;
+  // v0.15 (deneme): "parmağı kaldırınca ip kesilsin ama kapanmamış olsa bile
+  // çizgi halinde yerde kalsın" isteği — sadece 'release' (parmak bırakma)
+  // sebebiyle iptal olan izler, hasar/engel vermeyen salt görsel bir kalıntı
+  // olarak bir süre daha ekranda kalıyor (bkz. S.deadTrails, render()).
+  if (reason === 'release' && S.drawing.points.length > 1) {
+    S.deadTrails.push({ points: S.drawing.points.slice(), t: 0, life: CONFIG.deadTrailMs / 1000 });
+  }
+  burst(S.player.x, S.player.y, CONFIG.trail, 6);
+  if (reason === 'limit') blip(180, 0.14, 'sawtooth', 0.08, -140); // "ip bitti" — farklı, çökme tonu
+  else blip(220, 0.08, 'sine', 0.06, -60);
+  S.drawing = null;
+}
+
+/* ============ LoopAttack — ilmek kapanınca alan hasarı ============ */
+function electricBorderRadius() {
+  // v0.7 FIX: eski formül `electricBorder / Math.max(1, electricBorder)` her
+  // zaman 1'e sadeleşiyordu, yani 2./3. seviye hiçbir şey değiştirmiyordu.
+  // Artık her ek seviye menzili +electricBorderRadiusStep kadar büyütüyor.
+  if (S.upgrades.electricBorder <= 0) return 0;
+  return CONFIG.electricBorderRadius + (S.upgrades.electricBorder - 1) * CONFIG.electricBorderRadiusStep;
+}
+
+function closeLoop(hitIndex) {
+  // "kapandığı kadarı" — poligon SADECE dokunulan noktadan (hitIndex) şu ana
+  // kadar olan kısım; öncesi (varsa) atılır, ilmek olmaz.
+  const poly = S.drawing.points.slice(hitIndex || 0);
+  S.drawing = null;
+  if (poly.length < 3) return; // geçersiz, çok küçük
+
+  // v0.11: Bariyer — kapanan şekil, içinde düşman olsun ya da olmasın,
+  // CONFIG.barrierDurationMs kadar geçilmez bir duvara dönüşür. Bu yüzden
+  // erken (hasar hesabından önce) ekleniyor — "sadece tuzak kurmak" için
+  // boş bir ilmek kapatmak da tamamen geçerli bir kullanım.
+  S.barriers.push({ poly, t: 0, life: CONFIG.barrierDurationMs / 1000 });
+
+  const area = polygonArea(poly);
+  let areaMult = CONFIG.areaMultSmall, tier = 'small';
+  if (area >= CONFIG.areaMediumMaxPx2) { areaMult = CONFIG.areaMultLarge + S.upgrades.biggerMultiplier * 0.5; tier = 'large'; }
+  else if (area >= CONFIG.areaSmallMaxPx2) { areaMult = CONFIG.areaMultMedium; tier = 'medium'; }
+
+  const inside = S.enemies.filter(en => pointInPolygon(en.x, en.y, poly));
+  const count = inside.length;
+  let multiKillBonus = 0;
+  if (count >= CONFIG.multiKillThreshold2) multiKillBonus = CONFIG.multiKillBonus2;
+  else if (count >= CONFIG.multiKillThreshold1) multiKillBonus = CONFIG.multiKillBonus1;
+
+  const fillDamageMult = 1 + S.upgrades.fillDamage * 0.30;
+  const totalDamage = CONFIG.baseLoopDamage * areaMult * (1 + multiKillBonus) * fillDamageMult;
+
+  // v0.19: Heal Fill'in DOĞRU tetiklenmesi için kaç düşmanın bu kapanışta
+  // ilmek İÇİNDE gerçekten ÖLDÜĞÜNÜ sayıyoruz (applyLoopDamage true/false
+  // döndürüyor) — bkz. aşağıdaki healFill bloğu.
+  let killedInside = 0;
+  for (const en of inside) { if (applyLoopDamage(en, totalDamage)) killedInside++; }
+
+  // Electric Border — sınırın az dışındaki düşmanlar da (indirimli) hasar alır.
+  // v0.7 FIX: menzil artık seviyeyle gerçekten büyüyor (bkz. electricBorderRadius()),
+  // hasar çarpanı sabit kalıyor (CONFIG.electricBorderDamageMult) — stacking
+  // sadece "ne kadar dışarıyı vurduğun"nu büyütüyor, hasar yüzdesini değil.
+  const borderR = electricBorderRadius();
+  if (borderR > 0) {
+    for (const en of S.enemies) {
+      if (inside.includes(en)) continue;
+      const dist = distToPolygonBoundary(en.x, en.y, poly);
+      if (dist <= borderR) {
+        applyLoopDamage(en, totalDamage * CONFIG.electricBorderDamageMult);
+        // Border-only isabetleri ana isabetten görsel olarak ayırt et —
+        // oyuncu yükseltme seviyesi arttıkça menzilin gerçekten büyüdüğünü
+        // sahnede de görsün, sadece HUD sayısından değil.
+        burst(en.x, en.y, CONFIG.electricBorderSpark, 6);
+      }
+    }
+  }
+
+  // v0.19 FIX: eski koşul (count >= 3) "ilmek içinde 3+ düşman VARSA" demekti,
+  // "öldürünce" değil — bu yüzden çalışmıyor gibi hissettiriyordu. Artık
+  // ilmek İÇİNDE en az 1 düşman GERÇEKTEN öldürülünce can veriyor.
+  if (S.upgrades.healFill > 0 && killedInside > 0) {
+    S.player.hp = Math.min(CONFIG.playerMaxHP, S.player.hp + 5 * S.upgrades.healFill);
+    burst(S.player.x, S.player.y, CONFIG.ranged, 8); // healFill'in rengiyle (UPGRADE_ACCENT.healFill) tutarlı küçük bir "iyileşme" patlaması
+  }
+
+  // v0.10: Kombo — bu kapanışta vurulan her düşman kombo'yu 1 artırır,
+  // bu da effectiveMaxLoopLength() üzerinden izin GEÇİCİ olarak uzamasına
+  // yol açar. Hasar alınca (damagePlayer) kombo sıfırlanır.
+  if (count > 0) {
+    S.combo += count;
+    blip(Math.min(1200, 480 + S.combo * 18), 0.09, 'sine', 0.10, 140);
+  }
+
+  const centroid = polygonCentroid(poly);
+  S.loopFlash = { poly, t: 0, life: CONFIG.loopFlashMs / 1000, borderR };
+
+  // Juice — düşman sayısına göre ölçekli geri bildirim
+  const magnitude = count === 0 ? 0 : count >= 5 ? 2 : count >= 3 ? 1 : 0.5;
+  S.hitstop = CONFIG.hitstopBaseMs * (1 + magnitude);
+  S.shake = CONFIG.shakeBase * (1 + magnitude);
+  burst(centroid.x, centroid.y, CONFIG.loopEdge, 10 + count * 6);
+  for (const en of inside) burstToward(en.x, en.y, centroid.x, centroid.y, CONFIG.loopEdge, 5);
+  blip(count > 0 ? 260 : 200, 0.14, 'triangle', 0.16, count >= 5 ? 320 : 140);
+  if (count >= 5) blip(120, 0.22, 'sawtooth', 0.14, 80);
+}
+
+function applyLoopDamage(en, dmg) {
+  en.hp -= dmg;
+  en.hitFlash = 0.15;
+  spawnDmgText(en.x, en.y, Math.round(dmg));
+  if (S.upgrades.burningFill > 0) en.burn = { dps: 5 * S.upgrades.burningFill, timeLeft: 3 };
+  if (S.upgrades.freezeFill > 0) en.slowUntil = 2;
+  // v0.19: Heal Fill'in "öldürünce" tetiklenebilmesi için bu öldürüp
+  // öldürmediğini bildiriyor (bkz. closeLoop'taki killedInside sayacı).
+  if (en.hp <= 0 && !en.dead) { killEnemy(en); return true; }
+  return false;
+}
+
+function killEnemy(en) {
+  en.dead = true;
+  burst(en.x, en.y, enemyColor(en), 10);
+  blip(480, 0.08, 'square', 0.10, 200);
+
+  // v0.19: boss ölünce — kısıtlı arena kalkar, dalga-3 bitiş akışı (normal
+  // waveClearing sayacı → CONFIG.upgradeEveryNWaves zaten 3'e bölündüğü için
+  // otomatik olarak yükseltme ekranı) devam etsin diye tetikleniyor. Boss'a
+  // özel xp/iz-büyümesi YOK (tek seferlik bir karşılaşma, dalga sayacı değil).
+  if (en.type === 'boss') {
+    S.bossArena = null;
+    S.waveClearing = true;
+    S.waveClearTimer = CONFIG.waveClearDelayMs;
+    burst(en.x, en.y, CONFIG.chaser, 32); // normal ölümden daha büyük/dramatik patlama
+    blip(90, 0.4, 'sawtooth', 0.22, -220);
+    return;
+  }
+
+  // v0.4: iz limiti artık öldürdükçe (xp) büyüyor, dalga sonunu beklemiyor
+  const xp = en.type === 'ranged' ? CONFIG.loopGrowthXPRanged
+    : en.type === 'fast' ? CONFIG.loopGrowthXPFast
+    : CONFIG.loopGrowthXPChaser;
+  S.killXP += xp;
+  updateMaxLoopLength();
+}
+
+function updateMaxLoopLength() {
+  const steps = Math.floor(S.killXP / CONFIG.loopGrowthXPStep);
+  const baseLen = playerWidth() * CONFIG.maxLoopLengthMult;
+  // v0.20 FIX: eskiden burada bir tavan yoktu — sınırsız dalgada öldürdükçe
+  // ilmek KALICI olarak sonsuza kadar uzuyordu. Artık taban uzunluğun en
+  // fazla maxLoopLengthGrowthCapMult katına kadar büyüyüp orada kilitleniyor.
+  const uncapped = baseLen * (1 + steps * CONFIG.loopGrowthPct);
+  const newMax = Math.min(uncapped, baseLen * CONFIG.maxLoopLengthGrowthCapMult);
+  if (newMax > S.maxLoopLength) {
+    S.maxLoopLength = newMax;
+    blip(700, 0.09, 'sine', 0.08, 260); // "iz uzadı" — hafif olumlu geri bildirim (tavana ulaşınca artık hiç tetiklenmez)
+  }
+}
+
+function spawnDmgText(x, y, v) {
+  S.dmgTexts.push({ x: x + (Math.random() * 16 - 8), y, text: String(v), life: 0.8 });
+}
+
+/* ============ EnemyBase + WaveManager (Spawner) ============ */
+// v0.14: sınırsız harita geldiğinden beri (v0.13) düşman sayıları AYNI kaldığı
+// için ekran "az kalabalık" hissettiriyordu (eskiden sabit arenanın TAMAMI
+// ekrana yakındı, artık düşmanlar geniş bir dünyaya yayılıp oyuncuya doğru
+// yaklaşıyor). "düşman az geliyor sonsuz olunca ekran" isteğiyle sayılar
+// büyütüldü (~%40 civarı artış) — playtest'te çok kolay/zor olursa buradan
+// ince ayar yapılabilir.
+function waveComposition(n) {
+  if (n === 1) return { chaser: 7, fast: 0, ranged: 0 };
+  if (n === 2) return { chaser: 8, fast: 3, ranged: 0 };
+  if (n === 3) return { chaser: 7, fast: 4, ranged: 3 };
+  const extra = n - 3;
+  return {
+    chaser: 7 + Math.floor(extra * 1.5),
+    fast: 4 + Math.floor(extra * 1.0),
+    ranged: 3 + Math.floor(extra * 0.8)
+  };
+}
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function startWave(n) {
+  S.wave = n;
+  S.waveHpMult = 1 + (n - 1) * CONFIG.waveHpScalePerWave;
+  // NOT: maxLoopLength artık burada değil, öldürdükçe updateMaxLoopLength()
+  // ile büyüyor (v0.4) — dalga geçişini beklemek gerekmiyor.
+  const comp = waveComposition(n);
+  const q = [];
+  for (let i = 0; i < comp.chaser; i++) q.push('chaser');
+  for (let i = 0; i < comp.fast; i++) q.push('fast');
+  for (let i = 0; i < comp.ranged; i++) q.push('ranged');
+  S.spawnQueue = shuffle(q);
+  S.spawnTimer = 0;
+  S.waveClearing = false;
+}
+
+// v0.13: sabit arena kaldırıldığı için düşmanlar artık sabit bir dikdörtgenin
+// kenarında değil, OYUNCUYU SARAN sanal bir "görüş kutusu" (ekran boyutunda,
+// oyuncu merkezli) kenarında beliriyor — kamera oyuncuyu hep merkezde tuttuğu
+// için bu, pratikte "ekranın hemen dışında" spawn olmak anlamına geliyor.
+function spawnPointOutsideArena() {
+  const vb = { x: S.player.x - W / 2, y: S.player.y - H / 2, w: W, h: H };
+  const side = Math.floor(Math.random() * 4);
+  const pad = 34;
+  if (side === 0) return { x: vb.x + Math.random() * vb.w, y: vb.y - pad };
+  if (side === 1) return { x: vb.x + Math.random() * vb.w, y: vb.y + vb.h + pad };
+  if (side === 2) return { x: vb.x - pad, y: vb.y + Math.random() * vb.h };
+  return { x: vb.x + vb.w + pad, y: vb.y + Math.random() * vb.h };
+}
+
+// v0.16: "hepsi salak gibi üst üste toplanıyor, tek loop'a 15 düşman giriyor,
+// çok kolaylaştırıyor" geri bildirimiyle her düşmana SABİT, KİŞİSEL bir
+// rastgelelik veriliyor — doğdukları anda belirlenir, ölene kadar değişmez.
+// steerJitter: oyuncuya giden açıya eklenen sabit sapma (bazı düşmanlar dümdüz
+// gelmez, hafif eğri bir yörüngeyle yaklaşır) — bu yüzden hepsi TEK NOKTAYA
+// değil, oyuncunun etrafına YAYILARAK yaklaşır. speedMult: kişisel hız çarpanı
+// (bazıları biraz daha hızlı/yavaş) — aynı anda varmazlar, kümelenme azalır.
+function randRange(min, max) { return min + Math.random() * (max - min); }
+function spawnEnemy(type) {
+  const p = spawnPointOutsideArena();
+  const hpMult = S.waveHpMult;
+  const steerJitter = randRange(-CONFIG.enemySteerJitterRad, CONFIG.enemySteerJitterRad);
+  const speedMult = randRange(1 - CONFIG.enemySpeedVariance, 1 + CONFIG.enemySpeedVariance);
+  if (type === 'chaser') {
+    S.enemies.push({ type, x: p.x, y: p.y, hp: CONFIG.chaserHP * hpMult, maxHp: CONFIG.chaserHP * hpMult, r: CONFIG.chaserR, speed: CONFIG.chaserSpeed, hitFlash: 0, slowUntil: 0, burn: null, fireTimer: 300 + Math.random() * 800, steerJitter, speedMult });
+  } else if (type === 'fast') {
+    S.enemies.push({ type, x: p.x, y: p.y, hp: CONFIG.fastHP * hpMult, maxHp: CONFIG.fastHP * hpMult, r: CONFIG.fastR, speed: CONFIG.fastSpeed, hitFlash: 0, slowUntil: 0, burn: null, fireTimer: 300 + Math.random() * 800, steerJitter, speedMult });
+  } else {
+    const preferredDistJitter = randRange(-CONFIG.rangedPreferredDistJitter, CONFIG.rangedPreferredDistJitter);
+    S.enemies.push({ type, x: p.x, y: p.y, hp: CONFIG.rangedHP * hpMult, maxHp: CONFIG.rangedHP * hpMult, r: CONFIG.rangedR, speed: CONFIG.rangedSpeed, hitFlash: 0, slowUntil: 0, burn: null, fireTimer: 400 + Math.random() * 600, steerJitter, speedMult, preferredDistJitter });
+  }
+}
+
+function enemyColor(en) { return en.type === 'chaser' ? CONFIG.chaser : en.type === 'fast' ? CONFIG.fast : CONFIG.ranged; }
+function enemyCore(en) { return en.type === 'chaser' ? CONFIG.chaserCore : en.type === 'fast' ? CONFIG.fastCore : CONFIG.rangedCore; }
+
+// v0.11: Bariyer çarpışması — düşmanı, aktif her bariyerin her kenarından
+// kendi yarıçapı kadar dışarı iter (basit daire-vs-çizgi çözümü). Oyuncu
+// bilerek dahil edilmiyor — kendi bariyerinden serbestçe geçebilmeli.
+// v0.14: artık sadece itmiyor, temas eden düşmana CONFIG.barrierDps × dt
+// kadar sürekli hasar da uyguluyor ("duran looplar hasar verecek çarparlarsa").
+function resolveEnemyBarrierCollision(en, dt) {
+  if (S.barriers.length === 0) return;
+  let touching = false;
+  for (const b of S.barriers) {
+    const poly = b.poly;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], c = poly[(i + 1) % poly.length];
+      const cp = closestPointOnSegment(en.x, en.y, a.x, a.y, c.x, c.y);
+      const dx = en.x - cp.x, dy = en.y - cp.y;
+      const d = Math.hypot(dx, dy);
+      if (d < en.r) {
+        touching = true;
+        const push = (en.r - d) + 0.5;
+        if (d > 1e-4) { en.x += (dx / d) * push; en.y += (dy / d) * push; }
+        else { en.x += push; }
+      }
+    }
+  }
+  if (touching && !en.dead) applyBarrierDamage(en, CONFIG.barrierDps * dt);
+}
+
+// v0.14: bariyer teması hasarı — applyLoopDamage'den farklı olarak her karede
+// (60/sn) çağrılacağı için hasar metni/yanma-donma upgrade'lerini tetiklemiyor,
+// sadece ham hasar + kısa bir hitFlash uyguluyor.
+function applyBarrierDamage(en, dmg) {
+  en.hp -= dmg;
+  en.hitFlash = Math.max(en.hitFlash, 0.08);
+  if (en.hp <= 0 && !en.dead) killEnemy(en);
+}
+
+// v0.16: Basit ayrışma (separation) — yarıçapları çakışan iki düşmanı
+// birbirinden hafifçe uzaklaştırır (klasik "boid separation"). steerJitter/
+// speedMult çoğu kümelenmeyi zaten önlüyor, bu sadece tam üst üste binmeyi
+// engelleyen ucuz bir ek katman. O(n²) ama jam ölçeğindeki düşman sayılarında
+// (birkaç düzine) sorunsuz.
+function applyEnemySeparation(dt) {
+  const n = S.enemies.length;
+  for (let i = 0; i < n; i++) {
+    const a = S.enemies[i];
+    for (let j = i + 1; j < n; j++) {
+      const b = S.enemies[j];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      const minDist = a.r + b.r;
+      let d2 = dx * dx + dy * dy;
+      if (d2 >= minDist * minDist) continue;
+      if (d2 < 1e-6) {
+        // Tam aynı noktadalar (nadir ama olabilir, örn. aynı kare doğdular) —
+        // yön belirsiz, indekse göre sabit bir yönde küçük bir itiş ver ki
+        // bir sonraki karede gerçek mesafe oluşsun.
+        const a2 = (i * 2.399963 + j * 1.618034); // altın-oran tabanlı sözde-rastgele açı, tekrar üretilebilir
+        dx = Math.cos(a2) * 0.01; dy = Math.sin(a2) * 0.01;
+        d2 = dx * dx + dy * dy;
+      }
+      const d = Math.sqrt(d2);
+      const overlap = minDist - d;
+      const nx = dx / d, ny = dy / d;
+      const push = Math.min(overlap, CONFIG.enemySeparationForce * dt); // aşırı hızlı zıplamasın diye sınırlı
+      const half = push * 0.5;
+      a.x -= nx * half; a.y -= ny * half;
+      b.x += nx * half; b.y += ny * half;
+    }
+  }
+}
+
+// v0.19: Dalga 3 sonu Boss — "kısıtlı alan olsun ama çok da kısıtlı değil"
+// isteğiyle, boss tetiklenince oyuncunun o anki konumu merkez alınarak bir
+// çember-arena kuruluyor (S.bossArena). Oyuncu VE boss bu yarıçapı aşamıyor.
+function clampToBossArena(obj) {
+  if (!S.bossArena) return;
+  const dx = obj.x - S.bossArena.x, dy = obj.y - S.bossArena.y;
+  const d = Math.hypot(dx, dy);
+  if (d > S.bossArena.r) {
+    const k = S.bossArena.r / d;
+    obj.x = S.bossArena.x + dx * k;
+    obj.y = S.bossArena.y + dy * k;
+  }
+}
+
+function startBossFight() {
+  S.bossDone = true;
+  S.bossArena = { x: S.player.x, y: S.player.y, r: CONFIG.bossArenaRadius };
+  const hpMult = S.waveHpMult; // diğer düşmanlarla aynı ölçekleme mantığı
+  S.enemies.push({
+    type: 'boss', x: S.player.x, y: S.player.y - CONFIG.bossArenaRadius * 0.6,
+    hp: CONFIG.bossHP * hpMult, maxHp: CONFIG.bossHP * hpMult,
+    r: CONFIG.bossR, speed: CONFIG.bossSpeed,
+    hitFlash: 0, slowUntil: 0, burn: null, steerJitter: 0, speedMult: 1,
+    contactDamage: CONFIG.bossContactDamage,
+    // durum makinesi: 'chase' -> 'telegraph' -> 'dash'|'burst'|'homing' fiili
+    // saldırı -> 'recover' (dash hariç) -> 'chase'. nextAttack üç saldırı
+    // arasında rastgele dönüyor, aynısı iki kez ÜST ÜSTE gelmiyor (bkz.
+    // pickNextBossAttack) — v0.20: "arada bir de takip eden mermi" isteğiyle
+    // homing eklendi.
+    phase: 'chase', attackTimer: CONFIG.bossAttackCooldownMs, nextAttack: 'dash',
+    telegraphTimer: 0, dashTimer: 0, dashVx: 0, dashVy: 0, recoverTimer: 0, targetX: 0, targetY: 0
+  });
+  blip(70, 0.5, 'sawtooth', 0.20, -300); // tehditkar, kalın giriş sesi
+  burst(S.player.x, S.player.y - CONFIG.bossArenaRadius * 0.6, CONFIG.chaser, 24);
+}
+
+// v0.19: Boss'un 360° mermi patlaması — telegraph süresi boyunca (kırmızı
+// büyüyen halka, bkz. drawBossShape) hareket etmediği için oyuncu mesafe
+// açabilir, sonra n eşit açıyla mermi fırlar. Mevcut S.enemyProjectiles
+// sistemine ekleniyor — bariyerler bunu da normal mermi gibi durdurabiliyor.
+function fireBossBurst(en) {
+  const n = CONFIG.bossBurstCount;
+  for (let i = 0; i < n; i++) {
+    const ang = (i / n) * Math.PI * 2;
+    S.enemyProjectiles.push({
+      x: en.x, y: en.y,
+      vx: Math.cos(ang) * CONFIG.bossBurstProjSpeed, vy: Math.sin(ang) * CONFIG.bossBurstProjSpeed,
+      r: 6, dmg: CONFIG.bossBurstProjDamage, fromBoss: true
+    });
+  }
+  blip(200, 0.16, 'sawtooth', 0.14, -60);
+  burst(en.x, en.y, CONFIG.ranged, 18);
+}
+
+// v0.20: "arada bir de takip eden mermi yollasın, 2 sn takip edip havada
+// patlasın" isteğiyle eklendi. Tek bir mermi, CONFIG.bossHomingSpeed ile
+// fırlıyor, ondan sonraki dönüşü (takip) updateWave()'in enemyProjectiles
+// döngüsündeki `b.homing` bloğu yönetiyor — açısal hızı SINIRLI (bkz.
+// bossHomingTurnRate) ki anlık kilitlenme gibi hissetmesin, kaçılabilsin.
+function fireBossHoming(en) {
+  const dx = S.player.x - en.x, dy = S.player.y - en.y;
+  const d = Math.hypot(dx, dy) || 1;
+  S.enemyProjectiles.push({
+    x: en.x, y: en.y,
+    vx: (dx / d) * CONFIG.bossHomingSpeed, vy: (dy / d) * CONFIG.bossHomingSpeed,
+    r: 7, dmg: CONFIG.bossHomingDamage, fromBoss: true, homing: true, life: CONFIG.bossHomingLifeS
+  });
+  blip(260, 0.12, 'sawtooth', 0.14, 100);
+  burst(en.x, en.y, CONFIG.ranged, 12);
+}
+
+// v0.20: üç saldırı arasından, SON saldırıyla aynısı olmayacak şekilde
+// rastgele birini seçer — "arada bir de" homing'in de sıraya girmesi ama
+// art arda hep aynı saldırının gelmemesi için.
+function pickNextBossAttack(prev) {
+  const pool = ['dash', 'burst', 'homing'].filter(a => a !== prev);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function bossTelegraphMsFor(attack) {
+  return attack === 'dash' ? CONFIG.bossDashTelegraphMs
+    : attack === 'burst' ? CONFIG.bossBurstTelegraphMs
+    : CONFIG.bossHomingTelegraphMs;
+}
+
+// v0.19/v0.20: Boss durum makinesi. 'chase' fazında normal düşmanlardan yavaş
+// takip eder; attackTimer dolunca 'telegraph'a girer (saldırı türüne göre
+// UYARI süresi — oyuncu bu sırada kaçabilir), sonra fiilen saldırır ('dash':
+// hızlı kilitli-hedef hamle / 'burst': 360° mermi / 'homing': 2 sn takip eden
+// tek mermi), sonunda tekrar 'chase'e döner ve bir dahaki sefer FARKLI bir
+// saldırıya geçer (bkz. pickNextBossAttack — aynısı art arda gelmiyor).
+function updateBoss(en, dt) {
+  if (en.phase === 'chase') {
+    const dx = S.player.x - en.x, dy = S.player.y - en.y;
+    const d = Math.hypot(dx, dy) || 1;
+    en.x += (dx / d) * en.speed * dt;
+    en.y += (dy / d) * en.speed * dt;
+    en.attackTimer -= dt * 1000;
+    if (en.attackTimer <= 0) {
+      en.phase = 'telegraph';
+      en.telegraphTimer = bossTelegraphMsFor(en.nextAttack);
+      en.targetX = S.player.x; en.targetY = S.player.y; // kilitleniyor — telegraph sırasında GÜNCELLENMİYOR, kaçılabilsin
+    }
+  } else if (en.phase === 'telegraph') {
+    en.telegraphTimer -= dt * 1000;
+    if (en.telegraphTimer <= 0) {
+      if (en.nextAttack === 'dash') {
+        const dx = en.targetX - en.x, dy = en.targetY - en.y;
+        const d = Math.hypot(dx, dy) || 1;
+        en.dashVx = (dx / d) * CONFIG.bossDashSpeed;
+        en.dashVy = (dy / d) * CONFIG.bossDashSpeed;
+        en.dashTimer = CONFIG.bossDashDurationMs;
+        en.contactDamage = CONFIG.bossDashContactDamage;
+        en.phase = 'dash';
+      } else if (en.nextAttack === 'burst') {
+        fireBossBurst(en);
+        en.phase = 'recover';
+        en.recoverTimer = CONFIG.bossBurstRecoverMs;
+      } else { // 'homing'
+        fireBossHoming(en);
+        en.phase = 'recover';
+        en.recoverTimer = CONFIG.bossHomingRecoverMs;
+      }
+    }
+  } else if (en.phase === 'dash') {
+    en.x += en.dashVx * dt; en.y += en.dashVy * dt;
+    en.dashTimer -= dt * 1000;
+    if (Math.random() < 0.6) burst(en.x, en.y, CONFIG.chaser, 1); // ucuz hareket izi, salt görsel
+    if (en.dashTimer <= 0) {
+      en.phase = 'chase';
+      en.contactDamage = CONFIG.bossContactDamage;
+      en.attackTimer = CONFIG.bossAttackCooldownMs;
+      en.nextAttack = pickNextBossAttack(en.nextAttack);
+    }
+  } else if (en.phase === 'recover') {
+    en.recoverTimer -= dt * 1000;
+    if (en.recoverTimer <= 0) {
+      en.phase = 'chase';
+      en.attackTimer = CONFIG.bossAttackCooldownMs;
+      en.nextAttack = pickNextBossAttack(en.nextAttack);
+    }
+  }
+  clampToBossArena(en);
+}
+
+function updateWave(dt) {
+  if (S.spawnQueue.length > 0) {
+    S.spawnTimer -= dt * 1000;
+    if (S.spawnTimer <= 0) {
+      S.spawnTimer = CONFIG.enemySpawnStaggerMs;
+      spawnEnemy(S.spawnQueue.pop());
+    }
+  }
+  if (!S.waveClearing && S.spawnQueue.length === 0 && S.enemies.length === 0 && S.wave > 0) {
+    // v0.19: "3. dalga sonuna bir boss tasarla" — dalga 3'ün normal düşmanları
+    // bitince, direkt yükseltme ekranına gitmeden önce ARAYA tek seferlik bir
+    // boss karşılaşması giriyor (bkz. startBossFight()). Boss S.enemies'e
+    // eklendiği için bu blok bir sonraki karede zaten tekrar tetiklenmiyor
+    // (enemies.length artık 0 değil); boss ölünce killEnemy() normal
+    // waveClearing akışını kendi kendine devam ettiriyor.
+    if (S.wave === 3 && !S.bossDone) {
+      startBossFight();
+    } else {
+      S.waveClearing = true;
+      S.waveClearTimer = CONFIG.waveClearDelayMs;
+    }
+  }
+  if (S.waveClearing) {
+    S.waveClearTimer -= dt * 1000;
+    if (S.waveClearTimer <= 0) {
+      S.waveClearing = false;
+      if (S.wave % CONFIG.upgradeEveryNWaves === 0) openUpgradeScreen();
+      else startWave(S.wave + 1);
+    }
+  }
+}
+
+/* ============ UpgradeManager ============ */
+const UPGRADE_POOL = [
+  { id: 'fillDamage', name: 'Fill Damage', desc: '+%30 ilmek hasarı' },
+  { id: 'burningFill', name: 'Burning Fill', desc: 'İlmek isabetleri 3 sn yanma verir' },
+  { id: 'freezeFill', name: 'Freeze Fill', desc: 'İlmek isabetleri 2 sn %50 yavaşlatır' },
+  { id: 'electricBorder', name: 'Electric Border', desc: 'Sınıra yakın düşmanlar da hasar alır (her seviye menzili büyütür)' },
+  { id: 'healFill', name: 'Heal Fill', desc: 'İlmekle düşman öldürünce +5 can (seviye başına)' },
+  { id: 'biggerMultiplier', name: 'Bigger Multiplier', desc: 'Büyük alan çarpanı artar' }
+];
+// v0.17: art-direction sayfasındaki yükseltme kartı etüdündeki renk eşlemesi
+// — yeni renk YOK, hepsi zaten CONFIG'de var olan renkler, sadece her
+// yükseltmeye kendi "kimliği" için birini atadık.
+const UPGRADE_ACCENT = {
+  fillDamage: CONFIG.fast,
+  burningFill: CONFIG.chaser,
+  freezeFill: CONFIG.trail,
+  electricBorder: CONFIG.electricBorderSpark,
+  healFill: CONFIG.ranged,
+  biggerMultiplier: CONFIG.player
+};
+function openUpgradeScreen() {
+  const pool = shuffle(UPGRADE_POOL.slice());
+  S.upgradeChoices = pool.slice(0, 3);
+  S.mode = 'upgrade';
+}
+function upgradeButtonRects() {
+  const bw = Math.min(300, W - 40), bh = 64, gap = 14;
+  const totalH = bh * 3 + gap * 2;
+  const startY = H / 2 - totalH / 2 + 20;
+  return S.upgradeChoices.map((u, i) => ({ x: W / 2 - bw / 2, y: startY + i * (bh + gap), w: bw, h: bh, upgrade: u }));
+}
+function pickUpgradeAt(x, y) {
+  for (const r of upgradeButtonRects()) {
+    if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+      S.upgrades[r.upgrade.id]++;
+      blip(700, 0.12, 'triangle', 0.15, 200);
+      S.mode = 'play';
+      startWave(S.wave + 1);
+      return;
+    }
+  }
+}
+
+/* ============ ProjectileSystem ============ */
+function fireEnemyProjectile(en, speed, dmg) {
+  const dx = S.player.x - en.x, dy = S.player.y - en.y;
+  const d = Math.hypot(dx, dy) || 1;
+  S.enemyProjectiles.push({ x: en.x, y: en.y, vx: dx / d * speed, vy: dy / d * speed, r: 5, dmg });
+  blip(300, 0.05, 'square', 0.05, -40);
+}
+function fireAutoAttack() {
+  let nearest = null, nd = Infinity;
+  for (const en of S.enemies) {
+    const d = Math.hypot(en.x - S.player.x, en.y - S.player.y);
+    if (d < nd) { nd = d; nearest = en; }
+  }
+  if (!nearest) return;
+  const dx = nearest.x - S.player.x, dy = nearest.y - S.player.y;
+  const d = Math.hypot(dx, dy) || 1;
+  S.playerProjectiles.push({ x: S.player.x, y: S.player.y, vx: dx / d * CONFIG.autoAttackProjectileSpeed, vy: dy / d * CONFIG.autoAttackProjectileSpeed, r: 4 });
+  blip(520, 0.05, 'sine', 0.06, 120);
+  S.autoCooldown = CONFIG.autoAttackCooldownMs;
+}
+
+/* ============ UPDATE (sabit adım) ============ */
+function update(dt) {
+  if (S.hitstop > 0) { S.hitstop -= dt * 1000; return; }
+  if (S.shake > 0) S.shake = Math.max(0, S.shake - dt * 20);
+  updateParticles(dt);
+  for (let i = S.dmgTexts.length - 1; i >= 0; i--) {
+    const t = S.dmgTexts[i]; t.y -= dt * 30; t.life -= dt * 1.6;
+    if (t.life <= 0) S.dmgTexts.splice(i, 1);
+  }
+  if (S.loopFlash) { S.loopFlash.t += dt; if (S.loopFlash.t >= S.loopFlash.life) S.loopFlash = null; }
+  // v0.11: bariyerlerin ömrünü işlet — süresi dolan bariyer silinir
+  for (let i = S.barriers.length - 1; i >= 0; i--) {
+    S.barriers[i].t += dt;
+    if (S.barriers[i].t >= S.barriers[i].life) S.barriers.splice(i, 1);
+  }
+  // v0.15 (deneme): bırakılan (kapanmamış) iz kalıntılarının ömrünü işlet
+  for (let i = S.deadTrails.length - 1; i >= 0; i--) {
+    S.deadTrails[i].t += dt;
+    if (S.deadTrails[i].t >= S.deadTrails[i].life) S.deadTrails.splice(i, 1);
+  }
+
+  if (S.mode !== 'play') return;
+
+  const inp = computeInput(dt);
+  S.moveVec = { x: inp.mx, y: inp.my };
+  if (S.invuln > 0) S.invuln -= dt * 1000;
+
+  // PlayerController — ivmeli hareket (anlık zıplama/durma yerine yumuşak
+  // hızlanma-yavaşlama — "kontrol kötü/sert" hissini gidermek için)
+  const targetVx = inp.mx * CONFIG.playerSpeed, targetVy = inp.my * CONFIG.playerSpeed;
+  const accel = (inp.mx === 0 && inp.my === 0) ? CONFIG.playerDecel : CONFIG.playerAccel;
+  S.player.vx = moveToward(S.player.vx, targetVx, accel * dt);
+  S.player.vy = moveToward(S.player.vy, targetVy, accel * dt);
+  S.player.x += S.player.vx * dt;
+  S.player.y += S.player.vy * dt;
+  // v0.13: sabit arena kaldırıldı — sınır yok, oyuncu sınırsız dünyada hareket eder.
+  // v0.19: TEK istisna — boss karşılaşması sırasında (S.bossArena aktifken)
+  // oyuncu bu çemberin dışına çıkamıyor (bkz. clampToBossArena, startBossFight).
+  clampToBossArena(S.player);
+  // Kamera her zaman oyuncuyu ekran merkezinde tutar (bkz. render()).
+  S.camera.x = S.player.x;
+  S.camera.y = S.player.y;
+
+  // TrailDrawer / LoopDetector
+  updateDrawing(dt, inp);
+
+  // Auto Attack — v0.3: artık sadece hareketsizken değil, SÜREKLİ (kendi
+  // cooldown'unda) ateş ediyor — "ateş etsin" isteği. Hâlâ zayıf tutuldu
+  // (10 hasar, ~0.55 sn cooldown) ki ilmek asıl hasar kaynağı kalsın.
+  if (S.autoCooldown > 0) S.autoCooldown -= dt * 1000;
+  if (S.autoCooldown <= 0 && S.enemies.length > 0) {
+    fireAutoAttack();
+  }
+
+  // WaveManager
+  updateWave(dt);
+
+  // EnemyBase davranışı
+  for (let i = S.enemies.length - 1; i >= 0; i--) {
+    const en = S.enemies[i];
+    if (en.hitFlash > 0) en.hitFlash -= dt;
+    if (en.burn) {
+      en.hp -= en.burn.dps * dt;
+      en.burn.timeLeft -= dt;
+      if (en.burn.timeLeft <= 0) en.burn = null;
+      if (en.hp <= 0 && !en.dead) killEnemy(en);
+    }
+    if (en.dead) { S.enemies.splice(i, 1); continue; }
+
+    const slowFactor = en.slowUntil > 0 ? 0.5 : 1;
+    if (en.slowUntil > 0) en.slowUntil -= dt;
+
+    // v0.16: kişisel steerJitter açısı, oyuncuya-giden vektörü sabit bir
+    // miktar döndürüyor — böylece her düşman hafif farklı bir eğriyle
+    // yaklaşıyor/konumlanıyor, hepsi aynı düz çizgide üst üste gelmiyor.
+    const jitter = en.steerJitter || 0, speedMult = en.speedMult || 1;
+    const cosj = Math.cos(jitter), sinj = Math.sin(jitter);
+
+    if (en.type === 'boss') {
+      // v0.19: boss'un kendi durum makinesi (chase/telegraph/dash/burst) —
+      // steerJitter/fire-timer mantığı ona uygulanmıyor, updateBoss kendi
+      // hareket+saldırı desenini ve arena sınırını (clampToBossArena) yönetiyor.
+      updateBoss(en, dt);
+    } else if (en.type === 'ranged') {
+      const dx = S.player.x - en.x, dy = S.player.y - en.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const preferredDist = CONFIG.rangedPreferredDist + (en.preferredDistJitter || 0);
+      const dir = d > preferredDist ? 1 : d < preferredDist * 0.7 ? -1 : 0;
+      const rdx = dx * cosj - dy * sinj, rdy = dx * sinj + dy * cosj;
+      en.x += (rdx / d) * dir * en.speed * speedMult * slowFactor * dt;
+      en.y += (rdy / d) * dir * en.speed * speedMult * slowFactor * dt;
+      en.fireTimer -= dt * 1000;
+      if (en.fireTimer <= 0) { en.fireTimer = CONFIG.rangedFireIntervalMs; fireEnemyProjectile(en, CONFIG.rangedProjectileSpeed, CONFIG.rangedProjectileDamage); }
+    } else {
+      // chaser / fast — hâlâ üstüne koşar, AMA yeterince uzaktaysa
+      // yaklaşırken de zayıf bir mermi atar (yakına gelince ateş etmeyi
+      // bırakır, zaten temas hasarı devreye giriyor)
+      const dx = S.player.x - en.x, dy = S.player.y - en.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const rdx = dx * cosj - dy * sinj, rdy = dx * sinj + dy * cosj;
+      en.x += (rdx / d) * en.speed * speedMult * slowFactor * dt;
+      en.y += (rdy / d) * en.speed * speedMult * slowFactor * dt;
+
+      const fireIntervalMs = en.type === 'fast' ? CONFIG.fastFireIntervalMs : CONFIG.chaserFireIntervalMs;
+      const fireMinDist = en.type === 'fast' ? CONFIG.fastFireMinDist : CONFIG.chaserFireMinDist;
+      const projSpeed = en.type === 'fast' ? CONFIG.fastProjectileSpeed : CONFIG.chaserProjectileSpeed;
+      const projDmg = en.type === 'fast' ? CONFIG.fastProjectileDamage : CONFIG.chaserProjectileDamage;
+      en.fireTimer -= dt * 1000;
+      if (en.fireTimer <= 0) {
+        en.fireTimer = fireIntervalMs;
+        if (d > fireMinDist) fireEnemyProjectile(en, projSpeed, projDmg);
+      }
+    }
+
+    // v0.11: aktif bariyerler varsa düşmanı geçirme — temas hasarı
+    // kontrolünden ÖNCE, aynı frame'de çözülüyor ki duvara çarpıp da
+    // bir kare oyuncuya temas etmiş gibi görünmesin
+    // v0.20: "boss bariyerden etkilenmesin, daha korkunç olsun" isteğiyle
+    // boss bu kontrolden tamamen MUAF — ne duruyor ne bariyer hasarı alıyor,
+    // ilmek tuzağı boss'u hiç yavaşlatmıyor/durdurmuyor.
+    if (en.type !== 'boss') resolveEnemyBarrierCollision(en, dt);
+
+    // Oyuncuya temas hasarı (chaser/fast/ranged hepsi temas ederse verir)
+    if (S.invuln <= 0) {
+      const pd = Math.hypot(en.x - S.player.x, en.y - S.player.y);
+      if (pd < en.r + CONFIG.playerRadius) damagePlayer(en.contactDamage || CONFIG.playerContactDamage);
+    }
+  }
+
+  // v0.16: steerJitter/speedMult çoğu kümelenmeyi zaten azaltıyor, ama yine
+  // de yarıçapları çakışan düşmanlar oluyorsa birbirini hafifçe ittiriyor —
+  // "üst üste toplanma" hissine karşı ikinci, ucuz bir güvence katmanı.
+  applyEnemySeparation(dt);
+
+  // Düşman mermileri
+  for (let i = S.enemyProjectiles.length - 1; i >= 0; i--) {
+    const b = S.enemyProjectiles[i];
+    const px0 = b.x, py0 = b.y;
+    // v0.20: Boss'un takip eden (homing) mermisi — anlık kilitlenmek yerine
+    // CONFIG.bossHomingTurnRate ile SINIRLI bir açısal hızda oyuncuya döner,
+    // yani kaçılabilir. "life" (2 sn) dolunca aşağıda hasarsız "havada patlar".
+    if (b.homing) {
+      const dx = S.player.x - b.x, dy = S.player.y - b.y;
+      const desiredAngle = Math.atan2(dy, dx);
+      const curAngle = Math.atan2(b.vy, b.vx);
+      let diff = desiredAngle - curAngle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      const turn = clamp(diff, -CONFIG.bossHomingTurnRate * dt, CONFIG.bossHomingTurnRate * dt);
+      const newAngle = curAngle + turn;
+      const speed = Math.hypot(b.vx, b.vy);
+      b.vx = Math.cos(newAngle) * speed; b.vy = Math.sin(newAngle) * speed;
+      b.life -= dt;
+    }
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    // v0.14 FIX: bu sınır kontrolü eskiden (sabit arena döneminde) ekran =
+    // dünya koordinatı olduğu için doğruydu. v0.13'te sınırsız harita/kamera
+    // eklenince mermiler DÜNYA koordinatında saklanmaya devam etti ama bu
+    // kontrol hâlâ 0..W/0..H EKRAN aralığına bakıyordu — oyuncu merkezden
+    // uzaklaştıkça (ki her zaman öyle) tüm mermiler oluştuğu anda bu aralığın
+    // dışında kalıp SİLİNİYORDU. Yani "ateş kesmişiz" hissi aslında mermilerin
+    // doğar doğmaz görünmeden yok olmasıydı. Artık kameraya göre (oyuncu
+    // merkezli) dünya-uzayı sınırı kullanılıyor.
+    if (b.x < S.camera.x - W / 2 - 40 || b.x > S.camera.x + W / 2 + 40 || b.y < S.camera.y - H / 2 - 40 || b.y > S.camera.y + H / 2 + 40) { S.enemyProjectiles.splice(i, 1); continue; }
+
+    // v0.11: bariyer mermiyi durdurur — bir kare içinde aldığı tüm yolu
+    // (önceki konum → yeni konum) her bariyer kenarına karşı test ediyoruz,
+    // yoksa hızlı mermiler ince duvarı "atlayabilir" (tunneling)
+    // v0.20: "boss mermileri bariyerden etkilenmesin, daha korkunç olsun"
+    // isteğiyle boss'un kendi mermileri (b.fromBoss) bu kontrolden MUAF —
+    // normal düşman mermileri hâlâ bariyerde durduruluyor.
+    let blockedByBarrier = false;
+    if (!b.fromBoss) {
+      for (const bar of S.barriers) {
+        const poly = bar.poly;
+        for (let k = 0; k < poly.length && !blockedByBarrier; k++) {
+          const a = poly[k], c = poly[(k + 1) % poly.length];
+          const hit = segmentsIntersect(px0, py0, b.x, b.y, a.x, a.y, c.x, c.y);
+          if (hit) {
+            blockedByBarrier = true;
+            burst(hit.x, hit.y, CONFIG.loopEdge, 6);
+            blip(240, 0.06, 'square', 0.06, -60);
+          }
+        }
+        if (blockedByBarrier) break;
+      }
+    }
+    if (blockedByBarrier) { S.enemyProjectiles.splice(i, 1); continue; }
+
+    if (S.invuln <= 0) {
+      const d = Math.hypot(b.x - S.player.x, b.y - S.player.y);
+      if (d < b.r + CONFIG.playerRadius) { S.enemyProjectiles.splice(i, 1); damagePlayer(b.dmg); continue; }
+    }
+
+    // v0.20: takip mermisi 2 sn içinde vurmadıysa havada patlıyor — bu andan
+    // sonra HASARSIZ, sadece görsel/sesli bir patlama; "2 sn içinde vurursa
+    // da vurursun" isteğiyle isabet penceresi tam olarak bu süreyle sınırlı.
+    if (b.homing && b.life <= 0) {
+      burst(b.x, b.y, CONFIG.enemyProjectile, 14);
+      blip(160, 0.14, 'square', 0.10, -80);
+      S.enemyProjectiles.splice(i, 1);
+      continue;
+    }
+  }
+
+  // Oyuncu mermileri (auto attack)
+  for (let i = S.playerProjectiles.length - 1; i >= 0; i--) {
+    const b = S.playerProjectiles[i];
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    // v0.14 FIX: bkz. yukarıdaki enemyProjectiles açıklaması — aynı sınırsız-
+    // harita/kamera buğu burada oyuncunun kendi ateşini de anında siliyordu.
+    if (b.x < S.camera.x - W / 2 - 40 || b.x > S.camera.x + W / 2 + 40 || b.y < S.camera.y - H / 2 - 40 || b.y > S.camera.y + H / 2 + 40) { S.playerProjectiles.splice(i, 1); continue; }
+    let hit = false;
+    for (const en of S.enemies) {
+      if (Math.hypot(b.x - en.x, b.y - en.y) < b.r + en.r) {
+        en.hp -= CONFIG.autoAttackDamage; en.hitFlash = 0.1;
+        spawnDmgText(en.x, en.y, CONFIG.autoAttackDamage);
+        if (en.hp <= 0) killEnemy(en);
+        hit = true; break;
+      }
+    }
+    if (hit) S.playerProjectiles.splice(i, 1);
+  }
+
+  if (S.player.hp <= 0) endRun();
+}
+
+function damagePlayer(dmg) {
+  S.player.hp -= dmg;
+  S.invuln = CONFIG.playerInvulnMs;
+  // v0.10: hasar alınca kombo VE ondan gelen geçici iz-uzunluk bonusu anında sıfırlanır
+  if (S.combo > 0) {
+    S.combo = 0;
+    blip(140, 0.16, 'sawtooth', 0.12, -120);
+  }
+  if (S.drawing) cancelLoop('hit');   // hasar alınca çizim iptal olur — risk/ödül
+  burst(S.player.x, S.player.y, CONFIG.player, 10);
+  blip(150, 0.2, 'sawtooth', 0.18, -100);
+  S.hitstop = CONFIG.hitstopBaseMs;
+  S.shake = CONFIG.shakeBase * 1.5;
+  if (S.player.hp <= 0) endRun();
+}
+function endRun() { S.mode = 'over'; S.overT = performance.now(); if (S.wave > S.best) S.best = S.wave; }
+
+/* ============ PARÇACIKLAR (pooled) ============ */
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const p = S.particlePool.pop() || {};
+    const a = Math.random() * Math.PI * 2, sp = 50 + Math.random() * 160;
+    p.x = x; p.y = y; p.vx = Math.cos(a) * sp; p.vy = Math.sin(a) * sp;
+    p.life = 1; p.color = color; p.r = 2 + Math.random() * 3;
+    S.particles.push(p);
+  }
+}
+function burstToward(x, y, tx, ty, color, n) {
+  for (let i = 0; i < n; i++) {
+    const p = S.particlePool.pop() || {};
+    const dx = tx - x, dy = ty - y, d = Math.hypot(dx, dy) || 1;
+    const sp = 80 + Math.random() * 100;
+    p.x = x; p.y = y; p.vx = (dx / d) * sp; p.vy = (dy / d) * sp;
+    p.life = 1; p.color = color; p.r = 2 + Math.random() * 2;
+    S.particles.push(p);
+  }
+}
+function updateParticles(dt) {
+  for (let i = S.particles.length - 1; i >= 0; i--) {
+    const p = S.particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.94; p.vy *= 0.94;
+    p.life -= dt * 2.2;
+    if (p.life <= 0) { S.particlePool.push(p); S.particles.splice(i, 1); }
+  }
+}
+
+/* ============ NEON ÇİZİM YARDIMCILARI ============ */
+function neonDot(x, y, r, color, coreColor, flash) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.32;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x, y, r * 2, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = flash ? '#ffffff' : color;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = flash ? color : (coreColor || '#ffffff');
+  ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// v0.17: art-direction sayfasındaki yön etütlerinin oyuna uygulanmış hâli —
+// önceden her düşman tipi aynı düz daireydi (neonDot), artık şekil davranışı
+// okutuyor: chaser sivri/agresif bir diken, fast ok gibi uzamış ve hareket
+// yönüne bakıyor, ranged altıgen bir "turret" + yavaşça dönen bir çekirdek.
+// Renkler DEĞİŞMEDİ — hâlâ CONFIG.chaser/fast/ranged, sadece siluet değişti.
+function drawChaserShape(en) {
+  const r = en.r, flash = en.hitFlash > 0;
+  // v0.18: "etraflarında daire olmasın" — yumuşak glow halesi kaldırıldı,
+  // sadece keskin siluet kaldı. "büyükler biraz" — ölçek 1.55/0.62 → 1.85/0.72
+  // (SALT görsel büyüme; en.r/çarpışma yarıçapı değişmedi, denge aynı).
+  const outerR = r * 1.85, innerR = r * 0.72;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = flash ? '#ffffff' : CONFIG.chaser;
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (Math.PI / 4) * i - Math.PI / 2;
+    const rad = (i % 2 === 0) ? outerR : innerR;
+    const px = en.x + Math.cos(a) * rad, py = en.y + Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = flash ? CONFIG.chaser : CONFIG.chaserCore;
+  ctx.beginPath(); ctx.arc(en.x, en.y, r * 0.46, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawFastShape(en) {
+  const r = en.r, flash = en.hitFlash > 0;
+  const dx = S.player.x - en.x, dy = S.player.y - en.y;
+  const ang = Math.atan2(dy, dx);
+  ctx.save();
+  ctx.translate(en.x, en.y);
+  ctx.rotate(ang);
+  ctx.globalCompositeOperation = 'lighter';
+  // v0.18: glow halesi kaldırıldı, ok biraz büyütüldü (salt görsel — en.r/
+  // çarpışma yarıçapı aynı, denge değişmedi)
+  ctx.fillStyle = flash ? '#ffffff' : CONFIG.fast;
+  ctx.beginPath();
+  ctx.moveTo(r * 2.0, 0);
+  ctx.lineTo(-r * 1.05, r * 1.25);
+  ctx.lineTo(-r * 0.4, 0);
+  ctx.lineTo(-r * 1.05, -r * 1.25);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = flash ? CONFIG.fast : CONFIG.fastCore;
+  ctx.beginPath();
+  ctx.moveTo(r * 0.65, 0);
+  ctx.lineTo(-r * 0.52, r * 0.52);
+  ctx.lineTo(-r * 0.18, 0);
+  ctx.lineTo(-r * 0.52, -r * 0.52);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawRangedShape(en, tNow) {
+  const r = en.r, flash = en.hitFlash > 0;
+  // v0.18: glow halesi kaldırıldı, altıgen biraz büyütüldü (salt görsel —
+  // en.r/çarpışma yarıçapı aynı, denge değişmedi)
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = flash ? '#ffffff' : CONFIG.ranged;
+  ctx.lineWidth = Math.max(2, r * 0.24);
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 2;
+    const px = en.x + Math.cos(a) * r * 1.55, py = en.y + Math.sin(a) * r * 1.55;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = flash ? CONFIG.ranged : CONFIG.rangedCore;
+  ctx.beginPath(); ctx.arc(en.x, en.y, r * 0.46, 0, Math.PI * 2); ctx.fill();
+  // salt görsel, dönen bir çekirdek noktası — gameplay'e etkisi yok
+  const spin = tNow * 0.0016 + en.x * 0.01;
+  const ox = en.x + Math.cos(spin) * r * 0.9, oy = en.y + Math.sin(spin) * r * 0.9;
+  ctx.fillStyle = flash ? '#ffffff' : CONFIG.ranged;
+  ctx.beginPath(); ctx.arc(ox, oy, r * 0.26, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// v0.19: Boss silueti — chaser ailesinden (aynı renk CONFIG.chaser, yeni renk
+// EKLENMEDİ) ama büyük, 12 köşeli yavaşça dönen bir "kristal", çekirdek
+// CONFIG.hpBad (tehlike kırmızısı, zaten var olan palet). 'telegraph' fazında
+// (saldırı gelmeden ~450-550ms önce) kırmızı büyüyen bir uyarı halkası
+// nabız gibi parlıyor — "kaçma zamanı" sinyali, salt görsel/fair-telegraph.
+function drawBossShape(en, tNow) {
+  const r = en.r, flash = en.hitFlash > 0;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  if (en.phase === 'telegraph') {
+    const warnT = 1 - en.telegraphTimer / bossTelegraphMsFor(en.nextAttack);
+    ctx.globalAlpha = 0.45 + 0.35 * Math.sin(tNow * 0.02);
+    ctx.strokeStyle = CONFIG.hpBad;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(en.x, en.y, r * (1.6 + warnT * 1.3), 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  const spin = tNow * 0.0006;
+  const spikes = 12;
+  ctx.fillStyle = flash ? '#ffffff' : CONFIG.chaser;
+  ctx.beginPath();
+  for (let i = 0; i < spikes; i++) {
+    const a = (Math.PI * 2 / spikes) * i + spin;
+    const rad = (i % 2 === 0) ? r * 1.35 : r * 0.95;
+    const px = en.x + Math.cos(a) * rad, py = en.y + Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = flash ? CONFIG.chaser : CONFIG.hpBad;
+  ctx.beginPath(); ctx.arc(en.x, en.y, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPlayerShape(tNow) {
+  const p = S.player, r = CONFIG.playerRadius;
+  const speed = Math.hypot(p.vx, p.vy);
+  const ang = speed > 5 ? Math.atan2(p.vy, p.vx) : (S.lastMoveAngle || 0);
+  if (speed > 5) S.lastMoveAngle = ang;
+  // kuyruk — hızlandıkça uzayan, yavaşladıkça kısalan yumuşak bir "kuyruklu
+  // yıldız" izi (art-direction sayfasındaki A yönü: en garanti/en okunaklı seçenek)
+  const tailLen = Math.min(r * 3.2, r * 0.8 + speed * 0.055);
+  if (tailLen > r * 0.6) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(ang);
+    ctx.globalCompositeOperation = 'lighter';
+    const grad = ctx.createLinearGradient(-tailLen, 0, 0, 0);
+    grad.addColorStop(0, 'rgba(125,252,255,0)');
+    grad.addColorStop(1, 'rgba(125,252,255,0.5)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(-tailLen, 0);
+    ctx.quadraticCurveTo(-tailLen * 0.35, r * 0.5, 0, r * 0.4);
+    ctx.lineTo(0, -r * 0.4);
+    ctx.quadraticCurveTo(-tailLen * 0.35, -r * 0.5, -tailLen, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  neonDot(p.x, p.y, r, CONFIG.player, '#ffffff', false);
+}
+
+// v0.13: Arkaplan deseni — sınırsız dünyada "hareket ediyorum" hissi versin
+// diye kamerayla birlikte kayan, çok düşük alfalı bir nokta-grid. DÜNYA
+// koordinatında çiziliyor (render()'daki kamera translate'i içinde
+// çağrılıyor) — bu yüzden ekrana göre değil, dünyaya göre sabit kalıyor,
+// kamera hareket ettikçe doğal olarak kayıyormuş gibi görünüyor. Deseni
+// göz yormasın diye sadece kamboyanın görünür olduğu alanı (ekran + küçük
+// bir tampon) kapsayacak kadar çiziyoruz, sonsuz alanı değil.
+function drawBackgroundPattern() {
+  const cell = CONFIG.bgGridCellPx;
+  const pad = cell; // görünür alanın biraz dışını da kapla ki kenardan kesik görünmesin
+  const minX = Math.floor((S.camera.x - W / 2 - pad) / cell) * cell;
+  const maxX = S.camera.x + W / 2 + pad;
+  const minY = Math.floor((S.camera.y - H / 2 - pad) / cell) * cell;
+  const maxY = S.camera.y + H / 2 + pad;
+  ctx.save();
+  ctx.fillStyle = CONFIG.bgGridDotColor;
+  for (let y = minY; y <= maxY; y += cell) {
+    for (let x = minX; x <= maxX; x += cell) {
+      ctx.beginPath();
+      ctx.arc(x, y, CONFIG.bgGridDotRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/* ============ RENDER ============ */
+function render() {
+  ctx.save();
+  if (S.shake > 0) ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake);
+
+  ctx.fillStyle = CONFIG.bg;
+  ctx.fillRect(-20, -20, W + 40, H + 40);
+
+  // v0.13: DÜNYA UZAYI bloğu başlıyor — kamera oyuncuyu ekran merkezinde
+  // tutacak şekilde tek bir translate uyguluyoruz; bundan sonraki tüm
+  // çizimler (arkaplan deseni, ilmek, bariyer, düşman, mermi, parçacık,
+  // oyuncu, hasar sayıları) DÜNYA koordinatlarını kullanabilir — ekran
+  // dönüşümünü ayrıca hesaplamaya gerek yok. HUD ve overlay'ler bu
+  // translate'in DIŞINDA kalıyor (aşağıda ctx.restore() ile kapatılıyor),
+  // yani her zaman ekrana sabit.
+  ctx.save();
+  const camOffX = W / 2 - S.camera.x, camOffY = H / 2 - S.camera.y;
+  ctx.translate(camOffX, camOffY);
+
+  drawBackgroundPattern();
+
+  // v0.19: Boss arenası — sınırsız dünyanın TEK istisnası, boss karşılaşması
+  // sırasında oyuncu/boss'u sınırlayan çemberi (bkz. S.bossArena,
+  // clampToBossArena) ince kırmızımsı (CONFIG.hpBad, yeni renk YOK) bir
+  // halka olarak gösteriyor ki oyuncu "burada bir sınır var" hissetsin.
+  if (S.bossArena) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = CONFIG.hpBad;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([14, 10]);
+    ctx.beginPath(); ctx.arc(S.bossArena.x, S.bossArena.y, S.bossArena.r, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // Kapanan ilmek — kısa süreliğine dolu neon
+  if (S.loopFlash) {
+    const t = 1 - S.loopFlash.t / S.loopFlash.life;
+    const poly = S.loopFlash.poly;
+    ctx.save();
+    ctx.globalAlpha = 0.5 * t;
+    ctx.fillStyle = CONFIG.loopFill;
+    ctx.beginPath();
+    ctx.moveTo(poly[0].x, poly[0].y);
+    for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i].x, poly[i].y);
+    ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = CONFIG.loopEdge; ctx.globalAlpha = 0.9 * t;
+    ctx.stroke();
+
+    // v0.7: Electric Border aktifse, kapanan ilmeğin ETRAFINDA (poligonun
+    // her kenarından borderR kadar dışarıda) ikinci, daha soluk bir kontur
+    // çizilir — oyuncu yükseltme seviyesi arttıkça bu ikinci hattın
+    // gerçekten uzaklaştığını görsün. Tam poligon offseti karmaşık olduğu
+    // için basit bir yaklaşım kullanıyoruz: her köşe noktasından merkeze
+    // uzaklaştırma yönünde borderR kadar öteleyip aynı sırayla birleştiriyoruz
+    // — jam prototipi için yeterince doğru bir görsel yaklaşıklık.
+    if (S.loopFlash.borderR > 0) {
+      const c = polygonCentroid(poly);
+      ctx.beginPath();
+      for (let i = 0; i < poly.length; i++) {
+        const p = poly[i];
+        const dx = p.x - c.x, dy = p.y - c.y, d = Math.hypot(dx, dy) || 1;
+        const ox = p.x + (dx / d) * S.loopFlash.borderR;
+        const oy = p.y + (dy / d) * S.loopFlash.borderR;
+        if (i === 0) ctx.moveTo(ox, oy); else ctx.lineTo(ox, oy);
+      }
+      ctx.closePath();
+      ctx.setLineDash([6, 6]);
+      ctx.lineWidth = 2; ctx.strokeStyle = CONFIG.electricBorderSpark; ctx.globalAlpha = 0.55 * t;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+
+  // v0.11: Aktif bariyerler — kapanan ilmek şekli birkaç saniye yerde kalıp
+  // düşmanları geçirmiyor. Ömrünün son %25'inde yanıp sönerek kaybolacağını
+  // haber verir.
+  for (const b of S.barriers) {
+    const lifeFrac = clamp(1 - b.t / b.life, 0, 1);
+    let alpha = 0.2 + 0.5 * lifeFrac;
+    if (lifeFrac < 0.25) alpha *= (Math.sin(b.t * 30) > 0) ? 1 : 0.2;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = CONFIG.loopEdge;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(b.poly[0].x, b.poly[0].y);
+    for (let i = 1; i < b.poly.length; i++) ctx.lineTo(b.poly[i].x, b.poly[i].y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // v0.15 (deneme): parmak bırakınca kesilen ama KAPANMAMIŞ izlerin görsel
+  // kalıntısı — bariyerden farklı, hasar/engel YOK, sadece sönerek kaybolan
+  // AÇIK bir çizgi (closePath yok, bilerek).
+  for (const ghost of S.deadTrails) {
+    const pts = ghost.points;
+    if (pts.length < 2) continue;
+    const lifeFrac = clamp(1 - ghost.t / ghost.life, 0, 1);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = CONFIG.trail;
+    ctx.globalAlpha = 0.5 * lifeFrac;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Aktif çizim izi
+  if (S.drawing && S.drawing.points.length > 1) {
+    const pts = S.drawing.points;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = CONFIG.trail;
+    ctx.globalAlpha = 0.35; ctx.lineWidth = 14;
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.globalAlpha = 0.95; ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.restore();
+
+    // v0.5: kapanma artık izin HERHANGİ bir noktasına değince olabildiği
+    // için vurgu da sabit başlangıç yerine "şu an kapanacak nokta"da
+    // gösteriliyor — o noktaya yaklaşınca beyaza dönüp kalınlaşıyor.
+    const minLenViz = playerWidth() * CONFIG.minLoopLengthMult;
+    const closeR = playerWidth() * CONFIG.closeRadiusMult;
+    if (S.drawing.pathLength >= minLenViz) {
+      const warnIdx = findSelfTouchIndex(minLenViz, closeR * 2.2);
+      if (warnIdx >= 0) {
+        const touchPt = S.drawing.points[warnIdx];
+        const veryClose = findSelfTouchIndex(minLenViz, closeR) >= 0;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = veryClose ? '#ffffff' : CONFIG.trail;
+        ctx.globalAlpha = veryClose ? 0.9 : 0.4;
+        ctx.lineWidth = veryClose ? 3 : 2;
+        ctx.beginPath(); ctx.arc(touchPt.x, touchPt.y, closeR, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  // Düşmanlar — v0.17: tipe özgü siluetler (art-direction sayfasındaki yön)
+  const tNow = performance.now();
+  for (const en of S.enemies) {
+    if (en.type === 'chaser') drawChaserShape(en);
+    else if (en.type === 'fast') drawFastShape(en);
+    else if (en.type === 'ranged') drawRangedShape(en, tNow);
+    else if (en.type === 'boss') drawBossShape(en, tNow);
+  }
+
+  // Mermiler
+  // v0.20: takip eden (homing) mermi ayırt edilsin diye tehlike kırmızısıyla
+  // (CONFIG.hpBad) çiziliyor — oyuncu "bu düz gitmiyor, beni takip ediyor"
+  // sinyalini görsel olarak da alsın (fair-play okunaklılık).
+  for (const b of S.enemyProjectiles) {
+    if (b.homing) neonDot(b.x, b.y, b.r, CONFIG.hpBad, '#ffffff');
+    else neonDot(b.x, b.y, b.r, CONFIG.enemyProjectile, '#f5e9ff');
+  }
+  for (const b of S.playerProjectiles) neonDot(b.x, b.y, b.r, CONFIG.playerProjectile, '#ffffff');
+
+  // Parçacıklar
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of S.particles) {
+    ctx.globalAlpha = Math.max(0, p.life) * 0.9;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // Oyuncu — v0.17: kuyruklu-yıldız siluet (art-direction sayfasındaki A yönü)
+  if (S.mode !== 'over') {
+    const flashing = S.invuln > 0 && Math.floor(S.invuln / 80) % 2 === 0;
+    if (!flashing) drawPlayerShape(tNow);
+  }
+
+  // Hasar sayıları
+  ctx.textAlign = 'center';
+  for (const t of S.dmgTexts) {
+    ctx.globalAlpha = Math.max(0, t.life);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 14px system-ui, sans-serif';
+    ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // v0.13: DÜNYA UZAYI bloğu bitiyor — bundan sonrası tekrar ekran-sabit
+  // (kameradan bağımsız) çiziliyor: girdi görselleri, HUD, overlay'ler.
+  ctx.restore();
+
+  // Girdi görselleri — fare ve dokunmatik zaten ekran/istemci koordinatında
+  // geldiği için (e.clientX/Y) kamera dönüşümüne ihtiyaç duymaz.
+  const usingMouse = mouse.active && touches.size === 0;
+
+  if (S.mouseTargetVisual) {
+    ctx.save();
+    ctx.strokeStyle = mouse.rightDown ? CONFIG.trail : 'rgba(255,255,255,0.4)';
+    ctx.globalAlpha = mouse.rightDown ? 0.9 : 0.5;
+    ctx.lineWidth = mouse.rightDown ? 2.5 : 1.5;
+    ctx.beginPath(); ctx.arc(S.mouseTargetVisual.x, S.mouseTargetVisual.y, 10, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+  if (S.mode === 'play' && usingMouse) {
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = CONFIG.text; ctx.font = '600 11px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('SAĞ TIK BASILI TUT: ÇİZ', W / 2, H - 16);
+    ctx.restore();
+  }
+  if (S.touchTargetVisual) {
+    // v0.13: gerçek bir dinamik joystick görseli — sabit taban halkası
+    // (originX,originY'de, joystickRadius büyüklüğünde) + parmağın klemplenmiş
+    // konumundaki dolu "stick" noktası. Stick, joystickRadius'u aşamaz.
+    const tv = S.touchTargetVisual;
+    const dx = tv.curX - tv.originX, dy = tv.curY - tv.originY;
+    const d = Math.hypot(dx, dy) || 1;
+    const cl = Math.min(d, CONFIG.joystickRadius);
+    const stickX = tv.originX + (dx / d) * cl;
+    const stickY = tv.originY + (dy / d) * cl;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(tv.originX, tv.originY, CONFIG.joystickRadius, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = CONFIG.trail;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.arc(stickX, stickY, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  renderHUD();
+
+  if (S.mode === 'menu') overlay('NEONLOOP', 'DÜŞMANI ÇEMBERE AL — İLMEĞİ KAPAT', 'BAŞLA: FARE/DOKUN VEYA WASD+SPACE');
+  else if (S.mode === 'over') overlay('TUR BİTTİ', 'ulaşılan dalga ' + S.wave + '   en iyi ' + S.best, 'TEKRAR İÇİN DOKUN');
+  else if (S.mode === 'upgrade') renderUpgradeScreen();
+
+  ctx.restore();
+}
+
+// v0.17: köşeleri yuvarlanmış dikdörtgen — ctx.roundRect tarayıcıda yoksa
+// (eski mobil tarayıcılar) düz dikdörtgene düşer, hiç patlamaz.
+function roundRectPath(x, y, w, h, rad) {
+  if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, w, h, rad); return; }
+  ctx.beginPath(); ctx.rect(x, y, w, h);
+}
+
+function renderHUD() {
+  if (S.mode === 'menu') return;
+  // HP bar — v0.17: yuvarlak köşe + neon glow dolgu (art-direction sayfasındaki HUD etüdü)
+  const hpW = 160, hpH = 14, hx = 14, hy = 16;
+  roundRectPath(hx, hy, hpW, hpH, 7);
+  ctx.fillStyle = 'rgba(255,77,109,0.14)'; ctx.fill();
+  const hpFrac = Math.max(0, S.player.hp / CONFIG.playerMaxHP);
+  if (hpFrac > 0) {
+    ctx.save();
+    roundRectPath(hx, hy, hpW, hpH, 7);
+    ctx.clip(); // dolgu da aynı yuvarlak köşeyi takip etsin
+    ctx.shadowColor = hpFrac > 0.3 ? CONFIG.hpGood : CONFIG.hpBad;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = hpFrac > 0.3 ? CONFIG.hpGood : CONFIG.hpBad;
+    ctx.fillRect(hx, hy, hpW * hpFrac, hpH);
+    ctx.restore();
+  }
+  roundRectPath(hx, hy, hpW, hpH, 7);
+  ctx.strokeStyle = hpFrac > 0.3 ? 'rgba(125,252,255,0.35)' : 'rgba(255,77,109,0.45)';
+  ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = CONFIG.text; ctx.font = '700 11px system-ui, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(Math.max(0, Math.round(S.player.hp)) + '/' + CONFIG.playerMaxHP, hx + 4, hy + hpH + 13);
+
+  // Dalga + düşman sayısı
+  ctx.textAlign = 'right';
+  ctx.font = '700 16px system-ui, sans-serif';
+  ctx.fillText('DALGA ' + S.wave, W - 14, 26);
+  ctx.font = '500 12px system-ui, sans-serif';
+  ctx.fillText(S.enemies.length + ' düşman', W - 14, 44);
+
+  // v0.19: Boss can barı — ekranın üst-ortasında, sadece boss hayattayken
+  // görünür. Ayrı bir bar çünkü boss HP'si oyuncu HP'sinden çok daha büyük
+  // (900+) ve oyuncunun "ne kadar kaldı" diye takip edebilmesi önemli.
+  const boss = S.enemies.find(e => e.type === 'boss');
+  if (boss) {
+    const bw = Math.min(260, W - 40), bh = 12, bx = W / 2 - bw / 2, by = 14;
+    roundRectPath(bx, by, bw, bh, 6);
+    ctx.fillStyle = 'rgba(255,77,109,0.16)'; ctx.fill();
+    const bFrac = Math.max(0, boss.hp / boss.maxHp);
+    if (bFrac > 0) {
+      ctx.save();
+      roundRectPath(bx, by, bw, bh, 6);
+      ctx.clip();
+      ctx.shadowColor = CONFIG.hpBad; ctx.shadowBlur = 8;
+      ctx.fillStyle = CONFIG.hpBad;
+      ctx.fillRect(bx, by, bw * bFrac, bh);
+      ctx.restore();
+    }
+    roundRectPath(bx, by, bw, bh, 6);
+    ctx.strokeStyle = 'rgba(255,77,109,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.textAlign = 'center'; ctx.fillStyle = CONFIG.text;
+    ctx.font = '800 12px system-ui, sans-serif';
+    ctx.fillText('BOSS', W / 2, by + bh + 15);
+  }
+
+  // v0.10: Kombo göstergesi — izin ne kadar geçici bonus uzunluk kazandığını
+  // gösterir; hasar alınca bu satır kaybolur (kombo 0'a döndüğü için)
+  if (S.combo > 0) {
+    // v0.17: düz metin yerine parlayan bir "chip" — art-direction sayfasındaki KOMBO rozeti
+    ctx.font = '800 13px system-ui, sans-serif';
+    const label = 'KOMBO x' + S.combo;
+    const tw = ctx.measureText(label).width;
+    const chipW = tw + 22, chipH = 22, chipX = W - 14 - chipW, chipY = 52;
+    roundRectPath(chipX, chipY, chipW, chipH, chipH / 2);
+    ctx.save();
+    ctx.shadowColor = CONFIG.fast; ctx.shadowBlur = 10;
+    ctx.fillStyle = CONFIG.fast;
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#1a1206';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, chipX + chipW / 2, chipY + 15);
+    ctx.textAlign = 'right';
+  }
+
+  // Çizim durumu + iz limiti göstergesi (limit dolunca ilmek otomatik iptal olur)
+  if (S.drawing) {
+    ctx.textAlign = 'center'; ctx.fillStyle = CONFIG.trail;
+    ctx.font = '800 13px system-ui, sans-serif';
+    ctx.fillText('ÇİZİYORSUN', W / 2, 26);
+
+    const frac = clamp(S.drawing.pathLength / effectiveMaxLoopLength(), 0, 1);
+    const barW = 120, barX = W / 2 - barW / 2, barY = 32;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(barX, barY, barW, 4);
+    ctx.fillStyle = frac > 0.85 ? CONFIG.hpBad : CONFIG.trail;
+    ctx.fillRect(barX, barY, barW * frac, 4);
+  }
+
+  // Aktif yükseltmeler (kısa liste) — v0.7: Electric Border artık güncel
+  // menzilini (px) de gösteriyor, seviye arttıkça oyuncu sayının büyüdüğünü
+  // görsün (eski buğda bu hep aynı kalıyordu).
+  const active = Object.entries(S.upgrades).filter(([, v]) => v > 0);
+  if (active.length) {
+    ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(234,246,255,0.7)';
+    ctx.font = '600 10px system-ui, sans-serif';
+    const label = active.map(([k, v]) => {
+      if (k === 'electricBorder') {
+        return shortUpgradeName(k) + ' x' + v + ' (' + Math.round(electricBorderRadius()) + 'px)';
+      }
+      return shortUpgradeName(k) + (v > 1 ? ' x' + v : '');
+    }).join('   ');
+    ctx.fillText(label, hx, hy + hpH + 30);
+  }
+}
+function shortUpgradeName(id) {
+  return { fillDamage: 'Fill+', burningFill: 'Burn', freezeFill: 'Freeze', electricBorder: 'E.Border', healFill: 'Heal', biggerMultiplier: 'BigMult' }[id] || id;
+}
+
+function overlay(title, sub, cta) {
+  ctx.fillStyle = 'rgba(3,5,10,0.78)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  // v0.17: başlığa hafif bir neon glow — art-direction sayfasının başlık tedavisiyle tutarlı
+  ctx.save();
+  ctx.shadowColor = CONFIG.trail; ctx.shadowBlur = 18;
+  ctx.fillStyle = CONFIG.text;
+  ctx.font = '800 32px system-ui, sans-serif'; ctx.fillText(title, W / 2, H * 0.38);
+  ctx.restore();
+  ctx.fillStyle = CONFIG.text;
+  ctx.font = '500 14px system-ui, sans-serif'; ctx.fillText(sub, W / 2, H * 0.38 + 30);
+  ctx.font = '700 14px system-ui, sans-serif'; ctx.fillText(cta, W / 2, H * 0.58);
+}
+
+function renderUpgradeScreen() {
+  ctx.fillStyle = 'rgba(3,5,10,0.85)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = CONFIG.text; ctx.textAlign = 'center';
+  ctx.font = '800 22px system-ui, sans-serif';
+  ctx.fillText('DALGA ' + S.wave + ' TAMAMLANDI', W / 2, H / 2 - 130);
+  ctx.font = '500 13px system-ui, sans-serif';
+  ctx.fillText('BİR YÜKSELTME SEÇ', W / 2, H / 2 - 105);
+
+  // v0.17: art-direction sayfasındaki yükseltme kartı yönü — ince çerçeve,
+  // az dolgu, sol tarafta parlayan bir "kimlik" rozeti + sağda isim/açıklama
+  // (önceki hâli düz bir dikdörtgen + ortalı metindi)
+  for (const r of upgradeButtonRects()) {
+    const accent = UPGRADE_ACCENT[r.upgrade.id] || CONFIG.trail;
+    roundRectPath(r.x, r.y, r.w, r.h, 10);
+    ctx.fillStyle = 'rgba(125,252,255,0.05)';
+    ctx.fill();
+    roundRectPath(r.x, r.y, r.w, r.h, 10);
+    ctx.strokeStyle = 'rgba(125,252,255,0.28)'; ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const badgeR = 15, badgeCx = r.x + 28, badgeCy = r.y + r.h / 2;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.arc(badgeCx, badgeCy, badgeR * 1.7, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    const textX = r.x + 52;
+    ctx.fillStyle = CONFIG.text; ctx.textAlign = 'left';
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText(r.upgrade.name, textX, r.y + r.h / 2 - 6);
+    ctx.font = '500 11px system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(234,246,255,0.65)';
+    ctx.fillText(r.upgrade.desc, textX, r.y + r.h / 2 + 13, r.w - (textX - r.x) - 12);
+    ctx.textAlign = 'center';
+  }
+}
+
+/* ============ YARDIMCILAR ============ */
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function moveToward(cur, target, maxDelta) {
+  if (Math.abs(target - cur) <= maxDelta) return target;
+  return cur + Math.sign(target - cur) * maxDelta;
+}
+
+/* ============ DÖNGÜ & BAŞLAT ============ */
+let paused = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { paused = true; if (audioCtx) audioCtx.suspend(); }
+  else { paused = false; last = performance.now(); if (audioCtx) audioCtx.resume(); }
+});
+
+const STEP = 1000 / 60;
+let last = performance.now(), acc = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (paused) return;
+  let dt = now - last; last = now;
+  if (dt > 250) dt = 250;
+  acc += dt;
+  while (acc >= STEP) { update(STEP / 1000); acc -= STEP; }
+  render();
+}
+
+resizeCanvas();
+resetGame();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
