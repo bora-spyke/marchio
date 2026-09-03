@@ -1,0 +1,137 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e600db70d2c7b453cb7c64e8d0e6f910, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: Marchio::Marchio.GameConfig
+  referenceHeightPx: 844
+  playerRadius: 15
+  playerMaxHP: 100
+  playerSpeed: 320
+  playerAccel: 2300
+  playerDecel: 2900
+  playerInvulnMs: 500
+  playerContactDamage: 10
+  trailMinDist: 7
+  minLoopLengthMult: 3
+  closeRadiusMult: 0.5
+  loopFlashMs: 380
+  maxLoopLengthMult: 18.4
+  loopGrowthXPStep: 3
+  loopGrowthPct: 0.06
+  maxLoopLengthGrowthCapMult: 2
+  loopGrowthXPChaser: 1
+  loopGrowthXPFast: 1
+  loopGrowthXPRanged: 2
+  comboLoopLengthStep: 0.1
+  comboLoopLengthCapBonus: 1.5
+  barrierDurationMs: 3000
+  barrierDps: 30
+  deadTrailMs: 2500
+  touchAutoResumeMs: 1000
+  joystickRadius: 60
+  joystickDeadzone: 4
+  mouseFollowSlowRadius: 80
+  baseLoopDamage: 25
+  areaSmallMaxPx2: 9000
+  areaMediumMaxPx2: 25000
+  areaMultSmall: 1
+  areaMultMedium: 1.5
+  areaMultLarge: 2
+  multiKillThreshold1: 3
+  multiKillBonus1: 0.25
+  multiKillThreshold2: 5
+  multiKillBonus2: 0.5
+  electricBorderRadius: 42
+  electricBorderRadiusStep: 15
+  electricBorderDamageMult: 0.5
+  fillDamagePerLevel: 0.3
+  burnDpsPerLevel: 5
+  burnDurationS: 3
+  freezeDurationS: 2
+  freezeSlowFactor: 0.5
+  healPerLevel: 5
+  biggerMultiplierPerLevel: 0.5
+  autoAttackCooldownMs: 450
+  autoAttackDamage: 13
+  autoAttackProjectileSpeed: 340
+  chaserHP: 50
+  chaserSpeed: 90
+  chaserR: 14
+  chaserFireIntervalMs: 1900
+  chaserProjectileSpeed: 130
+  chaserProjectileDamage: 5
+  chaserFireMinDist: 70
+  fastHP: 30
+  fastSpeed: 150
+  fastR: 12
+  fastFireIntervalMs: 1700
+  fastProjectileSpeed: 150
+  fastProjectileDamage: 5
+  fastFireMinDist: 70
+  rangedHP: 60
+  rangedSpeed: 60
+  rangedR: 15
+  rangedPreferredDist: 190
+  rangedFireIntervalMs: 1400
+  rangedProjectileSpeed: 150
+  rangedProjectileDamage: 8
+  waveHpScalePerWave: 0.06
+  waveClearDelayMs: 1000
+  enemySpawnStaggerMs: 160
+  enemySteerJitterRad: 0.4
+  enemySpeedVariance: 0.2
+  rangedPreferredDistJitter: 40
+  enemySeparationForce: 220
+  spawnPadPx: 34
+  upgradeEveryNWaves: 3
+  bossWave: 3
+  bossHP: 1300
+  bossR: 34
+  bossSpeed: 70
+  bossContactDamage: 18
+  bossDashContactDamage: 30
+  bossAttackCooldownMs: 2200
+  bossDashTelegraphMs: 550
+  bossDashSpeed: 480
+  bossDashDurationMs: 450
+  bossBurstTelegraphMs: 450
+  bossBurstCount: 12
+  bossBurstProjSpeed: 170
+  bossBurstProjDamage: 16
+  bossBurstRecoverMs: 300
+  bossHomingTelegraphMs: 500
+  bossHomingSpeed: 210
+  bossHomingTurnRate: 2.6
+  bossHomingDamage: 16
+  bossHomingLifeS: 2
+  bossHomingRecoverMs: 350
+  bossArenaRadius: 820
+  enemyProjectileRadius: 5
+  playerProjectileRadius: 4
+  bossBurstProjectileRadius: 6
+  bossHomingProjectileRadius: 7
+  projectileDespawnPadPx: 40
+  hitstopBaseMs: 50
+  shakeBase: 3
+  bg: {r: 0.019607844, g: 0.02745098, b: 0.050980393, a: 1}
+  player: {r: 0.3019608, g: 0.8901961, b: 1, a: 1}
+  trail: {r: 0.49019608, g: 0.9882353, b: 1, a: 1}
+  loopFill: {r: 0.49019608, g: 0.9882353, b: 1, a: 0.22}
+  loopEdge: {r: 0.49019608, g: 0.9882353, b: 1, a: 1}
+  chaser: {r: 1, g: 0.18039216, b: 0.53333336, a: 1}
+  fast: {r: 1, g: 0.6901961, b: 0.1254902, a: 1}
+  ranged: {r: 0.627451, g: 0.41960785, b: 1, a: 1}
+  enemyProjectile: {r: 0.7882353, g: 0.54509807, b: 1, a: 1}
+  playerProjectile: {r: 0.3019608, g: 0.8901961, b: 1, a: 1}
+  electricBorderSpark: {r: 1, g: 0.9490196, b: 0.65882355, a: 1}
+  hpBad: {r: 1, g: 0.3019608, b: 0.42745098, a: 1}
+  telegraph: {r: 1, g: 0.3019608, b: 0.42745098, a: 1}
