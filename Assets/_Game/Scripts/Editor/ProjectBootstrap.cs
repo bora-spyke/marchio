@@ -404,6 +404,7 @@ namespace Marchio.Editor
             urpCam.renderPostProcessing = false;
             var rig = camGo.AddComponent<CameraRig>();
             BuildGround(cfg);
+            BuildShade(camGo.transform);
 
             var game = new GameObject("Game");
             var gm = game.AddComponent<GameManager>();
@@ -504,6 +505,20 @@ namespace Marchio.Editor
             var tiler = go.AddComponent<GroundTiler>();
             Set(tiler, "material", mat);
             return tiler;
+        }
+
+        public static void BuildShade(Transform camera)
+        {
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Textures/shdw.png");
+            var go = new GameObject("CameraShade");
+            go.transform.SetParent(camera, false);
+            go.transform.localPosition = new Vector3(0f, -42f, 784f);
+            go.transform.localRotation = Quaternion.Euler(25f, 0f, 0f);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.drawMode = SpriteDrawMode.Sliced;
+            sr.size = new Vector2(600f, 600f);
+            go.AddComponent<CameraShade>();
         }
 
         public static void MakeTransparent(Material mat)
