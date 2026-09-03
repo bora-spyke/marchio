@@ -115,7 +115,7 @@ namespace Marchio
 
             if (Mode != GameMode.Play) return;
 
-            var inp = input.Read(dt, player.Pos);
+            var inp = input.Read(dt);
             player.Tick(dt, inp);
             trail.Tick(dt, inp.Draw);
             autoAttack.Tick(dt);

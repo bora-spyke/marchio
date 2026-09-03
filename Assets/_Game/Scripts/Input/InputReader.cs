@@ -15,6 +15,8 @@ namespace Marchio
         bool wasTouching;
         bool touchEngaged;
         Vector2 lastTouchMove;
+        Vector2 mouseOrigin;
+        bool mouseHeld;
 
         public Vector2 JoystickOrigin { get; private set; }
         public Vector2 JoystickCurrent { get; private set; }
@@ -26,10 +28,34 @@ namespace Marchio
             wasTouching = false;
             touchEngaged = false;
             lastTouchMove = Vector2.zero;
+            mouseHeld = false;
             JoystickVisible = false;
         }
 
-        public InputFrame Read(float dt, Vector2 playerPos)
+        bool TryReadPointer(out Vector2 origin, out Vector2 current)
+        {
+            var touch = Touchscreen.current?.primaryTouch;
+            if (touch != null && touch.press.isPressed)
+            {
+                origin = touch.startPosition.ReadValue();
+                current = touch.position.ReadValue();
+                return true;
+            }
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.leftButton.isPressed)
+            {
+                current = mouse.position.ReadValue();
+                if (mouse.leftButton.wasPressedThisFrame || !mouseHeld) mouseOrigin = current;
+                mouseHeld = true;
+                origin = mouseOrigin;
+                return true;
+            }
+            mouseHeld = false;
+            origin = current = Vector2.zero;
+            return false;
+        }
+
+        public InputFrame Read(float dt)
         {
             var cfg = GameManager.I.Config;
             var move = Vector2.zero;
@@ -48,20 +74,14 @@ namespace Marchio
             if (usingKeyboard) move.Normalize();
 
             JoystickVisible = false;
-            bool usingTouch = false;
-            var ts = Touchscreen.current;
-            var touch = ts != null ? ts.primaryTouch : null;
-            bool touching = touch != null && touch.press.isPressed;
+            bool pointerDown = TryReadPointer(out var origin, out var current);
 
-            if (!usingKeyboard && touching)
+            if (!usingKeyboard && pointerDown)
             {
-                usingTouch = true;
                 touchEngaged = true;
                 if (!wasTouching) touchAutoResumeLeft = 0f;
                 wasTouching = true;
-                Vector2 origin = touch.startPosition.ReadValue();
-                Vector2 cur = touch.position.ReadValue();
-                var delta = cur - origin;
+                var delta = current - origin;
                 float d = delta.magnitude;
                 if (d > cfg.joystickDeadzone)
                 {
@@ -70,7 +90,7 @@ namespace Marchio
                 }
                 lastTouchMove = move;
                 JoystickOrigin = origin;
-                JoystickCurrent = cur;
+                JoystickCurrent = current;
                 JoystickVisible = true;
                 draw = true;
             }
@@ -91,21 +111,6 @@ namespace Marchio
                     draw = true;
                 }
             }
-
-            var mouse = Mouse.current;
-            bool touchWaiting = touchEngaged && touchAutoResumeLeft > 0f;
-            if (!usingKeyboard && !usingTouch && !touchWaiting && mouse != null && !touchEngaged)
-            {
-                var target = GameManager.I.Cam.ScreenToPlane(mouse.position.ReadValue());
-                var delta = target - playerPos;
-                float d = delta.magnitude;
-                if (d > 4f)
-                {
-                    float t = Mathf.Clamp01(d / cfg.mouseFollowSlowRadius);
-                    move = delta / d * t;
-                }
-            }
-            if (mouse != null && mouse.rightButton.isPressed) draw = true;
 
             return new InputFrame
             {

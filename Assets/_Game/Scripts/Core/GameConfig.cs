@@ -41,7 +41,7 @@ namespace Marchio
         public float touchAutoResumeMs = 1000f;
         public float joystickRadius = 60f;
         public float joystickDeadzone = 4f;
-        public float mouseFollowSlowRadius = 80f;
+        
 
         [Header("Loop Attack")]
         public float baseLoopDamage = 25f;
