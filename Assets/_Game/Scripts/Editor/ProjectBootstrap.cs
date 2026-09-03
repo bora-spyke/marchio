@@ -22,7 +22,7 @@ namespace Marchio.Editor
             if (Application.isPlaying) { Debug.LogError("[Marchio] Exit Play mode before bootstrapping."); return; }
             EnsureFolders();
             var cfg = LoadOrCreate<GameConfig>(ConfigPath);
-            var solid = Material("Unlit_Solid", "Universal Render Pipeline/Unlit", Color.white);
+            var solid = Material("Unlit_Solid", "Universal Render Pipeline/Lit", Color.white);
             var line = Material("Line", "Sprites/Default", Color.white);
             var particle = Material("Particle_Additive", "Legacy Shaders/Particles/Additive", Color.white);
 
@@ -390,14 +390,14 @@ namespace Marchio.Editor
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
-            cam.orthographic = true;
-            cam.orthographicSize = cfg.referenceHeightPx * 0.5f;
-            cam.nearClipPlane = 1f;
-            cam.farClipPlane = 1000f;
+            cam.orthographic = false;
+            cam.fieldOfView = 50f;
+            cam.nearClipPlane = 10f;
+            cam.farClipPlane = 4000f;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = cfg.bg;
-            camGo.transform.position = new Vector3(0f, 500f, 0f);
-            camGo.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            camGo.transform.position = new Vector3(0f, 880f, -410f);
+            camGo.transform.rotation = Quaternion.Euler(65f, 0f, 0f);
             camGo.AddComponent<AudioListener>();
             var urpCam = cam.GetUniversalAdditionalCameraData();
             urpCam.renderShadows = false;
@@ -479,7 +479,13 @@ namespace Marchio.Editor
 
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = Color.black;
+            RenderSettings.ambientLight = new Color(0.25f, 0.25f, 0.35f);
+            var lightGo = new GameObject("Directional Light");
+            var light = lightGo.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 1f;
+            light.shadows = LightShadows.None;
+            lightGo.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };

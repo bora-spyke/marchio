@@ -5,27 +5,51 @@ namespace Marchio
     [RequireComponent(typeof(Camera))]
     public sealed class CameraRig : MonoBehaviour
     {
-        [SerializeField] float height = 500f;
+        static readonly Plane Ground = new Plane(Vector3.up, Vector3.zero);
+
         Camera cam;
+        Vector3 offset;
+        Quaternion startRotation;
+        Vector2 halfExtents;
+        bool cached;
 
         public Camera Cam => cam != null ? cam : cam = GetComponent<Camera>();
         public Vector2 Center { get; private set; }
-        public Vector2 HalfExtents => new Vector2(Cam.orthographicSize * Cam.aspect, Cam.orthographicSize);
+        public Vector2 HalfExtents => halfExtents;
 
         public void Configure(GameConfig cfg)
         {
-            Cam.orthographic = true;
-            Cam.orthographicSize = cfg.referenceHeightPx * 0.5f;
+            if (!cached)
+            {
+                offset = transform.position;
+                startRotation = transform.rotation;
+                cached = true;
+            }
             Cam.backgroundColor = cfg.bg;
             Cam.clearFlags = CameraClearFlags.SolidColor;
-            transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            transform.rotation = startRotation;
+            Follow(Vector2.zero, 0f);
         }
 
         public void Follow(Vector2 target, float shake)
         {
             Center = target;
-            var offset = shake > 0f ? Random.insideUnitCircle * shake : Vector2.zero;
-            transform.position = new Vector3(target.x + offset.x, height, target.y + offset.y);
+            var jitter = shake > 0f ? Random.insideUnitCircle * shake : Vector2.zero;
+            transform.position = new Vector3(target.x + jitter.x, 0f, target.y + jitter.y) + offset;
+            halfExtents = MeasureHalfExtents();
+        }
+
+        Vector2 MeasureHalfExtents()
+        {
+            float w = Cam.pixelWidth, h = Cam.pixelHeight;
+            var half = Vector2.zero;
+            foreach (var corner in new[] { new Vector2(0f, 0f), new Vector2(w, 0f), new Vector2(0f, h), new Vector2(w, h) })
+            {
+                var p = ScreenToPlane(corner) - Center;
+                half.x = Mathf.Max(half.x, Mathf.Abs(p.x));
+                half.y = Mathf.Max(half.y, Mathf.Abs(p.y));
+            }
+            return half;
         }
 
         public bool IsOutside(Vector2 p, float pad)
@@ -37,7 +61,9 @@ namespace Marchio
 
         public Vector2 ScreenToPlane(Vector2 screen)
         {
-            var w = Cam.ScreenToWorldPoint(new Vector3(screen.x, screen.y, height));
+            var ray = Cam.ScreenPointToRay(new Vector3(screen.x, screen.y, 0f));
+            if (!Ground.Raycast(ray, out float enter)) enter = Cam.farClipPlane;
+            var w = ray.GetPoint(enter);
             return new Vector2(w.x, w.z);
         }
     }
