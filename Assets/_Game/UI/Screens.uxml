@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="screens" class="screens" picking-mode="Ignore">
+        <ui:VisualElement name="menu" class="overlay">
+            <ui:Label class="title" text="NEONLOOP" />
+            <ui:Label class="subtitle" text="DÜŞMANI ÇEMBERE AL — İLMEĞİ KAPAT" />
+            <ui:Label name="menu-cta" class="cta" text="BAŞLA: DOKUN / FARE / WASD+SPACE" />
+        </ui:VisualElement>
+        <ui:VisualElement name="upgrade" class="overlay">
+            <ui:Label name="upgrade-title" class="title-small" text="DALGA 3 TAMAMLANDI" />
+            <ui:Label class="subtitle" text="BİR YÜKSELTME SEÇ" />
+            <ui:VisualElement name="cards" class="cards" />
+        </ui:VisualElement>
+        <ui:VisualElement name="over" class="overlay">
+            <ui:Label class="title" text="TUR BİTTİ" />
+            <ui:Label name="over-sub" class="subtitle" text="ulaşılan dalga 1   en iyi 1" />
+            <ui:Label name="over-cta" class="cta" text="TEKRAR İÇİN DOKUN" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

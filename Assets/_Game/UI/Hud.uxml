@@ -1,0 +1,30 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="hud" class="hud" picking-mode="Ignore">
+        <ui:VisualElement name="top-left" class="top-left" picking-mode="Ignore">
+            <ui:VisualElement name="hp-bar" class="bar hp-bar" picking-mode="Ignore">
+                <ui:VisualElement name="hp-fill" class="bar-fill hp-fill" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:Label name="hp-text" class="hp-text" text="100/100" picking-mode="Ignore" />
+            <ui:Label name="upgrades-text" class="upgrades-text" text="" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <ui:VisualElement name="top-right" class="top-right" picking-mode="Ignore">
+            <ui:Label name="wave-text" class="wave-text" text="DALGA 1" picking-mode="Ignore" />
+            <ui:Label name="enemy-text" class="enemy-text" text="0 düşman" picking-mode="Ignore" />
+            <ui:Label name="combo-chip" class="combo-chip" text="KOMBO x1" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <ui:VisualElement name="top-center" class="top-center" picking-mode="Ignore">
+            <ui:VisualElement name="boss-bar" class="bar boss-bar" picking-mode="Ignore">
+                <ui:VisualElement name="boss-fill" class="bar-fill boss-fill" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:Label name="boss-label" class="boss-label" text="BOSS" picking-mode="Ignore" />
+            <ui:Label name="draw-text" class="draw-text" text="ÇİZİYORSUN" picking-mode="Ignore" />
+            <ui:VisualElement name="trail-bar" class="trail-bar" picking-mode="Ignore">
+                <ui:VisualElement name="trail-fill" class="trail-fill" picking-mode="Ignore" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="damage-layer" class="damage-layer" picking-mode="Ignore" />
+        <ui:VisualElement name="joystick" class="joystick" picking-mode="Ignore">
+            <ui:VisualElement name="joystick-knob" class="joystick-knob" picking-mode="Ignore" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
