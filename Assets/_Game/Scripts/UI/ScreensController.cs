@@ -120,43 +120,43 @@ namespace Marchio
                 + (trophy.Has(TrophyReward.CartColor) ? "  ·  COLOR" : "")
                 + (trophy.Has(TrophyReward.TrailEffect) ? "  ·  TRAIL FX" : "");
             mainRoad.Clear();
-            var header = new VisualElement();
-            header.AddToClassList("road-header");
-            UiKit.Label(header, "FREE", "road-col-title");
-            UiKit.Label(header, "PREMIUM", "road-col-title");
-            mainRoad.Add(header);
             var nodes = trophy.Nodes;
-            mainClaimed.text = $"{trophy.Claimed} / {nodes.Length}";
+            mainClaimed.text = $"{trophy.Claimed} / {nodes.Length} CLAIMED";
             // ponytail: no scroll; show last claimed + next few nodes. RoadWindow rows fit a 390x844 layout.
             int first = Mathf.Clamp(trophy.Claimed - 1, 0, Mathf.Max(0, nodes.Length - RoadWindow));
             int last = Mathf.Min(nodes.Length, first + RoadWindow);
             for (int i = first; i < last; i++)
             {
                 var node = nodes[i];
+                bool claimed = i < trophy.Claimed, next = i == trophy.Claimed;
                 var row = new VisualElement();
                 row.AddToClassList("node");
-                row.AddToClassList(node.macro ? "node--macro" : "node--micro");
-                if (i < trophy.Claimed) row.AddToClassList("node--claimed");
-                else if (i == trophy.Claimed) row.AddToClassList("node--next");
-                var free = new VisualElement();
-                free.AddToClassList("node-free");
+                if (node.macro) row.AddToClassList("node--macro");
+                if (claimed) row.AddToClassList("node--claimed");
+                if (next) row.AddToClassList("node--next");
+                if (i < last - 1) row.Add(Rail());
                 var badge = new VisualElement();
                 badge.AddToClassList("node-badge");
-                badge.Add(new Label(node.macro ? "\u2605" : (i + 1).ToString()));
+                badge.Add(new Label(claimed ? "\u2713" : node.macro ? "\u2605" : (i + 1).ToString()));
                 var text = new VisualElement();
                 text.AddToClassList("node-text");
                 UiKit.Label(text, node.title, "node-title");
-                string sub = i < trophy.Claimed ? "CLAIMED" : i == trophy.Claimed ? $"NEXT  \u00b7  {node.threshold:0} TROPHY" : $"{node.threshold:0} TROPHY";
-                UiKit.Label(text, sub, "node-sub");
-                free.Add(badge);
-                free.Add(text);
-                var premium = new VisualElement();
-                premium.AddToClassList("node-premium");
-                UiKit.Label(premium, "SOON", "node-premium-text");
-                row.Add(free);
-                row.Add(premium);
+                UiKit.Label(text, node.macro ? "MAJOR REWARD" : "REWARD", "node-sub");
+                var tag = new Label(claimed ? "CLAIMED" : next ? $"NEXT \u00b7 {node.threshold:0}" : node.threshold.ToString("0"));
+                tag.AddToClassList("node-tag");
+                row.Add(badge);
+                row.Add(text);
+                row.Add(tag);
                 mainRoad.Add(row);
             }
+        }
+
+        static VisualElement Rail()
+        {
+            var rail = new VisualElement();
+            rail.AddToClassList("node-rail");
+            rail.pickingMode = PickingMode.Ignore;
+            return rail;
         }
 
         void BuildClear()
