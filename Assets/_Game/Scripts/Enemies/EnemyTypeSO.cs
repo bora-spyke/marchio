@@ -20,6 +20,11 @@ namespace Marchio
         public float score = 8f;
         public bool ignoresBarriers;
 
+        [Header("Steering")]
+        [Tooltip("Seconds between move/facing target updates")]
+        public float retargetS = 1.5f;
+        public float turnDegPerS = 540f;
+
         [Header("Firing")]
         public bool fires = true;
         public Projectile projectilePrefab;

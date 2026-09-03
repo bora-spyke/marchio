@@ -33,3 +33,5 @@ MonoBehaviour:
   preferredDistJitter: 40
   retreatFraction: 0.7
   projectilePrefab: {fileID: 1795060547283548827, guid: 3aec60b392a947cabccd8c2dfe2eabc3, type: 3}
+  retargetS: 1.5
+  turnDegPerS: 540

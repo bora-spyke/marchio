@@ -27,6 +27,7 @@ namespace Marchio
         float fireTimer;
         float retargetTimer;
         Vector2 heading;
+        Vector2 facing;
         float slowLeft;
         float burnDps;
         float burnLeft;
@@ -73,6 +74,7 @@ namespace Marchio
             fireTimer = Random.Range(type.initialFireDelayMs.x, type.initialFireDelayMs.y);
             retargetTimer = 0f;
             heading = Vector2.zero;
+            facing = (Gm.Player.Pos - pos).normalized;
             if (visualRoot != null) visualRoot.gameObject.SetActive(true);
             if (hitParticle != null) hitParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             if (deathParticle != null) deathParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -101,7 +103,7 @@ namespace Marchio
             }
             Behave(dt, slowFactor);
             Velocity = (Pos - before) / dt;
-            ApplyTransform();
+            ApplyTransform(dt);
         }
 
         public bool TickDead(float dt)
@@ -117,7 +119,7 @@ namespace Marchio
             retargetTimer -= dt;
             if (retargetTimer <= 0f)
             {
-                retargetTimer = Cfg.enemyRetargetS;
+                retargetTimer = Type.retargetS;
                 heading = ComputeHeading(d);
             }
             Pos += heading * Speed * speedMult * slowFactor * dt;
@@ -131,6 +133,7 @@ namespace Marchio
             float d = distToPlayer < 1e-6f ? 1f : distToPlayer;
             float cosj = Mathf.Cos(steerJitter), sinj = Mathf.Sin(steerJitter);
             var steered = new Vector2(toPlayer.x * cosj - toPlayer.y * sinj, toPlayer.x * sinj + toPlayer.y * cosj) / d;
+            facing = toPlayer / d;
             if (type.behavior != EnemyBehavior.KeepDistance) return steered;
             float preferred = type.preferredDist + preferredDistJitter;
             float dir = d > preferred ? 1f : d < preferred * type.retreatFraction ? -1f : 0f;
@@ -198,13 +201,13 @@ namespace Marchio
             Gm.OnEnemyKilled(this);
         }
 
-        void ApplyTransform()
+        // dt < 0 snaps; facing only changes on retarget, so the visual no longer tracks the player every frame
+        void ApplyTransform(float dt = -1f)
         {
             transform.position = PolygonMath.ToWorld(Pos);
-            if (visualRoot == null) return;
-            var toPlayer = Gm.Player.Pos - Pos;
-            if (toPlayer.sqrMagnitude < 1e-6f) return;
-            visualRoot.rotation = Quaternion.LookRotation(new Vector3(toPlayer.x, 0f, toPlayer.y), Vector3.up);
+            if (visualRoot == null || facing.sqrMagnitude < 1e-6f) return;
+            var target = Quaternion.LookRotation(new Vector3(facing.x, 0f, facing.y), Vector3.up);
+            visualRoot.rotation = dt < 0f ? target : Quaternion.RotateTowards(visualRoot.rotation, target, Type.turnDegPerS * dt);
         }
     }
 }

@@ -72,7 +72,6 @@ namespace Marchio
         [Header("Waves")]
         public bool spawnEnemies = true;
         public float enemySteerJitterRad = 0.40f;
-        public float enemyRetargetS = 1.5f;
         public float enemySpeedVariance = 0.20f;
         public float rangedPreferredDistJitter = 40f;
         public float enemySeparationForce = 220f;
