@@ -94,7 +94,7 @@ namespace Marchio
                     if (dashTimer <= 0f)
                     {
                         Phase = BossPhase.Chase;
-                        ContactDamage = cfg.bossContactDamage;
+                        ContactDamage = Type.contactDamage;
                         attackTimer = cfg.bossAttackCooldownMs;
                         NextAttack = PickNextAttack(NextAttack);
                     }

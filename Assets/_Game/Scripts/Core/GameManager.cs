@@ -22,12 +22,9 @@ namespace Marchio
         [SerializeField] UpgradeManager upgrades;
         [SerializeField] ParticleFx fx;
         [SerializeField] Transform poolRoot;
+        [SerializeField] WaveTableSO waveTable;
 
         [Header("Pooled prefabs")]
-        [SerializeField] Enemy chaserPrefab;
-        [SerializeField] Enemy fastPrefab;
-        [SerializeField] Enemy rangedPrefab;
-        [SerializeField] BossController bossPrefab;
         [SerializeField] Projectile enemyProjectilePrefab;
         [SerializeField] Projectile playerProjectilePrefab;
         [SerializeField] Barrier barrierPrefab;
@@ -40,11 +37,9 @@ namespace Marchio
         public WaveManager Waves => waves;
         public UpgradeManager Upgrades => upgrades;
         public ParticleFx Fx => fx;
+        public WaveTableSO WaveTable => waveTable;
 
-        public ObjectPool<Enemy> Chasers { get; private set; }
-        public ObjectPool<Enemy> Fasts { get; private set; }
-        public ObjectPool<Enemy> Rangeds { get; private set; }
-        public ObjectPool<BossController> Bosses { get; private set; }
+        readonly Dictionary<EnemyTypeSO, ObjectPool<Enemy>> enemyPools = new Dictionary<EnemyTypeSO, ObjectPool<Enemy>>();
         public ObjectPool<Projectile> EnemyProjectiles { get; private set; }
         public ObjectPool<Projectile> PlayerProjectiles { get; private set; }
         public ObjectPool<Barrier> Barriers { get; private set; }
@@ -71,10 +66,6 @@ namespace Marchio
         {
             I = this;
             Application.targetFrameRate = 60;
-            Chasers = new ObjectPool<Enemy>(chaserPrefab, poolRoot, 16);
-            Fasts = new ObjectPool<Enemy>(fastPrefab, poolRoot, 8);
-            Rangeds = new ObjectPool<Enemy>(rangedPrefab, poolRoot, 8);
-            Bosses = new ObjectPool<BossController>(bossPrefab, poolRoot, 1);
             EnemyProjectiles = new ObjectPool<Projectile>(enemyProjectilePrefab, poolRoot, 32);
             PlayerProjectiles = new ObjectPool<Projectile>(playerProjectilePrefab, poolRoot, 16);
             Barriers = new ObjectPool<Barrier>(barrierPrefab, poolRoot, 4);
@@ -206,16 +197,14 @@ namespace Marchio
 
         public void OnEnemyKilled(Enemy en)
         {
-            if (en.Kind == EnemyKind.Boss)
+            if (en.Type.IsBoss)
             {
                 BossArenaActive = false;
                 waves.OnBossKilled();
-                fx.Burst(en.Pos, config.chaser, 32);
+                fx.Burst(en.Pos, en.Type.color, 32);
                 return;
             }
-            KillXP += en.Kind == EnemyKind.Ranged ? config.loopGrowthXPRanged
-                : en.Kind == EnemyKind.Fast ? config.loopGrowthXPFast
-                : config.loopGrowthXPChaser;
+            KillXP += en.Type.xp;
             UpdateMaxLoopLength();
         }
 
@@ -228,16 +217,20 @@ namespace Marchio
             if (newMax > MaxLoopLength) MaxLoopLength = newMax;
         }
 
+        public Enemy GetEnemy(EnemyTypeSO type)
+        {
+            if (!enemyPools.TryGetValue(type, out var pool))
+            {
+                pool = new ObjectPool<Enemy>(type.prefab, poolRoot, type.IsBoss ? 1 : 8);
+                enemyPools.Add(type, pool);
+            }
+            return pool.Get();
+        }
+
         public void ReleaseEnemy(Enemy en)
         {
             Enemies.Remove(en);
-            switch (en.Kind)
-            {
-                case EnemyKind.Chaser: Chasers.Release(en); break;
-                case EnemyKind.Fast: Fasts.Release(en); break;
-                case EnemyKind.Ranged: Rangeds.Release(en); break;
-                case EnemyKind.Boss: Bosses.Release((BossController)en); break;
-            }
+            enemyPools[en.Type].Release(en);
         }
 
         public void ActivateBossArena(Vector2 center)
@@ -292,10 +285,7 @@ namespace Marchio
 
         void ResetRun()
         {
-            Chasers.ReleaseAll();
-            Fasts.ReleaseAll();
-            Rangeds.ReleaseAll();
-            Bosses.ReleaseAll();
+            foreach (var pool in enemyPools.Values) pool.ReleaseAll();
             EnemyProjectiles.ReleaseAll();
             PlayerProjectiles.ReleaseAll();
             Barriers.ReleaseAll();

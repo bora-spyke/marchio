@@ -5,14 +5,14 @@ namespace Marchio
 {
     public sealed class WaveManager : MonoBehaviour
     {
-        readonly List<EnemyKind> spawnQueue = new List<EnemyKind>(64);
+        readonly List<EnemyTypeSO> spawnQueue = new List<EnemyTypeSO>(64);
         float spawnTimer;
         float waveClearTimer;
 
         public int Wave { get; private set; }
         public float WaveHpMult { get; private set; } = 1f;
         public bool WaveClearing { get; private set; }
-        public bool BossDone { get; private set; }
+        public int BossSpawnedWave { get; private set; }
         public BossController ActiveBoss { get; private set; }
 
         GameManager Gm => GameManager.I;
@@ -26,36 +26,21 @@ namespace Marchio
             Wave = 0;
             WaveHpMult = 1f;
             WaveClearing = false;
-            BossDone = false;
+            BossSpawnedWave = 0;
             ActiveBoss = null;
-        }
-
-        public static void Composition(int n, out int chaser, out int fast, out int ranged)
-        {
-            if (n == 1) { chaser = 7; fast = 0; ranged = 0; return; }
-            if (n == 2) { chaser = 8; fast = 3; ranged = 0; return; }
-            if (n == 3) { chaser = 7; fast = 4; ranged = 3; return; }
-            int extra = n - 3;
-            chaser = 7 + Mathf.FloorToInt(extra * 1.5f);
-            fast = 4 + Mathf.FloorToInt(extra * 1.0f);
-            ranged = 3 + Mathf.FloorToInt(extra * 0.8f);
         }
 
         public void StartWave(int n)
         {
             Wave = n;
             WaveHpMult = 1f + (n - 1) * Cfg.waveHpScalePerWave;
-            Composition(n, out int chaser, out int fast, out int ranged);
-            spawnQueue.Clear();
-            for (int i = 0; i < chaser; i++) spawnQueue.Add(EnemyKind.Chaser);
-            for (int i = 0; i < fast; i++) spawnQueue.Add(EnemyKind.Fast);
-            for (int i = 0; i < ranged; i++) spawnQueue.Add(EnemyKind.Ranged);
+            Gm.WaveTable.Compose(n, spawnQueue);
             Shuffle(spawnQueue);
             spawnTimer = 0f;
             WaveClearing = false;
         }
 
-        static void Shuffle(List<EnemyKind> list)
+        static void Shuffle(List<EnemyTypeSO> list)
         {
             for (int i = list.Count - 1; i > 0; i--)
             {
@@ -72,15 +57,16 @@ namespace Marchio
                 if (spawnTimer <= 0f)
                 {
                     spawnTimer = Cfg.enemySpawnStaggerMs;
-                    var kind = spawnQueue[spawnQueue.Count - 1];
+                    var type = spawnQueue[spawnQueue.Count - 1];
                     spawnQueue.RemoveAt(spawnQueue.Count - 1);
-                    Spawn(kind, SpawnPoint());
+                    Spawn(type, SpawnPoint());
                 }
             }
 
             if (!WaveClearing && spawnQueue.Count == 0 && Gm.Enemies.Count == 0 && Wave > 0)
             {
-                if (Wave == Cfg.bossWave && !BossDone) StartBossFight();
+                var bossType = Gm.WaveTable.BossAfter(Wave);
+                if (bossType != null && BossSpawnedWave != Wave) StartBossFight(bossType);
                 else BeginClear();
             }
 
@@ -118,29 +104,22 @@ namespace Marchio
             }
         }
 
-        Enemy Spawn(EnemyKind kind, Vector2 pos)
+        Enemy Spawn(EnemyTypeSO type, Vector2 pos)
         {
-            Enemy en;
-            switch (kind)
-            {
-                case EnemyKind.Fast: en = Gm.Fasts.Get(); break;
-                case EnemyKind.Ranged: en = Gm.Rangeds.Get(); break;
-                case EnemyKind.Boss: en = Gm.Bosses.Get(); break;
-                default: en = Gm.Chasers.Get(); break;
-            }
-            en.Init(kind, pos, WaveHpMult);
+            var en = Gm.GetEnemy(type);
+            en.Init(type, pos, WaveHpMult);
             Gm.Enemies.Add(en);
             return en;
         }
 
-        void StartBossFight()
+        void StartBossFight(EnemyTypeSO bossType)
         {
-            BossDone = true;
+            BossSpawnedWave = Wave;
             var center = Gm.Player.Pos;
             Gm.ActivateBossArena(center);
             var spawnPos = center + new Vector2(0f, Cfg.bossArenaRadius * 0.6f);
-            ActiveBoss = (BossController)Spawn(EnemyKind.Boss, spawnPos);
-            Gm.Fx.Burst(spawnPos, Cfg.chaser, 24);
+            ActiveBoss = Spawn(bossType, spawnPos) as BossController;
+            Gm.Fx.Burst(spawnPos, bossType.color, 24);
         }
 
         public void OnBossKilled()

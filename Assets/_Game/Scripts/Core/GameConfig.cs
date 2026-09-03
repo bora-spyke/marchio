@@ -26,9 +26,6 @@ namespace Marchio
         public int loopGrowthXPStep = 3;
         public float loopGrowthPct = 0.06f;
         public float maxLoopLengthGrowthCapMult = 2.0f;
-        public int loopGrowthXPChaser = 1;
-        public int loopGrowthXPFast = 1;
-        public int loopGrowthXPRanged = 2;
         public float comboLoopLengthStep = 0.10f;
         public float comboLoopLengthCapBonus = 1.5f;
 
@@ -70,33 +67,6 @@ namespace Marchio
         public float autoAttackDamage = 13f;
         public float autoAttackProjectileSpeed = 340f;
 
-        [Header("Chaser")]
-        public float chaserHP = 50f;
-        public float chaserSpeed = 90f;
-        public float chaserR = 14f;
-        public float chaserFireIntervalMs = 1900f;
-        public float chaserProjectileSpeed = 130f;
-        public float chaserProjectileDamage = 5f;
-        public float chaserFireMinDist = 70f;
-
-        [Header("Fast")]
-        public float fastHP = 30f;
-        public float fastSpeed = 150f;
-        public float fastR = 12f;
-        public float fastFireIntervalMs = 1700f;
-        public float fastProjectileSpeed = 150f;
-        public float fastProjectileDamage = 5f;
-        public float fastFireMinDist = 70f;
-
-        [Header("Ranged")]
-        public float rangedHP = 60f;
-        public float rangedSpeed = 60f;
-        public float rangedR = 15f;
-        public float rangedPreferredDist = 190f;
-        public float rangedFireIntervalMs = 1400f;
-        public float rangedProjectileSpeed = 150f;
-        public float rangedProjectileDamage = 8f;
-
         [Header("Waves")]
         public float waveHpScalePerWave = 0.06f;
         public float waveClearDelayMs = 1000f;
@@ -107,13 +77,8 @@ namespace Marchio
         public float enemySeparationForce = 220f;
         public float spawnPadPx = 34f;
         public int upgradeEveryNWaves = 3;
-        public int bossWave = 3;
 
-        [Header("Boss")]
-        public float bossHP = 1300f;
-        public float bossR = 34f;
-        public float bossSpeed = 70f;
-        public float bossContactDamage = 18f;
+        [Header("Boss Attacks")]
         public float bossDashContactDamage = 30f;
         public float bossAttackCooldownMs = 2200f;
         public float bossDashTelegraphMs = 550f;
@@ -169,15 +134,6 @@ namespace Marchio
             return electricBorderRadius + (level - 1) * electricBorderRadiusStep;
         }
 
-        public Color EnemyColor(EnemyKind kind)
-        {
-            switch (kind)
-            {
-                case EnemyKind.Fast: return fast;
-                case EnemyKind.Ranged: return ranged;
-                default: return chaser;
-            }
-        }
 
         static Color Hex(string hex)
         {

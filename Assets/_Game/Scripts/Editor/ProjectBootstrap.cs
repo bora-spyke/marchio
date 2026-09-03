@@ -14,6 +14,7 @@ namespace Marchio.Editor
         const string ConfigPath = Root + "/Config/GameConfig.asset";
         const string ScenePath = Root + "/Scenes/Game.unity";
         const string PanelPath = Root + "/UI/PanelSettings.asset";
+        const string WaveTablePath = Root + "/Config/WaveTable.asset";
 
         [MenuItem("Marchio/Bootstrap Project")]
         public static void Build()
@@ -34,6 +35,7 @@ namespace Marchio.Editor
             BuildLinePrefab<Barrier>("Barrier", line, cfg.loopEdge, 3f, true);
             BuildLinePrefab<DeadTrail>("DeadTrail", line, cfg.trail, 3f, false);
             BuildPanelSettings();
+            BuildEnemyTypes(cfg);
             AssetDatabase.SaveAssets();
 
             BuildScene();
@@ -50,6 +52,7 @@ namespace Marchio.Editor
                 var path = Root + "/" + f;
                 if (!AssetDatabase.IsValidFolder(path)) AssetDatabase.CreateFolder(Root, f);
             }
+            if (!AssetDatabase.IsValidFolder(Root + "/Config/Enemies")) AssetDatabase.CreateFolder(Root + "/Config", "Enemies");
         }
 
         static T LoadOrCreate<T>(string path) where T : ScriptableObject
@@ -194,6 +197,74 @@ namespace Marchio.Editor
             SavePrefab(root);
         }
 
+        static EnemyTypeSO EnemyType(string name, string prefab, System.Action<EnemyTypeSO> defaults)
+        {
+            var path = Root + "/Config/Enemies/" + name + ".asset";
+            var existing = AssetDatabase.LoadAssetAtPath<EnemyTypeSO>(path);
+            var so = existing != null ? existing : ScriptableObject.CreateInstance<EnemyTypeSO>();
+            if (existing == null)
+            {
+                so.displayName = name;
+                defaults(so);
+                AssetDatabase.CreateAsset(so, path);
+            }
+            so.prefab = Prefab<Enemy>(prefab);
+            EditorUtility.SetDirty(so);
+            return so;
+        }
+
+        static void BuildEnemyTypes(GameConfig cfg)
+        {
+            var chaser = EnemyType("Chaser", "Enemy_Chaser", t =>
+            {
+                t.behavior = EnemyBehavior.Chase; t.color = cfg.chaser;
+                t.hp = 50f; t.speed = 90f; t.radius = 14f; t.contactDamage = 10f; t.xp = 1;
+                t.fireIntervalMs = 1900f; t.projectileSpeed = 130f; t.projectileDamage = 5f; t.fireMinDist = 70f;
+                t.initialFireDelayMs = new Vector2(300f, 1100f);
+            });
+            var fast = EnemyType("Fast", "Enemy_Fast", t =>
+            {
+                t.behavior = EnemyBehavior.Chase; t.color = cfg.fast;
+                t.hp = 30f; t.speed = 150f; t.radius = 12f; t.contactDamage = 10f; t.xp = 1;
+                t.fireIntervalMs = 1700f; t.projectileSpeed = 150f; t.projectileDamage = 5f; t.fireMinDist = 70f;
+                t.initialFireDelayMs = new Vector2(300f, 1100f);
+            });
+            var ranged = EnemyType("Ranged", "Enemy_Ranged", t =>
+            {
+                t.behavior = EnemyBehavior.KeepDistance; t.color = cfg.ranged;
+                t.hp = 60f; t.speed = 60f; t.radius = 15f; t.contactDamage = 10f; t.xp = 2;
+                t.fireIntervalMs = 1400f; t.projectileSpeed = 150f; t.projectileDamage = 8f;
+                t.preferredDist = 190f; t.preferredDistJitter = 40f; t.retreatFraction = 0.7f;
+                t.initialFireDelayMs = new Vector2(400f, 1000f);
+            });
+            var boss = EnemyType("Boss", "Boss", t =>
+            {
+                t.behavior = EnemyBehavior.Boss; t.color = cfg.chaser;
+                t.hp = 1300f; t.speed = 70f; t.radius = 34f; t.contactDamage = 18f; t.xp = 0;
+                t.ignoresBarriers = true; t.fires = false;
+            });
+
+            if (AssetDatabase.LoadAssetAtPath<WaveTableSO>(WaveTablePath) == null)
+            {
+                var table = ScriptableObject.CreateInstance<WaveTableSO>();
+                table.waves = new[]
+                {
+                    new WaveEntry { spawns = new[] { Spawn(chaser, 7) } },
+                    new WaveEntry { spawns = new[] { Spawn(chaser, 8), Spawn(fast, 3) } },
+                    new WaveEntry { spawns = new[] { Spawn(chaser, 7), Spawn(fast, 4), Spawn(ranged, 3) }, bossAfter = boss }
+                };
+                table.beyondTable = new[]
+                {
+                    new ScalingRule { type = chaser, baseCount = 7, perWave = 1.5f },
+                    new ScalingRule { type = fast, baseCount = 4, perWave = 1.0f },
+                    new ScalingRule { type = ranged, baseCount = 3, perWave = 0.8f }
+                };
+                AssetDatabase.CreateAsset(table, WaveTablePath);
+            }
+        }
+
+        static SpawnEntry Spawn(EnemyTypeSO type, int count) => new SpawnEntry { type = type, count = count };
+
         static void BuildPanelSettings()
         {
             var panel = LoadOrCreate<PanelSettings>(PanelPath);
@@ -212,11 +283,8 @@ namespace Marchio.Editor
             var cfg = AssetDatabase.LoadAssetAtPath<GameConfig>(ConfigPath);
             var panel = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelPath);
             var particleMat = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Materials/Particle_Additive.mat");
+            var waveTable = AssetDatabase.LoadAssetAtPath<WaveTableSO>(WaveTablePath);
             var player = Prefab<PlayerController>("Player");
-            var chaser = Prefab<Enemy>("Enemy_Chaser");
-            var fast = Prefab<Enemy>("Enemy_Fast");
-            var ranged = Prefab<Enemy>("Enemy_Ranged");
-            var boss = Prefab<BossController>("Boss");
             var enemyProj = Prefab<Projectile>("Projectile_Enemy");
             var playerProj = Prefab<Projectile>("Projectile_Player");
             var barrier = Prefab<Barrier>("Barrier");
@@ -305,10 +373,7 @@ namespace Marchio.Editor
             Set(gm, "upgrades", upgrades);
             Set(gm, "fx", fx);
             Set(gm, "poolRoot", pools.transform);
-            Set(gm, "chaserPrefab", chaser);
-            Set(gm, "fastPrefab", fast);
-            Set(gm, "rangedPrefab", ranged);
-            Set(gm, "bossPrefab", boss);
+            Set(gm, "waveTable", waveTable);
             Set(gm, "enemyProjectilePrefab", enemyProj);
             Set(gm, "playerProjectilePrefab", playerProj);
             Set(gm, "barrierPrefab", barrier);
@@ -335,7 +400,7 @@ namespace Marchio.Editor
             PlayerSettings.allowedAutorotateToLandscapeRight = false;
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-            PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)24;
+            PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)26;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
             PlayerSettings.Android.forceSDCardPermission = false;
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { UnityEngine.Rendering.GraphicsDeviceType.Vulkan, UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 });

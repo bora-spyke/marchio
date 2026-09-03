@@ -2,8 +2,6 @@ using UnityEngine;
 
 namespace Marchio
 {
-    public enum EnemyKind { Chaser, Fast, Ranged, Boss }
-
     public class Enemy : MonoBehaviour, IPoolable
     {
         [SerializeField] protected Transform visualRoot;
@@ -12,7 +10,7 @@ namespace Marchio
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         MaterialPropertyBlock mpb;
 
-        public EnemyKind Kind { get; protected set; }
+        public EnemyTypeSO Type { get; private set; }
         public Vector2 Pos { get; protected set; }
         public float Hp { get; private set; }
         public float MaxHp { get; private set; }
@@ -20,7 +18,7 @@ namespace Marchio
         public float Speed { get; private set; }
         public float ContactDamage { get; protected set; }
         public bool Dead { get; private set; }
-        public bool IgnoresBarriers => Kind == EnemyKind.Boss;
+        public bool IgnoresBarriers => Type.ignoresBarriers;
 
         protected float steerJitter;
         protected float speedMult;
@@ -30,7 +28,6 @@ namespace Marchio
         float slowLeft;
         float burnDps;
         float burnLeft;
-        Color baseColor;
 
         protected GameManager Gm => GameManager.I;
         protected GameConfig Cfg => GameManager.I.Config;
@@ -38,56 +35,32 @@ namespace Marchio
         public virtual void OnSpawn() { }
         public virtual void OnDespawn() { }
 
-        public void Init(EnemyKind kind, Vector2 pos, float hpMult)
+        public void Init(EnemyTypeSO type, Vector2 pos, float hpMult)
         {
             var cfg = Cfg;
-            Kind = kind;
+            Type = type;
             Pos = pos;
             Dead = false;
             hitFlash = 0f;
             slowLeft = 0f;
             burnDps = 0f;
             burnLeft = 0f;
-            steerJitter = Random.Range(-cfg.enemySteerJitterRad, cfg.enemySteerJitterRad);
-            speedMult = Random.Range(1f - cfg.enemySpeedVariance, 1f + cfg.enemySpeedVariance);
-            preferredDistJitter = 0f;
-            switch (kind)
-            {
-                case EnemyKind.Chaser:
-                    SetStats(cfg.chaserHP * hpMult, cfg.chaserR, cfg.chaserSpeed);
-                    fireTimer = 300f + Random.value * 800f;
-                    break;
-                case EnemyKind.Fast:
-                    SetStats(cfg.fastHP * hpMult, cfg.fastR, cfg.fastSpeed);
-                    fireTimer = 300f + Random.value * 800f;
-                    break;
-                case EnemyKind.Ranged:
-                    SetStats(cfg.rangedHP * hpMult, cfg.rangedR, cfg.rangedSpeed);
-                    fireTimer = 400f + Random.value * 600f;
-                    preferredDistJitter = Random.Range(-cfg.rangedPreferredDistJitter, cfg.rangedPreferredDistJitter);
-                    break;
-                case EnemyKind.Boss:
-                    SetStats(cfg.bossHP * hpMult, cfg.bossR, cfg.bossSpeed);
-                    steerJitter = 0f;
-                    speedMult = 1f;
-                    break;
-            }
-            ContactDamage = kind == EnemyKind.Boss ? cfg.bossContactDamage : cfg.playerContactDamage;
-            baseColor = cfg.EnemyColor(kind);
+            Hp = type.hp * hpMult;
+            MaxHp = Hp;
+            Radius = type.radius;
+            Speed = type.speed;
+            ContactDamage = type.contactDamage;
+            bool boss = type.IsBoss;
+            steerJitter = boss ? 0f : Random.Range(-cfg.enemySteerJitterRad, cfg.enemySteerJitterRad);
+            speedMult = boss ? 1f : Random.Range(1f - cfg.enemySpeedVariance, 1f + cfg.enemySpeedVariance);
+            preferredDistJitter = Random.Range(-type.preferredDistJitter, type.preferredDistJitter);
+            fireTimer = Random.Range(type.initialFireDelayMs.x, type.initialFireDelayMs.y);
             if (visualRoot != null) visualRoot.localScale = Vector3.one * Radius * 2f;
             OnInit();
             ApplyTransform();
         }
 
         protected virtual void OnInit() { }
-
-        void SetStats(float hp, float radius, float speed)
-        {
-            Hp = hp;
-            MaxHp = hp;
-            Radius = radius;
-            Speed = speed;
-        }
 
         public void SetPos(Vector2 p)
         {
@@ -115,38 +88,34 @@ namespace Marchio
 
         protected virtual void Behave(float dt, float slowFactor)
         {
-            var cfg = Cfg;
+            var type = Type;
             var toPlayer = Gm.Player.Pos - Pos;
             float d = toPlayer.magnitude;
             if (d < 1e-6f) d = 1f;
             float cosj = Mathf.Cos(steerJitter), sinj = Mathf.Sin(steerJitter);
             var steered = new Vector2(toPlayer.x * cosj - toPlayer.y * sinj, toPlayer.x * sinj + toPlayer.y * cosj) / d;
 
-            if (Kind == EnemyKind.Ranged)
+            if (type.behavior == EnemyBehavior.KeepDistance)
             {
-                float preferred = cfg.rangedPreferredDist + preferredDistJitter;
-                float dir = d > preferred ? 1f : d < preferred * 0.7f ? -1f : 0f;
+                float preferred = type.preferredDist + preferredDistJitter;
+                float dir = d > preferred ? 1f : d < preferred * type.retreatFraction ? -1f : 0f;
                 Pos += steered * dir * Speed * speedMult * slowFactor * dt;
-                fireTimer -= dt * 1000f;
-                if (fireTimer <= 0f)
-                {
-                    fireTimer = cfg.rangedFireIntervalMs;
-                    Fire(cfg.rangedProjectileSpeed, cfg.rangedProjectileDamage);
-                }
+                TickFire(dt, d, false);
                 return;
             }
 
             Pos += steered * Speed * speedMult * slowFactor * dt;
-            bool fast = Kind == EnemyKind.Fast;
+            TickFire(dt, d, true);
+        }
+
+        void TickFire(float dt, float distToPlayer, bool respectMinDist)
+        {
+            var type = Type;
+            if (!type.fires) return;
             fireTimer -= dt * 1000f;
-            if (fireTimer <= 0f)
-            {
-                fireTimer = fast ? cfg.fastFireIntervalMs : cfg.chaserFireIntervalMs;
-                float minDist = fast ? cfg.fastFireMinDist : cfg.chaserFireMinDist;
-                if (d > minDist)
-                    Fire(fast ? cfg.fastProjectileSpeed : cfg.chaserProjectileSpeed,
-                         fast ? cfg.fastProjectileDamage : cfg.chaserProjectileDamage);
-            }
+            if (fireTimer > 0f) return;
+            fireTimer = type.fireIntervalMs;
+            if (!respectMinDist || distToPlayer > type.fireMinDist) Fire(type.projectileSpeed, type.projectileDamage);
         }
 
         protected void Fire(float speed, float damage)
@@ -189,7 +158,7 @@ namespace Marchio
         {
             if (Dead) return;
             Dead = true;
-            Gm.Fx.Burst(Pos, baseColor, 10);
+            Gm.Fx.Burst(Pos, Type.color, 10);
             Gm.OnEnemyKilled(this);
         }
 
@@ -199,6 +168,7 @@ namespace Marchio
             if (visualRenderer != null)
             {
                 mpb ??= new MaterialPropertyBlock();
+                var baseColor = Type.color;
                 var c = hitFlash > 0f ? Color.white : baseColor;
                 if (slowLeft > 0f && hitFlash <= 0f) c = Color.Lerp(baseColor, Cfg.trail, 0.5f);
                 mpb.SetColor(BaseColorId, c);

@@ -41,17 +41,6 @@ namespace Marchio.Tests
         }
 
         [Test]
-        public void WaveCompositionMatchesPrototype()
-        {
-            WaveManager.Composition(1, out var c, out var f, out var r);
-            Assert.AreEqual((7, 0, 0), (c, f, r));
-            WaveManager.Composition(3, out c, out f, out r);
-            Assert.AreEqual((7, 4, 3), (c, f, r));
-            WaveManager.Composition(6, out c, out f, out r);
-            Assert.AreEqual((11, 7, 5), (c, f, r));
-        }
-
-        [Test]
         public void BossNeverRepeatsAttack()
         {
             for (int i = 0; i < 200; i++)

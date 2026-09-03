@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18cb704a74937452cb7ee60831bf7a3c, type: 3}
+  m_Name: Chaser
+  m_EditorClassIdentifier: Marchio::Marchio.EnemyTypeSO
+  displayName: Chaser
+  prefab: {fileID: 7664372054549846782, guid: 15bec91b7294548afaaf9175335e337a, type: 3}
+  behavior: 0
+  color: {r: 1, g: 0.18039216, b: 0.53333336, a: 1}
+  hp: 50
+  speed: 90
+  radius: 14
+  contactDamage: 10
+  xp: 1
+  ignoresBarriers: 0
+  fires: 1
+  fireIntervalMs: 1900
+  projectileSpeed: 130
+  projectileDamage: 5
+  fireMinDist: 70
+  initialFireDelayMs: {x: 300, y: 1100}
+  preferredDist: 190
+  preferredDistJitter: 40
+  retreatFraction: 0.7
