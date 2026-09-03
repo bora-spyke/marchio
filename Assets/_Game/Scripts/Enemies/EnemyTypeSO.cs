@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Marchio
 {
-    public enum EnemyBehavior { Chase, KeepDistance, Boss }
+    public enum EnemyBehavior { Chase, KeepDistance, SeekTrail, Boss }
 
     [CreateAssetMenu(menuName = "Marchio/Enemy Type", fileName = "EnemyType")]
     public sealed class EnemyTypeSO : ScriptableObject
@@ -18,6 +18,7 @@ namespace Marchio
         public float radius = 14f;
         public float contactDamage = 10f;
         public int xp = 1;
+        public float score = 8f;
         public bool ignoresBarriers;
 
         [Header("Firing")]

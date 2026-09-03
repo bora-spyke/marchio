@@ -5131,6 +5131,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Marchio::Marchio.GameManager
   config: {fileID: 11400000, guid: 30a8c4f6fb10f4301803b4627d7ab473, type: 2}
+  preset: {fileID: 11400000, guid: 9741587ef96c24ba99c9c8eb1d0638ad, type: 2}
   cameraRig: {fileID: 1298780673}
   input: {fileID: 693961886}
   player: {fileID: 1104720868}
@@ -5140,7 +5141,6 @@ MonoBehaviour:
   upgrades: {fileID: 693961884}
   fx: {fileID: 757005667}
   poolRoot: {fileID: 1630967580}
-  waveTable: {fileID: 11400000, guid: 75a69a3797244422bab811a0b76a1275, type: 2}
   enemyProjectilePrefab: {fileID: 1795060547283548827, guid: fa597dd4b894f44afa5455ed29e841cf, type: 3}
   playerProjectilePrefab: {fileID: 1314426356495512094, guid: 731961c9b9fdd41cfb72717124ae18cb, type: 3}
   barrierPrefab: {fileID: 1393564817872220168, guid: 1ac53fe7e25f24d529284da86ac25655, type: 3}

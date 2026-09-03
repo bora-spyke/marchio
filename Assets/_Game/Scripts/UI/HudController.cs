@@ -1,4 +1,3 @@
-using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -8,16 +7,16 @@ namespace Marchio
     public sealed class HudController : MonoBehaviour
     {
         VisualElement root;
-        VisualElement hpBar, hpFill, bossBar, bossFill, trailBar, trailFill, joystick, joystickKnob;
-        Label hpText, upgradesText, waveText, enemyText, comboChip, bossLabel, drawText;
+        VisualElement hpBar, hpFill, thresholdBar, thresholdFill, eliteBar, eliteFill, trailBar, trailFill, joystick, joystickKnob, stackRow, toast;
+        Label hpText, levelText, thresholdText, comboChip, eliteLabel, drawText, toastText;
         DamageTextLayer damageLayer;
         InputReader input;
-        readonly StringBuilder sb = new StringBuilder(128);
         int lastCombo = -1;
-        int lastUpgradeHash = -1;
+        int lastStackHash = -1;
         int lastHp = int.MinValue;
-        int lastWave = -1;
-        int lastEnemyCount = -1;
+        int lastLevel = -1;
+        int lastRemaining = -1;
+        bool pulse;
 
         void OnEnable()
         {
@@ -26,28 +25,37 @@ namespace Marchio
             hpBar = root.Q("hp-bar");
             hpFill = root.Q("hp-fill");
             hpText = root.Q<Label>("hp-text");
-            upgradesText = root.Q<Label>("upgrades-text");
-            waveText = root.Q<Label>("wave-text");
-            enemyText = root.Q<Label>("enemy-text");
+            stackRow = root.Q("stack-row");
+            levelText = root.Q<Label>("level-text");
+            thresholdBar = root.Q("threshold-bar");
+            thresholdFill = root.Q("threshold-fill");
+            thresholdText = root.Q<Label>("threshold-text");
             comboChip = root.Q<Label>("combo-chip");
-            bossBar = root.Q("boss-bar");
-            bossFill = root.Q("boss-fill");
-            bossLabel = root.Q<Label>("boss-label");
+            eliteBar = root.Q("elite-bar");
+            eliteFill = root.Q("elite-fill");
+            eliteLabel = root.Q<Label>("elite-label");
             drawText = root.Q<Label>("draw-text");
             trailBar = root.Q("trail-bar");
             trailFill = root.Q("trail-fill");
             joystick = root.Q("joystick");
             joystickKnob = root.Q("joystick-knob");
+            toast = root.Q("toast");
+            toastText = root.Q<Label>("toast-text");
             damageLayer = new DamageTextLayer(root.Q("damage-layer"));
-            SafeArea.Apply(root);
+            root.schedule.Execute(() =>
+            {
+                pulse = !pulse;
+                thresholdBar.EnableInClassList("threshold-bar--pulse", pulse && thresholdBar.ClassListContains("threshold-bar--pressure"));
+            }).Every(350);
         }
 
         void Start()
         {
             var gm = GameManager.I;
-            input = FindFirstObjectByType<InputReader>();
+            input = gm.GetComponent<InputReader>();
             gm.DamageText += damageLayer.Spawn;
             gm.ModeChanged += OnMode;
+            gm.NodeUnlocked += OnUnlock;
             OnMode(gm.Mode);
         }
 
@@ -57,54 +65,78 @@ namespace Marchio
             if (gm == null) return;
             gm.DamageText -= damageLayer.Spawn;
             gm.ModeChanged -= OnMode;
+            gm.NodeUnlocked -= OnUnlock;
         }
 
         void OnMode(GameMode mode)
         {
-            root.style.display = mode == GameMode.Menu ? DisplayStyle.None : DisplayStyle.Flex;
-            if (mode == GameMode.Play) lastUpgradeHash = -1;
+            root.style.display = mode == GameMode.Play ? DisplayStyle.Flex : DisplayStyle.None;
+            if (mode == GameMode.Play) { lastStackHash = -1; lastLevel = -1; lastRemaining = -1; }
+        }
+
+        void OnUnlock(TrophyNode node)
+        {
+            toastText.text = "UNLOCKED  ·  " + node.title.ToUpperInvariant();
+            toast.EnableInClassList("toast--macro", node.macro);
+            toast.AddToClassList("toast--on");
+            toast.schedule.Execute(() => toast.RemoveFromClassList("toast--on")).ExecuteLater(1900);
         }
 
         void Update()
         {
             var gm = GameManager.I;
             if (gm == null || root.resolvedStyle.display == DisplayStyle.None) return;
-            var cfg = gm.Config;
             var cam = gm.Cam.Cam;
 
-            float hpFrac = Mathf.Clamp01(gm.Player.Hp / cfg.playerMaxHP);
+            float maxHp = gm.PlayerMaxHp;
+            float hpFrac = Mathf.Clamp01(gm.Player.Hp / maxHp);
             hpFill.style.width = Length.Percent(hpFrac * 100f);
             hpBar.EnableInClassList("hp-bar--low", hpFrac <= 0.3f);
             int hp = Mathf.Max(0, Mathf.RoundToInt(gm.Player.Hp));
             if (hp != lastHp)
             {
                 lastHp = hp;
-                hpText.text = $"{hp}/{cfg.playerMaxHP:0}";
+                hpText.text = $"{hp}/{maxHp:0}";
             }
-            if (gm.Waves.Wave != lastWave)
+
+            var run = gm.Run;
+            if (run.Level != lastLevel)
             {
-                lastWave = gm.Waves.Wave;
-                waveText.text = $"DALGA {lastWave}";
+                lastLevel = run.Level;
+                levelText.text = run.IsVictoryLap ? "VICTORY LAP" : $"LEVEL {run.Level}";
             }
-            if (gm.Enemies.Count != lastEnemyCount)
+            if (run.IsVictoryLap)
             {
-                lastEnemyCount = gm.Enemies.Count;
-                enemyText.text = $"{lastEnemyCount} düşman";
+                float lap = Mathf.Clamp01(run.LevelTime / Mathf.Max(1f, gm.Preset.victoryLapDurationS));
+                thresholdFill.style.width = Length.Percent(lap * 100f);
+                thresholdBar.RemoveFromClassList("threshold-bar--pressure");
+                if (lastRemaining != 0) { lastRemaining = 0; thresholdText.text = "ENJOY THE RIDE"; }
+            }
+            else
+            {
+                thresholdFill.style.width = Length.Percent(run.Progress * 100f);
+                thresholdBar.EnableInClassList("threshold-bar--pressure", run.Progress >= gm.Preset.thresholdPressureFrac);
+                int remaining = Mathf.CeilToInt(run.Remaining);
+                if (remaining != lastRemaining)
+                {
+                    lastRemaining = remaining;
+                    thresholdText.text = $"{remaining} TO GO";
+                }
             }
 
             if (gm.Combo != lastCombo)
             {
                 lastCombo = gm.Combo;
-                comboChip.text = $"KOMBO x{gm.Combo}";
+                comboChip.text = $"COMBO x{gm.Combo}";
                 comboChip.EnableInClassList("combo-chip--on", gm.Combo > 0);
                 if (gm.Combo > 0) Pop(comboChip);
             }
 
-            var boss = gm.Waves.ActiveBoss;
-            bool bossAlive = boss != null && !boss.Dead;
-            bossBar.style.display = bossAlive ? DisplayStyle.Flex : DisplayStyle.None;
-            bossLabel.style.display = bossAlive ? DisplayStyle.Flex : DisplayStyle.None;
-            if (bossAlive) bossFill.style.width = Length.Percent(Mathf.Clamp01(boss.Hp / boss.MaxHp) * 100f);
+            var elite = gm.Waves.ActiveElite;
+            bool eliteAlive = elite != null && !elite.Dead && elite.gameObject.activeSelf;
+            eliteBar.style.display = eliteAlive ? DisplayStyle.Flex : DisplayStyle.None;
+            eliteLabel.style.display = eliteAlive ? DisplayStyle.Flex : DisplayStyle.None;
+            if (eliteAlive) eliteFill.style.width = Length.Percent(Mathf.Clamp01(elite.Hp / elite.MaxHp) * 100f);
 
             bool drawing = gm.Trail.Drawing;
             drawText.EnableInClassList("draw-text--on", drawing);
@@ -116,31 +148,20 @@ namespace Marchio
                 trailFill.EnableInClassList("trail-fill--hot", frac > 0.85f);
             }
 
-            UpdateUpgrades(gm);
+            UpdateStack(gm);
             UpdateJoystick();
             damageLayer.Tick(Time.deltaTime, cam);
         }
 
-        void UpdateUpgrades(GameManager gm)
+        void UpdateStack(GameManager gm)
         {
             int hash = 17;
-            for (int i = 0; i < UpgradeManager.Count; i++) hash = hash * 31 + gm.Upgrades.Level((UpgradeId)i);
-            if (hash == lastUpgradeHash) return;
-            lastUpgradeHash = hash;
-            sb.Clear();
-            for (int i = 0; i < UpgradeManager.Count; i++)
-            {
-                var id = (UpgradeId)i;
-                int lvl = gm.Upgrades.Level(id);
-                if (lvl <= 0) continue;
-                if (sb.Length > 0) sb.Append("   ");
-                sb.Append(UpgradeManager.ShortNameOf(id));
-                if (id == UpgradeId.ElectricBorder)
-                    sb.Append(" x").Append(lvl).Append(" (").Append(Mathf.RoundToInt(gm.Config.ElectricBorderRadius(lvl))).Append("px)");
-                else if (lvl > 1)
-                    sb.Append(" x").Append(lvl);
-            }
-            upgradesText.text = sb.ToString();
+            var up = gm.Upgrades;
+            for (int i = 0; i < up.Fill.Count; i++) hash = hash * 31 + up.Fill.Level(i);
+            for (int i = 0; i < up.Power.Count; i++) hash = hash * 31 + up.Power.Level(i);
+            if (hash == lastStackHash) return;
+            lastStackHash = hash;
+            UiKit.FillStackRow(stackRow, up);
         }
 
         void UpdateJoystick()

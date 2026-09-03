@@ -19,6 +19,7 @@ namespace Marchio
         Vector2 last;
         float flashT;
         float flashLife;
+        float baseWidth = -1f;
 
         public bool Drawing { get; private set; }
         public float PathLength { get; private set; }
@@ -26,8 +27,48 @@ namespace Marchio
 
         GameManager Gm => GameManager.I;
 
+        public void ApplyLook()
+        {
+            var gm = GameManager.I;
+            if (baseWidth < 0f) baseWidth = line.startWidth;
+            float w = baseWidth * gm.Trophy.TrailWidthMult;
+            line.startWidth = w;
+            line.endWidth = w;
+            var c = gm.Trophy.Has(TrophyReward.TrailEffect) ? gm.Config.trailVariant : gm.Config.trail;
+            c.a = line.startColor.a;
+            line.startColor = c;
+            line.endColor = c;
+        }
+
+        public bool TryNearestPoint(Vector2 from, out Vector2 point)
+        {
+            point = default;
+            if (!Drawing || points.Count < 2) return false;
+            float best = float.PositiveInfinity;
+            for (int i = 0; i < points.Count; i += 3)
+            {
+                float d2 = (points[i] - from).sqrMagnitude;
+                if (d2 < best) { best = d2; point = points[i]; }
+            }
+            return true;
+        }
+
+        public bool Touches(Vector2 pos, float radius)
+        {
+            if (!Drawing || points.Count < 3) return false;
+            float r2 = radius * radius;
+            int lastSegment = points.Count - 3;
+            for (int i = 0; i < lastSegment; i++)
+            {
+                var cp = PolygonMath.ClosestPointOnSegment(pos, points[i], points[i + 1]);
+                if ((pos - cp).sqrMagnitude <= r2) return true;
+            }
+            return false;
+        }
+
         public void ResetState()
         {
+            ApplyLook();
             Drawing = false;
             points.Clear();
             lengths.Clear();
@@ -69,7 +110,7 @@ namespace Marchio
             float minLen = cfg.MinLoopLength;
             if (PathLength >= minLen)
             {
-                int hit = FindSelfTouchIndex(pos, minLen, cfg.CloseRadius);
+                int hit = FindSelfTouchIndex(pos, minLen, cfg.CloseRadius * Gm.Trophy.TrailWidthMult);
                 if (hit >= 0) { Close(hit); return; }
             }
             RenderLine(pos);

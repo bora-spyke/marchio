@@ -1,96 +1,68 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Marchio
 {
     public sealed class WaveManager : MonoBehaviour
     {
-        readonly List<EnemyTypeSO> spawnQueue = new List<EnemyTypeSO>(64);
-        float spawnTimer;
-        float waveClearTimer;
+        float spawnAccumulator;
 
-        public int Wave { get; private set; }
-        public float WaveHpMult { get; private set; } = 1f;
-        public bool WaveClearing { get; private set; }
-        public int BossSpawnedWave { get; private set; }
-        public BossController ActiveBoss { get; private set; }
+        public Enemy ActiveElite { get; private set; }
 
         GameManager Gm => GameManager.I;
         GameConfig Cfg => GameManager.I.Config;
 
         public void ResetState()
         {
-            spawnQueue.Clear();
-            spawnTimer = 0f;
-            waveClearTimer = 0f;
-            Wave = 0;
-            WaveHpMult = 1f;
-            WaveClearing = false;
-            BossSpawnedWave = 0;
-            ActiveBoss = null;
+            spawnAccumulator = 0f;
+            ActiveElite = null;
         }
 
-        public void StartWave(int n)
+        public void BeginLevel()
         {
-            Wave = n;
-            WaveHpMult = 1f + (n - 1) * Cfg.waveHpScalePerWave;
-            spawnQueue.Clear();
-            if (Cfg.spawnEnemies)
-            {
-                Gm.WaveTable.Compose(n, spawnQueue);
-                Shuffle(spawnQueue);
-            }
-            spawnTimer = 0f;
-            WaveClearing = false;
+            spawnAccumulator = 0f;
+            ActiveElite = null;
         }
 
-        static void Shuffle(List<EnemyTypeSO> list)
-        {
-            for (int i = list.Count - 1; i > 0; i--)
-            {
-                int j = Random.Range(0, i + 1);
-                (list[i], list[j]) = (list[j], list[i]);
-            }
-        }
+        float HpMult => 1f + (Gm.Run.Level - 1) * Gm.Preset.hpScalePerLevel;
 
         public void Tick(float dt)
         {
             if (!Cfg.spawnEnemies) return;
-            if (spawnQueue.Count > 0)
+            var run = Gm.Run;
+            var preset = Gm.Preset;
+            float rate = preset.baseSpawnPerS * preset.SpawnRateMult(run.LevelTime);
+            if (run.IsVictoryLap) rate *= preset.victoryLapDensity;
+            spawnAccumulator += rate * dt;
+            while (spawnAccumulator >= 1f)
             {
-                spawnTimer -= dt * 1000f;
-                if (spawnTimer <= 0f)
-                {
-                    spawnTimer = Cfg.enemySpawnStaggerMs;
-                    var type = spawnQueue[spawnQueue.Count - 1];
-                    spawnQueue.RemoveAt(spawnQueue.Count - 1);
-                    Spawn(type, SpawnPoint());
-                }
+                spawnAccumulator -= 1f;
+                var type = PickType(preset, run.LevelTime);
+                if (type != null) Spawn(type, SpawnPoint(), HpMult);
             }
 
-            if (!WaveClearing && spawnQueue.Count == 0 && Gm.Enemies.Count == 0 && Wave > 0)
+            if (!run.IsVictoryLap && !run.EliteSpawned && preset.eliteType != null && run.Progress >= preset.eliteAtThresholdFrac)
             {
-                var bossType = Gm.WaveTable.BossAfter(Wave);
-                if (bossType != null && BossSpawnedWave != Wave) StartBossFight(bossType);
-                else BeginClear();
-            }
-
-            if (WaveClearing)
-            {
-                waveClearTimer -= dt * 1000f;
-                if (waveClearTimer <= 0f)
-                {
-                    WaveClearing = false;
-                    if (Wave % Cfg.upgradeEveryNWaves == 0) Gm.OpenUpgradeScreen();
-                    else StartWave(Wave + 1);
-                }
+                run.EliteSpawned = true;
+                var pos = SpawnPoint();
+                ActiveElite = Spawn(preset.eliteType, pos, HpMult * preset.eliteHpMult);
+                Gm.Fx.Burst(pos, preset.eliteType.color, 24);
             }
         }
 
-        void BeginClear()
+        static EnemyTypeSO PickType(RunPreset preset, float levelTime)
         {
-            WaveClearing = true;
-            waveClearTimer = Cfg.waveClearDelayMs;
+            int idx = preset.PhaseIndex(levelTime);
+            if (idx < 0) return null;
+            var weights = preset.spawnPhases[idx].weights;
+            float total = 0f;
+            for (int i = 0; i < weights.Length; i++) total += weights[i].weight;
+            float roll = Random.value * total;
+            for (int i = 0; i < weights.Length; i++)
+            {
+                roll -= weights[i].weight;
+                if (roll <= 0f) return weights[i].type;
+            }
+            return weights.Length > 0 ? weights[weights.Length - 1].type : null;
         }
 
         Vector2 SpawnPoint()
@@ -109,28 +81,12 @@ namespace Marchio
             }
         }
 
-        Enemy Spawn(EnemyTypeSO type, Vector2 pos)
+        Enemy Spawn(EnemyTypeSO type, Vector2 pos, float hpMult)
         {
             var en = Gm.GetEnemy(type);
-            en.Init(type, pos, WaveHpMult);
+            en.Init(type, pos, hpMult);
             Gm.Enemies.Add(en);
             return en;
-        }
-
-        void StartBossFight(EnemyTypeSO bossType)
-        {
-            BossSpawnedWave = Wave;
-            var center = Gm.Player.Pos;
-            Gm.ActivateBossArena(center);
-            var spawnPos = center + new Vector2(0f, Cfg.bossArenaRadius * 0.6f);
-            ActiveBoss = Spawn(bossType, spawnPos) as BossController;
-            Gm.Fx.Burst(spawnPos, bossType.color, 24);
-        }
-
-        public void OnBossKilled()
-        {
-            ActiveBoss = null;
-            BeginClear();
         }
 
         public void TickEnemies(float dt)
@@ -138,6 +94,9 @@ namespace Marchio
             var gm = Gm;
             var cfg = Cfg;
             var player = gm.Player;
+            var trail = gm.Trail;
+            float cutRadius = cfg.trailHitRadius * gm.Trophy.TrailWidthMult;
+            int liveWire = gm.Upgrades.Level(PowerId.LiveWire);
             for (int i = gm.Enemies.Count - 1; i >= 0; i--)
             {
                 var en = gm.Enemies[i];
@@ -152,6 +111,14 @@ namespace Marchio
                     for (int b = 0; b < barriers.Count; b++)
                         if (barriers[b].PushOut(en, dt)) touching = true;
                     if (touching) en.ApplyBarrierDamage(cfg.barrierDps * dt);
+                    if (en.Dead) { gm.ReleaseEnemy(en); continue; }
+                }
+
+                if (player.Invuln <= 0f && trail.Touches(en.Pos, en.Radius + cutRadius))
+                {
+                    if (liveWire > 0) en.ApplyBurn(gm.Preset.liveWireBurnDps * liveWire, cfg.burnDurationS);
+                    gm.Fx.Burst(en.Pos, cfg.trail, 12);
+                    player.TakeDamage(cfg.trailCutDamage);
                     if (en.Dead) { gm.ReleaseEnemy(en); continue; }
                 }
 

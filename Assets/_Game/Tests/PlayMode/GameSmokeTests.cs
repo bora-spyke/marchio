@@ -19,18 +19,22 @@ namespace Marchio.Tests
 
             gm.OnScreenTap();
             Assert.AreEqual(GameMode.Play, gm.Mode);
-            Assert.AreEqual(1, gm.Waves.Wave);
+            Assert.AreEqual(1, gm.Run.Level);
+            Assert.Greater(gm.Run.Threshold, 0f);
 
             float t = 0f;
             while (t < 4f) { t += Time.deltaTime; yield return null; }
 
-            Assert.Greater(gm.Enemies.Count, 0, "wave 1 should have spawned chasers");
+            Assert.Greater(gm.Enemies.Count, 0, "level 1 should have spawned chasers");
             Assert.Greater(gm.PlayerProjectiles.Active.Count + gm.EnemyProjectiles.Active.Count, 0, "auto attack or enemies should have fired");
 
             var enemy = gm.Enemies[0];
             var pos = enemy.Pos;
+            float trophyBefore = gm.Trophy.Total;
             enemy.Kill();
             yield return null;
+            Assert.Greater(gm.Run.LevelScore, 0f, "kill should add level score");
+            Assert.Greater(gm.Trophy.Total, trophyBefore, "kill score banks to trophy road immediately");
             Assert.IsFalse(gm.Enemies.Contains(enemy), "dead enemy released back to pool");
             Assert.IsFalse(enemy.gameObject.activeSelf);
 
@@ -41,8 +45,14 @@ namespace Marchio.Tests
             LoopDamage.Resolve(poly);
             Assert.AreEqual(1, gm.Barriers.Active.Count, "closing a loop always spawns a barrier");
 
-            gm.EndRun();
-            Assert.AreEqual(GameMode.Over, gm.Mode);
+            gm.Fail();
+            Assert.AreEqual(GameMode.Fail, gm.Mode);
+            Assert.AreEqual(1, gm.Run.RevivesLeft);
+            gm.Revive();
+            Assert.AreEqual(GameMode.Play, gm.Mode);
+            Assert.AreEqual(0, gm.Enemies.Count, "revive restarts the level with a clear field");
+            gm.ToMenu();
+            Assert.AreEqual(GameMode.Menu, gm.Mode);
         }
     }
 }

@@ -21,6 +21,7 @@ MonoBehaviour:
   radius: 34
   contactDamage: 18
   xp: 0
+  score: 60
   ignoresBarriers: 1
   fires: 0
   fireIntervalMs: 1900

@@ -1,19 +1,47 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:VisualElement name="screens" class="screens" picking-mode="Ignore">
-        <ui:VisualElement name="menu" class="overlay">
+        <ui:VisualElement name="main" class="overlay overlay--main">
             <ui:Label class="title" text="NEONLOOP" />
-            <ui:Label class="subtitle" text="DÜŞMANI ÇEMBERE AL — İLMEĞİ KAPAT" />
-            <ui:Label name="menu-cta" class="cta" text="BAŞLA: DOKUN / FARE / WASD+SPACE" />
+            <ui:Label class="subtitle subtitle--tight" text="TRACE · CLAIM · SURVIVE" />
+            <ui:VisualElement name="main-trophy" class="panel" />
+            <ui:ScrollView name="main-road" class="road" />
+            <ui:Label name="main-cart" class="cart-preview" text="CART MK I" />
+            <ui:VisualElement name="main-buttons" class="buttons" />
         </ui:VisualElement>
-        <ui:VisualElement name="upgrade" class="overlay">
-            <ui:Label name="upgrade-title" class="title-small" text="DALGA 3 TAMAMLANDI" />
-            <ui:Label class="subtitle" text="BİR YÜKSELTME SEÇ" />
-            <ui:VisualElement name="cards" class="cards" />
+        <ui:VisualElement name="clear" class="overlay">
+            <ui:Label name="clear-title" class="title-small" text="LEVEL 1 COMPLETE" />
+            <ui:VisualElement name="clear-lines" class="panel" />
+            <ui:VisualElement name="clear-trophy" class="panel" />
+            <ui:VisualElement name="clear-stack" class="stack-row panel" />
+            <ui:Label name="clear-hp" class="hp-line" text="HP 100 / 100" />
+            <ui:VisualElement name="clear-buttons" class="buttons" />
         </ui:VisualElement>
-        <ui:VisualElement name="over" class="overlay">
-            <ui:Label class="title" text="TUR BİTTİ" />
-            <ui:Label name="over-sub" class="subtitle" text="ulaşılan dalga 1   en iyi 1" />
-            <ui:Label name="over-cta" class="cta" text="TEKRAR İÇİN DOKUN" />
+        <ui:VisualElement name="fill" class="overlay">
+            <ui:Label name="fill-title" class="title-small" text="LEVEL 1 COMPLETE" />
+            <ui:Label class="subtitle" text="CHOOSE A FILL UPGRADE" />
+            <ui:VisualElement name="fill-cards" class="cards" />
+        </ui:VisualElement>
+        <ui:VisualElement name="power" class="overlay">
+            <ui:Label name="power-title" class="title-small" text="LEVEL 2" />
+            <ui:Label class="subtitle" text="PICK A POWER-UP" />
+            <ui:VisualElement name="power-cards" class="cards" />
+        </ui:VisualElement>
+        <ui:VisualElement name="fail" class="overlay">
+            <ui:Label class="title" text="RUN OVER" />
+            <ui:Label name="fail-score" class="subtitle subtitle--tight" text="SCORE EARNED THIS RUN: 0" />
+            <ui:VisualElement name="fail-trophy" class="panel" />
+            <ui:Label class="panel-title" text="YOUR BUILD" />
+            <ui:VisualElement name="fail-stack" class="stack-row panel" />
+            <ui:Label name="fail-bonus" class="missed" text="+35% BONUS MISSED" />
+            <ui:VisualElement name="fail-buttons" class="buttons" />
+        </ui:VisualElement>
+        <ui:VisualElement name="victory" class="overlay">
+            <ui:Label class="title" text="VICTORY LAP" />
+            <ui:Label name="victory-score" class="subtitle subtitle--tight" text="RUN SCORE: 0" />
+            <ui:VisualElement name="victory-trophy" class="panel" />
+            <ui:Label class="panel-title" text="UNLOCKED" />
+            <ui:VisualElement name="victory-rewards" class="rewards" />
+            <ui:VisualElement name="victory-buttons" class="buttons" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

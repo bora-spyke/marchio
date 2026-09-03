@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Marchio
 {
-    public enum GameMode { Menu, Play, Upgrade, Over }
+    public enum GameMode { Menu, Play, LevelClear, FillUpgrade, PowerUp, Fail, Victory }
 
     public sealed class GameManager : MonoBehaviour
     {
@@ -13,6 +13,7 @@ namespace Marchio
         public static GameManager I { get; private set; }
 
         [SerializeField] GameConfig config;
+        [SerializeField] RunPreset preset;
         [SerializeField] CameraRig cameraRig;
         [SerializeField] InputReader input;
         [SerializeField] PlayerController player;
@@ -22,7 +23,6 @@ namespace Marchio
         [SerializeField] UpgradeManager upgrades;
         [SerializeField] ParticleFx fx;
         [SerializeField] Transform poolRoot;
-        [SerializeField] WaveTableSO waveTable;
 
         [Header("Pooled prefabs")]
         [SerializeField] Projectile enemyProjectilePrefab;
@@ -31,13 +31,15 @@ namespace Marchio
         [SerializeField] DeadTrail deadTrailPrefab;
 
         public GameConfig Config => config;
+        public RunPreset Preset => preset;
         public CameraRig Cam => cameraRig;
         public PlayerController Player => player;
         public LoopTrail Trail => trail;
         public WaveManager Waves => waves;
         public UpgradeManager Upgrades => upgrades;
         public ParticleFx Fx => fx;
-        public WaveTableSO WaveTable => waveTable;
+        public Run Run { get; private set; }
+        public TrophyRoad Trophy { get; private set; }
 
         readonly Dictionary<EnemyTypeSO, ObjectPool<Enemy>> enemyPools = new Dictionary<EnemyTypeSO, ObjectPool<Enemy>>();
         public ObjectPool<Projectile> EnemyProjectiles { get; private set; }
@@ -52,15 +54,35 @@ namespace Marchio
         public float MaxLoopLength { get; private set; }
         public float Hitstop { get; private set; }
         public float Shake { get; private set; }
-        public int Best { get; private set; }
-        public float OverTime { get; private set; }
-        public bool BossArenaActive { get; private set; }
-        public Vector2 BossArenaCenter { get; private set; }
 
         public event Action<GameMode> ModeChanged;
         public event Action<Vector2, int> DamageText;
+        public event Action<TrophyNode> NodeUnlocked;
 
         float accumulator;
+
+        public float PlayerMaxHp
+        {
+            get
+            {
+                float mult = Trophy.MaxHpMult;
+                mult += upgrades.Level(PowerId.IronHull) * preset.ironHullPerStack;
+                if (upgrades.Level(PowerId.DevilsBargain) > 0) mult -= preset.devilHpPenalty;
+                return Mathf.Max(1f, config.playerMaxHP * mult);
+            }
+        }
+
+        public float DamageMult
+        {
+            get
+            {
+                float mult = Trophy.DamageMult * (1f + upgrades.Level(PowerId.Overload) * preset.overloadPerStack);
+                if (upgrades.Level(PowerId.DevilsBargain) > 0) mult *= preset.devilDamageMult;
+                return mult;
+            }
+        }
+
+        public float FireRateMult => 1f + upgrades.Level(PowerId.RapidFeed) * preset.rapidFeedPerStack;
 
         void Awake()
         {
@@ -70,6 +92,9 @@ namespace Marchio
             PlayerProjectiles = new ObjectPool<Projectile>(playerProjectilePrefab, poolRoot, 16);
             Barriers = new ObjectPool<Barrier>(barrierPrefab, poolRoot, 4);
             DeadTrails = new ObjectPool<DeadTrail>(deadTrailPrefab, poolRoot, 4);
+            Trophy = new TrophyRoad(preset);
+            Run = new Run(preset, Trophy);
+            upgrades.Init(config);
             cameraRig.Configure(config);
             ResetRun();
         }
@@ -106,6 +131,7 @@ namespace Marchio
 
             if (Mode != GameMode.Play) return;
 
+            Run.LevelTime += dt;
             var inp = input.Read(dt);
             player.Tick(dt, inp);
             trail.Tick(dt, inp.Draw);
@@ -115,7 +141,22 @@ namespace Marchio
             waves.ApplySeparation(dt);
             TickEnemyProjectiles(dt);
             TickPlayerProjectiles(dt);
-            if (player.Hp <= 0f) EndRun();
+
+            if (Mode != GameMode.Play) return;
+            if (Trophy.HasPending) ApplyUnlock(Trophy.ClaimNext());
+            if (Run.ThresholdReached) CompleteLevel();
+            else if (Run.VictoryLapDone) FinishVictoryLap();
+        }
+
+        void ApplyUnlock(TrophyNode node)
+        {
+            player.ApplyLook();
+            player.ClampHp();
+            trail.ApplyLook();
+            if (node.reward == TrophyReward.ExtraRevive) Run.RevivesLeft++;
+            fx.Burst(player.Pos, config.electricBorderSpark, 40);
+            AddJuice(config.hitstopBaseMs * 2f, config.shakeBase);
+            NodeUnlocked?.Invoke(node);
         }
 
         void TickEnemyProjectiles(float dt)
@@ -158,15 +199,31 @@ namespace Marchio
                 for (int e = 0; e < Enemies.Count; e++)
                 {
                     var en = Enemies[e];
-                    if (en.Dead) continue;
+                    if (en.Dead || en == b.LastHit) continue;
                     if (Vector2.Distance(b.Pos, en.Pos) < b.Radius + en.Radius)
                     {
-                        en.ApplyDamage(config.autoAttackDamage, 0.1f, true);
-                        pool.Release(b);
+                        en.ApplyDamage(b.Damage, 0.1f, true);
+                        var next = b.Bounces > 0 ? NearestEnemyExcept(b.Pos, en, preset.ricochetRangePx) : null;
+                        if (next != null) b.Redirect(en, next.Pos);
+                        else pool.Release(b);
                         break;
                     }
                 }
             }
+        }
+
+        Enemy NearestEnemyExcept(Vector2 from, Enemy except, float maxDist)
+        {
+            Enemy best = null;
+            float bestD = maxDist * maxDist;
+            for (int i = 0; i < Enemies.Count; i++)
+            {
+                var en = Enemies[i];
+                if (en.Dead || en == except) continue;
+                float d = (en.Pos - from).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = en; }
+            }
+            return best;
         }
 
         public bool SegmentBlockedByBarrier(Vector2 from, Vector2 to, out Vector2 hit)
@@ -180,7 +237,7 @@ namespace Marchio
         public float EffectiveMaxLoopLength()
         {
             float bonus = Mathf.Min(Combo * config.comboLoopLengthStep, config.comboLoopLengthCapBonus);
-            return MaxLoopLength * (1f + bonus);
+            return MaxLoopLength * (1f + bonus) * Trophy.TrailLengthMult;
         }
 
         public void AddCombo(int count) => Combo += count;
@@ -197,10 +254,9 @@ namespace Marchio
 
         public void OnEnemyKilled(Enemy en)
         {
+            Run.AddScore(ScoreSource.Kill, en.Type.score);
             if (en.Type.IsBoss)
             {
-                BossArenaActive = false;
-                waves.OnBossKilled();
                 fx.Burst(en.Pos, en.Type.color, 32);
                 return;
             }
@@ -233,57 +289,113 @@ namespace Marchio
             enemyPools[en.Type].Release(en);
         }
 
-        public void ActivateBossArena(Vector2 center)
-        {
-            BossArenaActive = true;
-            BossArenaCenter = center;
-        }
-
-        public Vector2 ClampToBossArena(Vector2 p)
-        {
-            if (!BossArenaActive) return p;
-            var d = p - BossArenaCenter;
-            float r = config.bossArenaRadius;
-            if (d.sqrMagnitude > r * r) return BossArenaCenter + d.normalized * r;
-            return p;
-        }
-
         public void OnScreenTap()
         {
             if (Mode == GameMode.Menu) StartRun();
-            else if (Mode == GameMode.Over && Time.unscaledTime - OverTime > 0.35f) StartRun();
         }
 
         public void StartRun()
         {
             ResetRun();
+            Run.Start(preset.freeRevives + Trophy.ExtraRevives);
+            BeginLevel(1);
+        }
+
+        void BeginLevel(int level)
+        {
+            ClearField();
+            Run.BeginLevel(level);
+            waves.BeginLevel();
+            trail.ResetState();
+            autoAttack.ResetState();
+            player.ClampHp();
             SetMode(GameMode.Play);
-            waves.StartWave(1);
         }
 
-        public void OpenUpgradeScreen()
+        void CompleteLevel()
         {
-            upgrades.RollThree();
-            SetMode(GameMode.Upgrade);
+            Run.CompleteLevel();
+            if (Run.HealsAfter(Run.Level))
+            {
+                player.Heal(PlayerMaxHp * preset.healAmount);
+                Run.HealedOnClear = true;
+            }
+            Trophy.Flush();
+            SetMode(GameMode.LevelClear);
         }
 
-        public void PickUpgrade(UpgradeId id)
+        public void ContinueFromClear()
         {
-            if (Mode != GameMode.Upgrade) return;
-            upgrades.Apply(id);
-            SetMode(GameMode.Play);
-            waves.StartWave(waves.Wave + 1);
+            if (Mode != GameMode.LevelClear) return;
+            if (Run.OffersFillUpgrade(Run.Level))
+            {
+                upgrades.Fill.RollThree();
+                if (upgrades.Fill.Choices.Count > 0) { SetMode(GameMode.FillUpgrade); return; }
+            }
+            OfferPowerUpOrStart();
         }
 
-        public void EndRun()
+        public void PickFill(int id)
         {
-            if (Mode == GameMode.Over) return;
-            OverTime = Time.unscaledTime;
-            if (waves.Wave > Best) Best = waves.Wave;
-            SetMode(GameMode.Over);
+            if (Mode != GameMode.FillUpgrade) return;
+            upgrades.Fill.Apply(id);
+            OfferPowerUpOrStart();
         }
 
-        void ResetRun()
+        void OfferPowerUpOrStart()
+        {
+            int next = Run.Level + 1;
+            if (Run.OffersPowerUpBefore(next))
+            {
+                upgrades.Power.RollThree();
+                if (upgrades.Power.Choices.Count > 0) { SetMode(GameMode.PowerUp); return; }
+            }
+            BeginLevel(next);
+        }
+
+        public void PickPower(int id)
+        {
+            if (Mode != GameMode.PowerUp) return;
+            upgrades.Power.Apply(id);
+            BeginLevel(Run.Level + 1);
+        }
+
+        public void Fail()
+        {
+            if (Mode != GameMode.Play) return;
+            Trophy.Flush();
+            SetMode(GameMode.Fail);
+        }
+
+        public void Revive()
+        {
+            if (Mode != GameMode.Fail || Run.RevivesLeft <= 0) return;
+            Run.RevivesLeft--;
+            player.SetHp(PlayerMaxHp * preset.reviveHp);
+            BeginLevel(Run.Level);
+        }
+
+        public void ToMenu()
+        {
+            ResetRun();
+            SetMode(GameMode.Menu);
+        }
+
+        public void ResetProgress()
+        {
+            if (Mode != GameMode.Menu) return;
+            Trophy.Reset();
+            ResetRun();
+            SetMode(GameMode.Menu);
+        }
+
+        void FinishVictoryLap()
+        {
+            Trophy.Flush();
+            SetMode(GameMode.Victory);
+        }
+
+        void ClearField()
         {
             foreach (var pool in enemyPools.Values) pool.ReleaseAll();
             EnemyProjectiles.ReleaseAll();
@@ -292,18 +404,23 @@ namespace Marchio
             DeadTrails.ReleaseAll();
             Enemies.Clear();
             Combo = 0;
-            KillXP = 0;
-            MaxLoopLength = config.BaseMaxLoopLength;
             Hitstop = 0f;
             Shake = 0f;
-            BossArenaActive = false;
             accumulator = 0f;
             input.ResetState();
+            waves.ResetState();
+        }
+
+        void ResetRun()
+        {
+            ClearField();
+            KillXP = 0;
+            MaxLoopLength = config.BaseMaxLoopLength;
+            upgrades.ResetState();
             player.ResetState();
             trail.ResetState();
             autoAttack.ResetState();
-            waves.ResetState();
-            upgrades.ResetState();
+            Run.Start(preset.freeRevives + Trophy.ExtraRevives);
         }
 
         void SetMode(GameMode mode)

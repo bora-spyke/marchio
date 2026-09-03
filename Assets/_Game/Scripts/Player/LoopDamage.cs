@@ -37,7 +37,7 @@ namespace Marchio
             }
             int count = insideBuffer.Count;
             float area = PolygonMath.Area(poly);
-            float total = Compute(cfg, area, count, up.Level(UpgradeId.FillDamage), up.Level(UpgradeId.BiggerMultiplier));
+            float total = Compute(cfg, area, count, up.Level(UpgradeId.FillDamage), up.Level(UpgradeId.BiggerMultiplier)) * gm.DamageMult;
 
             int killedInside = 0;
             for (int i = 0; i < insideBuffer.Count; i++)
@@ -66,6 +66,8 @@ namespace Marchio
             }
 
             if (count > 0) gm.AddCombo(count);
+            gm.Run.Streak++;
+            gm.Run.AddScore(ScoreSource.Area, gm.Run.AreaScore(area));
 
             var centroid = PolygonMath.Centroid(poly);
             float magnitude = count == 0 ? 0f : count >= 5 ? 2f : count >= 3 ? 1f : 0.5f;

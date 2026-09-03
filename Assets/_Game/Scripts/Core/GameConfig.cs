@@ -22,6 +22,8 @@ namespace Marchio
         public float minLoopLengthMult = 3f;
         public float closeRadiusMult = 0.5f;
         public float loopFlashMs = 380f;
+        public float trailHitRadius = 6f;
+        public float trailCutDamage = 10f;
         public float maxLoopLengthMult = 18.4f;
         public int loopGrowthXPStep = 3;
         public float loopGrowthPct = 0.06f;
@@ -69,15 +71,11 @@ namespace Marchio
 
         [Header("Waves")]
         public bool spawnEnemies = true;
-        public float waveHpScalePerWave = 0.06f;
-        public float waveClearDelayMs = 1000f;
-        public float enemySpawnStaggerMs = 160f;
         public float enemySteerJitterRad = 0.40f;
         public float enemySpeedVariance = 0.20f;
         public float rangedPreferredDistJitter = 40f;
         public float enemySeparationForce = 220f;
         public float spawnPadPx = 34f;
-        public int upgradeEveryNWaves = 3;
 
         [Header("Boss Attacks")]
         public float bossDashContactDamage = 30f;
@@ -96,7 +94,6 @@ namespace Marchio
         public float bossHomingDamage = 16f;
         public float bossHomingLifeS = 2f;
         public float bossHomingRecoverMs = 350f;
-        public float bossArenaRadius = 820f;
 
         [Header("Projectiles")]
         public float enemyProjectileRadius = 5f;
@@ -118,6 +115,12 @@ namespace Marchio
         public Color chaser = Hex("#ff2e88");
         public Color fast = Hex("#ffb020");
         public Color ranged = Hex("#a06bff");
+        public Color breaker = Hex("#39ff88");
+        public Color skin1 = Hex("#ffd84d");
+        public Color cartColorVariant = Hex("#ff7ad9");
+        public Color trailVariant = Hex("#b8ff5c");
+        public Color cart2 = Hex("#f4f7ff");
+        public float cart2ScaleMult = 1.25f;
         public Color enemyProjectile = Hex("#c98bff");
         public Color playerProjectile = Hex("#4de3ff");
         public Color electricBorderSpark = Hex("#fff2a8");

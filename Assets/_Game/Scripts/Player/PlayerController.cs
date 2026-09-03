@@ -22,23 +22,47 @@ namespace Marchio
         {
             Pos = Vector2.zero;
             Velocity = Vector2.zero;
-            Hp = Cfg.playerMaxHP;
+            Hp = GameManager.I.PlayerMaxHp;
             Invuln = 0f;
             LastMoveAngle = 0f;
+            ApplyLook();
             ApplyTransform();
+        }
+
+        public void SetHp(float hp) => Hp = Mathf.Clamp(hp, 0f, GameManager.I.PlayerMaxHp);
+
+        public void ClampHp() => Hp = Mathf.Min(Hp, GameManager.I.PlayerMaxHp);
+
+        public void ApplyLook()
+        {
+            var gm = GameManager.I;
+            if (visualRoot != null)
+                visualRoot.localScale = Vector3.one * (gm.Trophy.CartTier > 0 ? Cfg.cart2ScaleMult : 1f);
+        }
+
+        Color BodyColor
+        {
+            get
+            {
+                var t = GameManager.I.Trophy;
+                if (t.CartTier > 0) return Cfg.cart2;
+                if (t.Has(TrophyReward.CartColor)) return Cfg.cartColorVariant;
+                if (t.Has(TrophyReward.DamageBoost)) return Cfg.skin1;
+                return Cfg.player;
+            }
         }
 
         public void Tick(float dt, in InputFrame inp)
         {
             var cfg = Cfg;
             if (Invuln > 0f) Invuln -= dt * 1000f;
-            var target = inp.Move * cfg.playerSpeed;
+            var target = inp.Move * cfg.playerSpeed * GameManager.I.Trophy.SpeedMult;
             bool idle = inp.Move.x == 0f && inp.Move.y == 0f;
             float accel = (idle ? cfg.playerDecel : cfg.playerAccel) * dt;
             Velocity = new Vector2(
                 Mathf.MoveTowards(Velocity.x, target.x, accel),
                 Mathf.MoveTowards(Velocity.y, target.y, accel));
-            Pos = GameManager.I.ClampToBossArena(Pos + Velocity * dt);
+            Pos += Velocity * dt;
             if (Velocity.sqrMagnitude > 1f) LastMoveAngle = Mathf.Atan2(Velocity.y, Velocity.x);
             ApplyTransform();
         }
@@ -50,15 +74,16 @@ namespace Marchio
             Hp -= dmg;
             Invuln = cfg.playerInvulnMs;
             gm.ResetCombo();
+            gm.Run.Streak = 0;
             gm.Trail.Cancel(LoopCancelReason.Hit);
             gm.Fx.Burst(Pos, cfg.player, 10);
             gm.AddJuice(cfg.hitstopBaseMs, cfg.shakeBase * 1.5f);
-            if (Hp <= 0f) gm.EndRun();
+            if (Hp <= 0f) gm.Fail();
         }
 
         public void Heal(float amount)
         {
-            Hp = Mathf.Min(Cfg.playerMaxHP, Hp + amount);
+            Hp = Mathf.Min(GameManager.I.PlayerMaxHp, Hp + amount);
         }
 
         void ApplyTransform()
@@ -70,7 +95,7 @@ namespace Marchio
             {
                 mpb ??= new MaterialPropertyBlock();
                 bool blink = Invuln > 0f && Mathf.FloorToInt(Invuln / 60f) % 2 == 0;
-                mpb.SetColor(BaseColorId, blink ? Color.white : Cfg.player);
+                mpb.SetColor(BaseColorId, blink ? Color.white : BodyColor);
                 visualRenderer.SetPropertyBlock(mpb);
             }
         }

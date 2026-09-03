@@ -17,6 +17,8 @@ namespace Marchio
         public bool FromBoss { get; private set; }
         public bool Homing { get; private set; }
         public float Life { get; private set; }
+        public int Bounces { get; private set; }
+        public Enemy LastHit { get; private set; }
 
         public void OnSpawn() { }
         public void OnDespawn() { }
@@ -30,6 +32,8 @@ namespace Marchio
             FromBoss = fromBoss;
             Homing = homing;
             Life = life;
+            Bounces = 0;
+            LastHit = null;
             if (visualRoot != null) visualRoot.localScale = Vector3.one * radius * 2f;
             if (visualRenderer != null)
             {
@@ -38,6 +42,17 @@ namespace Marchio
                 visualRenderer.SetPropertyBlock(mpb);
             }
             Apply();
+        }
+
+        public void SetBounces(int bounces) => Bounces = bounces;
+
+        public void Redirect(Enemy hit, Vector2 towards)
+        {
+            LastHit = hit;
+            Bounces--;
+            var d = towards - Pos;
+            if (d.sqrMagnitude < 1e-6f) d = Vector2.right;
+            Velocity = d.normalized * Velocity.magnitude;
         }
 
         public void Advance(float dt, Vector2 target)

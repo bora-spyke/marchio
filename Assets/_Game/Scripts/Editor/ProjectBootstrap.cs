@@ -14,7 +14,7 @@ namespace Marchio.Editor
         const string ConfigPath = Root + "/Config/GameConfig.asset";
         const string ScenePath = Root + "/Scenes/Game.unity";
         const string PanelPath = Root + "/UI/PanelSettings.asset";
-        const string WaveTablePath = Root + "/Config/WaveTable.asset";
+        const string PresetsFolder = Root + "/Config/Presets";
 
         [MenuItem("Marchio/Bootstrap Project (creates only missing assets)")]
         public static void Build()
@@ -30,6 +30,7 @@ namespace Marchio.Editor
             BuildEnemy("Enemy_Chaser", PrimitiveType.Sphere, solid);
             BuildEnemy("Enemy_Fast", PrimitiveType.Cube, solid);
             BuildEnemy("Enemy_Ranged", PrimitiveType.Capsule, solid);
+            BuildEnemy("Enemy_Breaker", PrimitiveType.Cylinder, solid);
             BuildBoss(cfg, solid, line);
             BuildProjectile("Projectile_Enemy", solid);
             BuildProjectile("Projectile_Player", solid);
@@ -37,6 +38,7 @@ namespace Marchio.Editor
             BuildLinePrefab<DeadTrail>("DeadTrail", line, cfg.trail, 3f, false);
             BuildPanelSettings();
             BuildEnemyTypes(cfg);
+            BuildPresets();
             AssetDatabase.SaveAssets();
 
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) BuildScene();
@@ -55,6 +57,7 @@ namespace Marchio.Editor
                 if (!AssetDatabase.IsValidFolder(path)) AssetDatabase.CreateFolder(Root, f);
             }
             if (!AssetDatabase.IsValidFolder(Root + "/Config/Enemies")) AssetDatabase.CreateFolder(Root + "/Config", "Enemies");
+            if (!AssetDatabase.IsValidFolder(PresetsFolder)) AssetDatabase.CreateFolder(Root + "/Config", "Presets");
         }
 
         static T LoadOrCreate<T>(string path) where T : ScriptableObject
@@ -215,7 +218,7 @@ namespace Marchio.Editor
             SavePrefab(root);
         }
 
-        static EnemyTypeSO EnemyType(string name, string prefab, System.Action<EnemyTypeSO> defaults)
+        static EnemyTypeSO EnemyType(string name, string prefab, System.Action<EnemyTypeSO> defaults, float score)
         {
             var path = Root + "/Config/Enemies/" + name + ".asset";
             var existing = AssetDatabase.LoadAssetAtPath<EnemyTypeSO>(path);
@@ -226,6 +229,7 @@ namespace Marchio.Editor
                 defaults(so);
                 AssetDatabase.CreateAsset(so, path);
             }
+            so.score = score;
             so.prefab = Prefab<Enemy>(prefab);
             EditorUtility.SetDirty(so);
             return so;
@@ -239,49 +243,124 @@ namespace Marchio.Editor
                 t.hp = 50f; t.speed = 90f; t.radius = 14f; t.contactDamage = 10f; t.xp = 1;
                 t.fireIntervalMs = 1900f; t.projectileSpeed = 130f; t.projectileDamage = 5f; t.fireMinDist = 70f;
                 t.initialFireDelayMs = new Vector2(300f, 1100f);
-            });
-            var fast = EnemyType("Fast", "Enemy_Fast", t =>
+            }, 8f);
+            EnemyType("Fast", "Enemy_Fast", t =>
             {
                 t.behavior = EnemyBehavior.Chase; t.color = cfg.fast;
                 t.hp = 30f; t.speed = 150f; t.radius = 12f; t.contactDamage = 10f; t.xp = 1;
                 t.fireIntervalMs = 1700f; t.projectileSpeed = 150f; t.projectileDamage = 5f; t.fireMinDist = 70f;
                 t.initialFireDelayMs = new Vector2(300f, 1100f);
-            });
-            var ranged = EnemyType("Ranged", "Enemy_Ranged", t =>
+            }, 8f);
+            EnemyType("Ranged", "Enemy_Ranged", t =>
             {
                 t.behavior = EnemyBehavior.KeepDistance; t.color = cfg.ranged;
                 t.hp = 60f; t.speed = 60f; t.radius = 15f; t.contactDamage = 10f; t.xp = 2;
                 t.fireIntervalMs = 1400f; t.projectileSpeed = 150f; t.projectileDamage = 8f;
                 t.preferredDist = 190f; t.preferredDistJitter = 40f; t.retreatFraction = 0.7f;
                 t.initialFireDelayMs = new Vector2(400f, 1000f);
-            });
-            var boss = EnemyType("Boss", "Boss", t =>
+            }, 12f);
+            EnemyType("Breaker", "Enemy_Breaker", t =>
+            {
+                t.behavior = EnemyBehavior.SeekTrail; t.color = cfg.breaker;
+                t.hp = 35f; t.speed = 125f; t.radius = 12f; t.contactDamage = 8f; t.xp = 1;
+                t.fires = false;
+            }, 10f);
+            EnemyType("Boss", "Boss", t =>
             {
                 t.behavior = EnemyBehavior.Boss; t.color = cfg.chaser;
                 t.hp = 1300f; t.speed = 70f; t.radius = 34f; t.contactDamage = 18f; t.xp = 0;
                 t.ignoresBarriers = true; t.fires = false;
-            });
-
-            if (AssetDatabase.LoadAssetAtPath<WaveTableSO>(WaveTablePath) == null)
-            {
-                var table = ScriptableObject.CreateInstance<WaveTableSO>();
-                table.waves = new[]
-                {
-                    new WaveEntry { spawns = new[] { Spawn(chaser, 7) } },
-                    new WaveEntry { spawns = new[] { Spawn(chaser, 8), Spawn(fast, 3) } },
-                    new WaveEntry { spawns = new[] { Spawn(chaser, 7), Spawn(fast, 4), Spawn(ranged, 3) }, bossAfter = boss }
-                };
-                table.beyondTable = new[]
-                {
-                    new ScalingRule { type = chaser, baseCount = 7, perWave = 1.5f },
-                    new ScalingRule { type = fast, baseCount = 4, perWave = 1.0f },
-                    new ScalingRule { type = ranged, baseCount = 3, perWave = 0.8f }
-                };
-                AssetDatabase.CreateAsset(table, WaveTablePath);
-            }
+            }, 60f);
         }
 
-        static SpawnEntry Spawn(EnemyTypeSO type, int count) => new SpawnEntry { type = type, count = count };
+        static EnemyTypeSO Type(string name) => AssetDatabase.LoadAssetAtPath<EnemyTypeSO>(Root + "/Config/Enemies/" + name + ".asset");
+
+        static SpawnPhase[] DemoSpawnPhases()
+        {
+            var chaser = Type("Chaser");
+            var fast = Type("Fast");
+            var ranged = Type("Ranged");
+            var breaker = Type("Breaker");
+            return new[]
+            {
+                new SpawnPhase { startS = 0f, rateMult = 1f, weights = new[] { W(chaser, 1f) } },
+                new SpawnPhase { startS = 15f, rateMult = 1.5f, weights = new[] { W(chaser, 0.55f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.1f) } },
+                new SpawnPhase { startS = 30f, rateMult = 2f, weights = new[] { W(chaser, 0.35f), W(fast, 0.15f), W(ranged, 0.2f), W(breaker, 0.3f) } }
+            };
+        }
+
+        static SpawnWeight W(EnemyTypeSO type, float weight) => new SpawnWeight { type = type, weight = weight };
+
+        static TrophyNode Node(string title, float threshold, bool macro, TrophyReward reward) =>
+            new TrophyNode { title = title, threshold = threshold, macro = macro, reward = reward };
+
+        static RunPreset Preset(string name, System.Action<RunPreset> defaults, TrophyNode[] nodes)
+        {
+            var path = PresetsFolder + "/" + name + ".asset";
+            var existing = AssetDatabase.LoadAssetAtPath<RunPreset>(path);
+            var so = existing != null ? existing : ScriptableObject.CreateInstance<RunPreset>();
+            if (existing == null)
+            {
+                defaults(so);
+                AssetDatabase.CreateAsset(so, path);
+            }
+            so.nodes = nodes;
+            so.spawnPhases = DemoSpawnPhases();
+            so.eliteType = Type("Boss");
+            EditorUtility.SetDirty(so);
+            return so;
+        }
+
+        static void BuildPresets()
+        {
+            Preset("DEMO", p => { p.baseThreshold = 180f; p.scoreCurveMultiplier = 1.35f; p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
+            {
+                Node("Damage Boost + Skin", 70f, true, TrophyReward.DamageBoost),
+                Node("Cart Color", 160f, false, TrophyReward.CartColor),
+                Node("Max HP +10%", 330f, false, TrophyReward.MaxHpUp),
+                Node("Cart Speed Unlocked", 500f, true, TrophyReward.SpeedUnlock),
+                Node("+1 Revive", 700f, false, TrophyReward.ExtraRevive),
+                Node("Wider Trace", 950f, true, TrophyReward.TrailWiden),
+                Node("Trail Effect", 1250f, false, TrophyReward.TrailEffect),
+                Node("New Cart", 1550f, true, TrophyReward.NewCart)
+            });
+            Preset("DEMO_SHORT", p => { p.baseThreshold = 110f; p.scoreCurveMultiplier = 1.4f; p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
+            {
+                Node("Damage Boost + Skin", 45f, true, TrophyReward.DamageBoost),
+                Node("Max HP +10%", 130f, false, TrophyReward.MaxHpUp),
+                Node("Cart Speed Unlocked", 320f, true, TrophyReward.SpeedUnlock),
+                Node("+1 Revive", 480f, false, TrophyReward.ExtraRevive),
+                Node("Wider Trace", 640f, true, TrophyReward.TrailWiden),
+                Node("New Cart", 1000f, true, TrophyReward.NewCart)
+            });
+            Preset("LIVE", p => { p.baseThreshold = 240f; p.scoreCurveMultiplier = 1.15f; p.levelCount = 0; p.powerUpUnlockLevel = 4; p.fillUpgradeLastLevel = 999; }, LiveNodes());
+        }
+
+        static TrophyNode[] LiveNodes()
+        {
+            var fillers = new[] { TrophyReward.CartColor, TrophyReward.MaxHpUp, TrophyReward.ExtraRevive, TrophyReward.TrailEffect };
+            var macros = new[]
+            {
+                Node("Damage Boost + Skin", 90f, true, TrophyReward.DamageBoost),
+                Node("Cart Speed Unlocked", 700f, true, TrophyReward.SpeedUnlock),
+                Node("Wider Trace", 1500f, true, TrophyReward.TrailWiden),
+                Node("New Cart", 2600f, true, TrophyReward.NewCart)
+            };
+            var list = new System.Collections.Generic.List<TrophyNode>();
+            float prev = 0f;
+            for (int m = 0; m < macros.Length; m++)
+            {
+                for (int k = 1; k <= 4; k++)
+                {
+                    var reward = fillers[(m * 4 + k) % fillers.Length];
+                    float t = Mathf.Round(Mathf.Lerp(prev, macros[m].threshold, k / 5f));
+                    list.Add(Node(reward == TrophyReward.MaxHpUp ? "Max HP +10%" : reward == TrophyReward.ExtraRevive ? "+1 Revive" : reward == TrophyReward.CartColor ? "Cart Color" : "Trail Effect", t, false, reward));
+                }
+                list.Add(macros[m]);
+                prev = macros[m].threshold;
+            }
+            return list.ToArray();
+        }
 
         static void BuildPanelSettings()
         {
@@ -301,7 +380,7 @@ namespace Marchio.Editor
             var cfg = AssetDatabase.LoadAssetAtPath<GameConfig>(ConfigPath);
             var panel = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelPath);
             var particleMat = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Materials/Particle_Additive.mat");
-            var waveTable = AssetDatabase.LoadAssetAtPath<WaveTableSO>(WaveTablePath);
+            var preset = AssetDatabase.LoadAssetAtPath<RunPreset>(PresetsFolder + "/DEMO.asset");
             var player = Prefab<PlayerController>("Player");
             var enemyProj = Prefab<Projectile>("Projectile_Enemy");
             var playerProj = Prefab<Projectile>("Projectile_Player");
@@ -391,7 +470,7 @@ namespace Marchio.Editor
             Set(gm, "upgrades", upgrades);
             Set(gm, "fx", fx);
             Set(gm, "poolRoot", pools.transform);
-            Set(gm, "waveTable", waveTable);
+            Set(gm, "preset", preset);
             Set(gm, "enemyProjectilePrefab", enemyProj);
             Set(gm, "playerProjectilePrefab", playerProj);
             Set(gm, "barrierPrefab", barrier);

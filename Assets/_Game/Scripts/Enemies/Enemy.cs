@@ -104,6 +104,14 @@ namespace Marchio
                 return;
             }
 
+            if (type.behavior == EnemyBehavior.SeekTrail && Gm.Trail.TryNearestPoint(Pos, out var trailPoint))
+            {
+                var toTrail = trailPoint - Pos;
+                float td = toTrail.magnitude;
+                if (td > 1e-6f) Pos += toTrail / td * Speed * speedMult * slowFactor * dt;
+                return;
+            }
+
             Pos += steered * Speed * speedMult * slowFactor * dt;
             TickFire(dt, d, true);
         }
@@ -140,13 +148,15 @@ namespace Marchio
         {
             var up = Gm.Upgrades;
             int burn = up.Level(UpgradeId.BurningFill);
-            if (burn > 0)
-            {
-                burnDps = Cfg.burnDpsPerLevel * burn;
-                burnLeft = Cfg.burnDurationS;
-            }
+            if (burn > 0) ApplyBurn(Cfg.burnDpsPerLevel * burn, Cfg.burnDurationS);
             if (up.Level(UpgradeId.FreezeFill) > 0) slowLeft = Cfg.freezeDurationS;
             return ApplyDamage(dmg, 0.15f, true);
+        }
+
+        public void ApplyBurn(float dps, float duration)
+        {
+            burnDps = Mathf.Max(burnDps, dps);
+            burnLeft = Mathf.Max(burnLeft, duration);
         }
 
         public void ApplyBarrierDamage(float dmg)

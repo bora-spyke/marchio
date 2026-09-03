@@ -112,7 +112,6 @@ namespace Marchio
                     break;
                 }
             }
-            Pos = Gm.ClampToBossArena(Pos);
         }
 
         float TelegraphMs(BossAttack a)
