@@ -28,9 +28,6 @@ MonoBehaviour:
   loopGrowthXPStep: 3
   loopGrowthPct: 0.06
   maxLoopLengthGrowthCapMult: 2
-  loopGrowthXPChaser: 1
-  loopGrowthXPFast: 1
-  loopGrowthXPRanged: 2
   comboLoopLengthStep: 0.1
   comboLoopLengthCapBonus: 1.5
   barrierDurationMs: 3000
@@ -39,7 +36,6 @@ MonoBehaviour:
   touchAutoResumeMs: 1000
   joystickRadius: 60
   joystickDeadzone: 4
-  mouseFollowSlowRadius: 80
   baseLoopDamage: 25
   areaSmallMaxPx2: 9000
   areaMediumMaxPx2: 25000
@@ -63,27 +59,7 @@ MonoBehaviour:
   autoAttackCooldownMs: 450
   autoAttackDamage: 13
   autoAttackProjectileSpeed: 340
-  chaserHP: 50
-  chaserSpeed: 90
-  chaserR: 14
-  chaserFireIntervalMs: 1900
-  chaserProjectileSpeed: 130
-  chaserProjectileDamage: 5
-  chaserFireMinDist: 70
-  fastHP: 30
-  fastSpeed: 150
-  fastR: 12
-  fastFireIntervalMs: 1700
-  fastProjectileSpeed: 150
-  fastProjectileDamage: 5
-  fastFireMinDist: 70
-  rangedHP: 60
-  rangedSpeed: 60
-  rangedR: 15
-  rangedPreferredDist: 190
-  rangedFireIntervalMs: 1400
-  rangedProjectileSpeed: 150
-  rangedProjectileDamage: 8
+  spawnEnemies: 1
   waveHpScalePerWave: 0.06
   waveClearDelayMs: 1000
   enemySpawnStaggerMs: 160
@@ -93,11 +69,6 @@ MonoBehaviour:
   enemySeparationForce: 220
   spawnPadPx: 34
   upgradeEveryNWaves: 3
-  bossWave: 3
-  bossHP: 1300
-  bossR: 34
-  bossSpeed: 70
-  bossContactDamage: 18
   bossDashContactDamage: 30
   bossAttackCooldownMs: 2200
   bossDashTelegraphMs: 550

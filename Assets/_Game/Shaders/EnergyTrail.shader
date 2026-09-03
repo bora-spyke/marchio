@@ -12,6 +12,11 @@ Shader "Marchio/EnergyTrail"
         _NoiseSpeed ("Noise Speed", Float) = 0.8
         _NoiseAmount ("Noise Wobble Amount", Range(0, 0.5)) = 0.12
         _ShimmerAmount ("Shimmer Amount", Range(0, 1)) = 0.15
+
+        _DangerColor ("Danger Color", Color) = (1, 0.15, 0.1, 1)
+        _DangerThreshold ("Danger Start (0-1 of lifetime)", Range(0, 1)) = 0.55
+        _DangerT ("Danger T (set from script)", Range(0, 1)) = 0
+        _TrailEndU ("Trail End U (set from script)", Float) = 1.0
     }
 
     SubShader
@@ -53,6 +58,10 @@ Shader "Marchio/EnergyTrail"
                 float _NoiseSpeed;
                 float _NoiseAmount;
                 float _ShimmerAmount;
+                float4 _DangerColor;
+                float _DangerThreshold;
+                float _DangerT;
+                float _TrailEndU;
             CBUFFER_END
 
             Varyings vert(Attributes IN)
@@ -98,6 +107,13 @@ Shader "Marchio/EnergyTrail"
                 // continuous gradient from the core out to the edge (no flat plateau)
                 float core = pow(saturate(1.0 - v), _GradientPower);
                 float3 col = lerp(_EdgeColor.rgb, _CoreColor.rgb, core);
+
+                // the head (near the player, high uv.x) always stays clean; danger creeps in from the tail (uv.x 0)
+                // as the trail nears the end of its allowed length, the red wave reaches further toward the head
+                float distFromHead = saturate(1.0 - IN.uv.x / max(_TrailEndU, 0.0001));
+                float dangerProgress = _DangerThreshold < 1.0 ? saturate((_DangerT - _DangerThreshold) / (1.0 - _DangerThreshold)) : 0.0;
+                float dangerAmt = dangerProgress > 0.0001 ? saturate((distFromHead - (1.0 - dangerProgress)) / dangerProgress) : 0.0;
+                col = lerp(col, _DangerColor.rgb, dangerAmt);
 
                 // slow brightness shimmer so the energy feels alive, not a static print
                 float shimmerN = valueNoise(float2(IN.uv.x * _NoiseScale * 0.6 - t * 1.3, 9.7));
