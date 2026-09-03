@@ -23,7 +23,7 @@ MonoBehaviour:
   xp: 1
   score: 8
   ignoresBarriers: 0
-  fires: 0
+  fires: 1
   fireIntervalMs: 1900
   projectileSpeed: 130
   projectileDamage: 5

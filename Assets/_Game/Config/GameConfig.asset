@@ -67,7 +67,7 @@ MonoBehaviour:
   rangedPreferredDistJitter: 40
   enemySeparationForce: 220
   spawnPadPx: 34
-  bossDashContactDamage: 15
+  bossDashContactDamage: 30
   bossAttackCooldownMs: 2200
   bossDashTelegraphMs: 550
   bossDashSpeed: 480

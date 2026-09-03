@@ -78,7 +78,7 @@ namespace Marchio
         public float spawnPadPx = 34f;
 
         [Header("Boss Attacks")]
-        public float bossDashContactDamage = 15f;
+        public float bossDashContactDamage = 30f;
         public float bossAttackCooldownMs = 2200f;
         public float bossDashTelegraphMs = 550f;
         public float bossDashSpeed = 480f;
