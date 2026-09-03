@@ -34,8 +34,12 @@ namespace Marchio
         {
             Wave = n;
             WaveHpMult = 1f + (n - 1) * Cfg.waveHpScalePerWave;
-            Gm.WaveTable.Compose(n, spawnQueue);
-            Shuffle(spawnQueue);
+            spawnQueue.Clear();
+            if (Cfg.spawnEnemies)
+            {
+                Gm.WaveTable.Compose(n, spawnQueue);
+                Shuffle(spawnQueue);
+            }
             spawnTimer = 0f;
             WaveClearing = false;
         }
@@ -51,6 +55,7 @@ namespace Marchio
 
         public void Tick(float dt)
         {
+            if (!Cfg.spawnEnemies) return;
             if (spawnQueue.Count > 0)
             {
                 spawnTimer -= dt * 1000f;

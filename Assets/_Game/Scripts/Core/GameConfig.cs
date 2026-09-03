@@ -68,6 +68,7 @@ namespace Marchio
         public float autoAttackProjectileSpeed = 340f;
 
         [Header("Waves")]
+        public bool spawnEnemies = true;
         public float waveHpScalePerWave = 0.06f;
         public float waveClearDelayMs = 1000f;
         public float enemySpawnStaggerMs = 160f;
