@@ -13,7 +13,6 @@ namespace Marchio
         Vector2 halfExtents;
         bool cached;
         Vector3 fromPos;
-        Quaternion fromRot;
         float transitionT = -1f;
         float transitionDuration;
 
@@ -37,20 +36,22 @@ namespace Marchio
             Follow(Vector2.zero, 0f);
         }
 
-        public void SnapLookingAt(Vector3 position, Vector3 lookAt)
+        public void SnapAlongViewLine(Vector2 target, float distance)
         {
             transitionT = -1f;
-            transform.position = position;
-            transform.rotation = Quaternion.LookRotation(lookAt - position, Vector3.up);
+            transform.position = new Vector3(target.x, 0f, target.y) + offset.normalized * distance;
+            transform.rotation = startRotation;
             halfExtents = MeasureHalfExtents();
         }
+
+        public float TransitionProgress { get; private set; }
 
         public void BeginTransitionToGameplay(float duration)
         {
             fromPos = transform.position;
-            fromRot = transform.rotation;
             transitionDuration = Mathf.Max(0.01f, duration);
             transitionT = 0f;
+            TransitionProgress = 0f;
         }
 
         public bool TickTransition(float dt, Vector2 target)
@@ -59,9 +60,10 @@ namespace Marchio
             transitionT += dt;
             float u = Mathf.Clamp01(transitionT / transitionDuration);
             float eased = u * u * (3f - 2f * u);
+            TransitionProgress = eased;
             var toPos = new Vector3(target.x, 0f, target.y) + offset;
             transform.position = Vector3.Lerp(fromPos, toPos, eased);
-            transform.rotation = Quaternion.Slerp(fromRot, startRotation, eased);
+            transform.rotation = startRotation;
             halfExtents = MeasureHalfExtents();
             if (u < 1f) return false;
             transitionT = -1f;

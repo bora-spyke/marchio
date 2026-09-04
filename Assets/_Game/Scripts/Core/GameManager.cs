@@ -112,7 +112,7 @@ namespace Marchio
         void SnapCameraToIntro()
         {
             var pose = player.IntroCameraPose;
-            if (pose != null) cameraRig.SnapLookingAt(pose.position, player.transform.position);
+            if (pose != null) cameraRig.SnapAlongViewLine(player.Pos, pose.localPosition.magnitude);
             else cameraRig.Follow(player.Pos, 0f);
         }
 
@@ -127,7 +127,9 @@ namespace Marchio
 
             if (Mode == GameMode.Intro)
             {
-                if (cameraRig.TickTransition(dt, player.Pos)) SetMode(GameMode.Play);
+                bool done = cameraRig.TickTransition(dt, player.Pos);
+                player.SetIntroProgress(cameraRig.TransitionProgress);
+                if (done) SetMode(GameMode.Play);
                 return;
             }
             if (Mode != GameMode.Play) return;

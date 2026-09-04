@@ -9,6 +9,13 @@ namespace Marchio
         [SerializeField] Transform introCameraPose;
 
         public Transform IntroCameraPose => introCameraPose;
+        const float IntroSpinDeg = 180f;
+
+        public void SetIntroProgress(float eased)
+        {
+            visualYaw = Mathf.Lerp(IntroSpinDeg, 0f, eased);
+            if (visualRoot != null) visualRoot.rotation = Quaternion.Euler(0f, visualYaw, 0f);
+        }
         [SerializeField] ParticleSystem hitParticle;
         [SerializeField] ParticleSystem explosionParticle;
 
@@ -41,7 +48,7 @@ namespace Marchio
             Hp = GameManager.I.PlayerMaxHp;
             Invuln = 0f;
             LastMoveAngle = 0f;
-            visualYaw = 0f;
+            visualYaw = IntroSpinDeg;
             ApplyTransform(float.PositiveInfinity);
         }
 
@@ -94,7 +101,7 @@ namespace Marchio
             if (visualRoot != null)
             {
                 float targetYaw = -LastMoveAngle * Mathf.Rad2Deg;
-                visualYaw = Mathf.MoveTowardsAngle(visualYaw, targetYaw, Cfg.carTurnDegPerS * dt);
+                if (!float.IsPositiveInfinity(dt)) visualYaw = Mathf.MoveTowardsAngle(visualYaw, targetYaw, Cfg.carTurnDegPerS * dt);
                 visualRoot.rotation = Quaternion.Euler(0f, visualYaw, 0f);
             }
             if (visualRenderer != null)
