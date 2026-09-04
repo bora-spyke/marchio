@@ -32,7 +32,6 @@ namespace Marchio.Editor
             BuildEnemy("Enemy_Ranged", PrimitiveType.Capsule, solid);
             BuildProjectile("Projectile_Enemy", solid);
             BuildProjectile("Projectile_Player", solid);
-            BuildLinePrefab<Barrier>("Barrier", line, cfg.loopEdge, 3f, true);
             BuildPanelSettings();
             BuildEnemyTypes(cfg);
             BuildPresets();
@@ -329,7 +328,6 @@ namespace Marchio.Editor
             var player = Prefab<PlayerController>("Player");
             var enemyProj = Prefab<Projectile>("Projectile_Enemy");
             var playerProj = Prefab<Projectile>("Projectile_Player");
-            var barrier = Prefab<Barrier>("Barrier");
 
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
@@ -419,7 +417,6 @@ namespace Marchio.Editor
             Set(gm, "preset", preset);
             Set(gm, "enemyProjectilePrefab", enemyProj);
             Set(gm, "playerProjectilePrefab", playerProj);
-            Set(gm, "barrierPrefab", barrier);
 
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
@@ -484,8 +481,8 @@ namespace Marchio.Editor
         static void ApplyPlayerSettings()
         {
             PlayerSettings.companyName = "Spyke Games";
-            PlayerSettings.productName = "NeonLoop";
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.spykegames.neonloop");
+            PlayerSettings.productName = "Hollow Busters";
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.spykegames.hollowbusters");
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
             PlayerSettings.allowedAutorotateToPortrait = true;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;

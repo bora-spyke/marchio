@@ -42,12 +42,6 @@ namespace Marchio.Tests
             Assert.IsFalse(gm.Enemies.Contains(enemy), "dead enemy released back to pool after its death particles finish");
             Assert.IsFalse(enemy.gameObject.activeSelf);
 
-            var poly = new System.Collections.Generic.List<Vector2>
-            {
-                pos + new Vector2(-40, -40), pos + new Vector2(40, -40), pos + new Vector2(40, 40), pos + new Vector2(-40, 40)
-            };
-            LoopDamage.Resolve(poly);
-            Assert.AreEqual(1, gm.Barriers.Active.Count, "closing a loop always spawns a barrier");
 
             gm.Fail();
             Assert.AreEqual(GameMode.Fail, gm.Mode);

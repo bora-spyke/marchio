@@ -27,7 +27,6 @@ namespace Marchio
         [Header("Pooled prefabs")]
         [SerializeField] Projectile enemyProjectilePrefab;
         [SerializeField] Projectile playerProjectilePrefab;
-        [SerializeField] Barrier barrierPrefab;
         [SerializeField] SoulStone soulStonePrefab;
 
         public GameConfig Config => config;
@@ -44,7 +43,6 @@ namespace Marchio
         readonly Dictionary<Projectile, ObjectPool<Projectile>> enemyProjectilePools = new Dictionary<Projectile, ObjectPool<Projectile>>();
         public readonly List<ObjectPool<Projectile>> EnemyProjectilePools = new List<ObjectPool<Projectile>>();
         public ObjectPool<Projectile> PlayerProjectiles { get; private set; }
-        public ObjectPool<Barrier> Barriers { get; private set; }
         readonly Dictionary<SoulStone, ObjectPool<SoulStone>> soulStonePools = new Dictionary<SoulStone, ObjectPool<SoulStone>>();
         public readonly List<ObjectPool<SoulStone>> SoulStonePools = new List<ObjectPool<SoulStone>>();
         public readonly List<Enemy> Enemies = new List<Enemy>();
@@ -88,7 +86,6 @@ namespace Marchio
             I = this;
             Application.targetFrameRate = Application.platform == RuntimePlatform.WebGLPlayer ? -1 : 60;
             PlayerProjectiles = new ObjectPool<Projectile>(playerProjectilePrefab, poolRoot, 16);
-            Barriers = new ObjectPool<Barrier>(barrierPrefab, poolRoot, 4);
             Run = new Run(preset);
             upgrades.Init(config);
             cameraRig.Configure(config);
@@ -120,8 +117,6 @@ namespace Marchio
             }
             if (Shake > 0f) Shake = Mathf.Max(0f, Shake - dt * 20f);
             trail.TickFlash(dt);
-            for (int i = Barriers.Active.Count - 1; i >= 0; i--)
-                if (!Barriers.Active[i].Tick(dt)) Barriers.Release(Barriers.Active[i]);
 
             if (Mode != GameMode.Play) return;
 
@@ -164,15 +159,8 @@ namespace Marchio
             for (int i = pool.Active.Count - 1; i >= 0; i--)
             {
                 var b = pool.Active[i];
-                var from = b.Pos;
                 b.Advance(dt);
                 if (b.Expired || cameraRig.IsOutside(b.Pos, config.projectileDespawnPadPx)) { pool.Release(b); continue; }
-                if (SegmentBlockedByBarrier(from, b.Pos, out var hit))
-                {
-                    fx.Burst(hit, config.loopEdge, 6);
-                    pool.Release(b);
-                    continue;
-                }
                 if (player.Invuln <= 0f && Vector2.Distance(b.Pos, player.Pos) < b.Radius + config.playerRadius)
                 {
                     pool.Release(b);
@@ -217,14 +205,6 @@ namespace Marchio
                 if (d < bestD) { bestD = d; best = en; }
             }
             return best;
-        }
-
-        public bool SegmentBlockedByBarrier(Vector2 from, Vector2 to, out Vector2 hit)
-        {
-            for (int i = 0; i < Barriers.Active.Count; i++)
-                if (Barriers.Active[i].BlocksSegment(from, to, out hit)) return true;
-            hit = default;
-            return false;
         }
 
         public float EffectiveMaxLoopLength()
@@ -411,7 +391,6 @@ namespace Marchio
             foreach (var pool in enemyPools.Values) pool.ReleaseAll();
             foreach (var pool in EnemyProjectilePools) pool.ReleaseAll();
             PlayerProjectiles.ReleaseAll();
-            Barriers.ReleaseAll();
             foreach (var pool in SoulStonePools) pool.ReleaseAll();
             Enemies.Clear();
             Combo = 0;

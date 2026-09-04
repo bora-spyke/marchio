@@ -31,9 +31,6 @@ namespace Marchio
         public float comboLoopLengthStep = 0.10f;
         public float comboLoopLengthCapBonus = 1.5f;
 
-        [Header("Barrier")]
-        public float barrierDurationMs = 3000f;
-
         [Header("Soul Stone")]
         public float soulstonePickupRadiusMult = 2f;
         public float soulstoneSizePx = 34f;

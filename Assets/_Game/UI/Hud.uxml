@@ -2,8 +2,11 @@
     <ui:VisualElement name="hud" class="hud" picking-mode="Ignore">
         <ui:VisualElement name="safe" class="safe" picking-mode="Ignore">
         <ui:VisualElement name="top-row" class="top-row" picking-mode="Ignore">
-            <ui:VisualElement name="stage-badge" class="stage-badge" picking-mode="Ignore">
-                <ui:Label name="stage-text" class="stage-text" text="STAGE 1/4" picking-mode="Ignore" />
+            <ui:VisualElement class="stage-col" picking-mode="Ignore">
+                <ui:VisualElement name="stage-badge" class="stage-badge" picking-mode="Ignore">
+                    <ui:Label name="stage-text" class="stage-text" text="STAGE 1/4" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:Label name="wave-info" class="wave-info" text="WAVE 1/6 · 6 LEFT" picking-mode="Ignore" />
             </ui:VisualElement>
             <ui:VisualElement name="hp-group" class="hp-group" picking-mode="Ignore">
                 <ui:VisualElement name="hp-bar" class="hp-track" picking-mode="Ignore">

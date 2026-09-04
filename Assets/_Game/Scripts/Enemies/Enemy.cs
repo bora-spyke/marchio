@@ -20,7 +20,6 @@ namespace Marchio
         public float ContactDamage { get; private set; }
         public bool Dead { get; private set; }
         public Vector2 Velocity { get; private set; }
-        public bool IgnoresBarriers => Type.ignoresBarriers;
         public SoulStone SoulStonePrefab => soulStonePrefab;
 
         float steerJitter;

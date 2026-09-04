@@ -14,6 +14,7 @@ namespace Marchio
 
         public int WaveIndex { get; private set; }
         public int WaveCount { get; private set; }
+        public int RemainingInWave => spawnQueue.Count + LiveEnemies();
 
         GameManager Gm => GameManager.I;
         GameConfig Cfg => GameManager.I.Config;
@@ -173,13 +174,6 @@ namespace Marchio
                 }
                 en.Tick(dt);
                 if (en.Dead) continue;
-
-                if (!en.IgnoresBarriers)
-                {
-                    var barriers = gm.Barriers.Active;
-                    for (int b = 0; b < barriers.Count; b++)
-                        barriers[b].PushOut(en, dt);
-                }
 
                 if (liveWire > 0 && trail.Touches(en.Pos, en.Radius + cutRadius))
                     en.ApplyBurn(gm.Preset.liveWireBurnDps * liveWire, cfg.burnDurationS);

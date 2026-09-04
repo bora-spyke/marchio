@@ -8,7 +8,8 @@ namespace Marchio
     {
         VisualElement root;
         VisualElement hpBar, hpFill, trailBar, trailFill, joystick, joystickKnob, stackRow;
-        Label stageText, comboChip, drawText;
+        Label stageText, waveInfo, comboChip, drawText;
+        int lastWaveKey = -1;
         DamageTextLayer damageLayer;
         InputReader input;
         int lastCombo = -1;
@@ -24,6 +25,7 @@ namespace Marchio
             hpFill = root.Q("hp-fill");
             stackRow = root.Q("stack-row");
             stageText = root.Q<Label>("stage-text");
+            waveInfo = root.Q<Label>("wave-info");
             comboChip = root.Q<Label>("combo-chip");
             drawText = root.Q<Label>("draw-text");
             trailBar = root.Q("trail-bar");
@@ -53,7 +55,7 @@ namespace Marchio
         void OnMode(GameMode mode)
         {
             root.style.display = mode == GameMode.Play ? DisplayStyle.Flex : DisplayStyle.None;
-            if (mode == GameMode.Play) { lastStackHash = -1; lastLevel = -1; }
+            if (mode == GameMode.Play) { lastStackHash = -1; lastLevel = -1; lastWaveKey = -1; }
         }
 
         void Update()
@@ -73,6 +75,14 @@ namespace Marchio
                 int total = gm.Preset.levelCount;
                 stageText.text = run.IsVictoryLap ? "VICTORY LAP" : total > 0 ? $"STAGE {run.Level}/{total}" : $"STAGE {run.Level}";
             }
+            var waves = gm.Waves;
+            int waveKey = run.IsVictoryLap ? -2 : waves.WaveIndex * 1000 + waves.RemainingInWave;
+            if (waveKey != lastWaveKey)
+            {
+                lastWaveKey = waveKey;
+                waveInfo.text = run.IsVictoryLap ? "VICTORY LAP" : $"WAVE {Mathf.Min(waves.WaveIndex + 1, Mathf.Max(1, waves.WaveCount))}/{waves.WaveCount}  ·  {waves.RemainingInWave} LEFT";
+            }
+
             if (gm.Combo != lastCombo)
             {
                 lastCombo = gm.Combo;

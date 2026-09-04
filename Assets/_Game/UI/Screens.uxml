@@ -2,7 +2,7 @@
     <ui:VisualElement name="screens" class="screens" picking-mode="Ignore">
         <ui:VisualElement name="main" class="overlay overlay--main">
             <ui:VisualElement class="main-hero">
-                <ui:Label class="title title--hero" text="NEONLOOP" />
+                <ui:Label class="title title--hero" text="HOLLOW BUSTERS" />
                 <ui:Label class="subtitle subtitle--tight" text="TRACE  ·  CLAIM  ·  SURVIVE" />
             </ui:VisualElement>
             <ui:VisualElement class="spacer" />

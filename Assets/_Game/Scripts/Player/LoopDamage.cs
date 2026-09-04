@@ -27,8 +27,6 @@ namespace Marchio
             var cfg = gm.Config;
             var up = gm.Upgrades;
 
-            gm.Barriers.Get().Init(poly);
-
             insideBuffer.Clear();
             for (int i = 0; i < gm.Enemies.Count; i++)
             {

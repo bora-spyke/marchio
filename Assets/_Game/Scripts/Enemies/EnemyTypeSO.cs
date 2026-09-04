@@ -18,7 +18,6 @@ namespace Marchio
         public float contactDamage = 10f;
         public int xp = 1;
         public float score = 8f;
-        public bool ignoresBarriers;
 
         [Header("Steering")]
         [Tooltip("Seconds between move/facing target updates")]
