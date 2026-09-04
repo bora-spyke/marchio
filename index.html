@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hollow Busters</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070d">
+<link rel="icon" type="image/png" href="TemplateData/icon.png">
+<link rel="apple-touch-icon" href="TemplateData/icon.png">
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    position: fixed; inset: 0; overflow: hidden;
+    background: #05070d; color: #eaf6ff;
+    font-family: system-ui, sans-serif;
+    overscroll-behavior: none; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #unity-canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; background: #05070d; }
+  #loading {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end; gap: 14px; background: #05070d url("TemplateData/splash.png") center / cover no-repeat;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 48px) env(safe-area-inset-left);
+  }
+  #bar { width: 200px; height: 6px; background: rgba(255,255,255,0.18); border-radius: 2px; overflow: hidden; }
+  #fill { width: 0; height: 100%; background: #7dfcff; transition: width 0.15s; }
+  #hint { font-size: 13px; opacity: 0.85; text-shadow: 0 1px 2px #000; }
+</style>
+</head>
+<body>
+<canvas id="unity-canvas" tabindex="-1"></canvas>
+<div id="loading"><div id="bar"><div id="fill"></div></div><div id="hint"></div></div>
+<script src="Build/7033f188d93c60ed005f3e0243e48d99.loader.js"></script>
+<script>
+  var canvas = document.querySelector("#unity-canvas");
+  var loading = document.querySelector("#loading");
+  var fill = document.querySelector("#fill");
+  var hint = document.querySelector("#hint");
+  var config = {
+    arguments: [],
+    dataUrl: "Build/c3b3534d8d00793887a019058d4299b4.data.unityweb",
+    frameworkUrl: "Build/c367b3550e6fab5d6218d71afce2c8fa.framework.js.unityweb",
+    codeUrl: "Build/9b4a78ef38fd345dc966d1b7dccc1329.wasm.unityweb",
+    streamingAssetsUrl: "StreamingAssets",
+    companyName: "Spyke Games",
+    productName: "Hollow Busters",
+    productVersion: "0.1.0",
+    devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
+  };
+  ["touchstart", "touchmove", "touchend", "gesturestart", "contextmenu", "dblclick"].forEach(function (t) {
+    document.addEventListener(t, function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  });
+  var shownAt = Date.now(), minShowMs = 2000;
+  createUnityInstance(canvas, config, function (p) {
+    fill.style.width = Math.round(p * 100) + "%";
+  }).then(function () {
+    var wait = Math.max(0, minShowMs - (Date.now() - shownAt));
+    setTimeout(function () { loading.style.display = "none"; }, wait);
+  }).catch(function (message) {
+    hint.textContent = message;
+  });
+</script>
+</body>
+</html>
