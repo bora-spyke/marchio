@@ -9,11 +9,13 @@ namespace Marchio
         [SerializeField] Transform introCameraPose;
 
         public Transform IntroCameraPose => introCameraPose;
+        const float GameplayStartHeadingDeg = 90f;
         const float IntroSpinDeg = 180f;
+        const float GameplayStartYaw = -GameplayStartHeadingDeg;
 
         public void SetIntroProgress(float eased)
         {
-            visualYaw = Mathf.Lerp(IntroSpinDeg, 0f, eased);
+            visualYaw = Mathf.Lerp(GameplayStartYaw + IntroSpinDeg, GameplayStartYaw, eased);
             if (visualRoot != null) visualRoot.rotation = Quaternion.Euler(0f, visualYaw, 0f);
         }
         [SerializeField] ParticleSystem hitParticle;
@@ -47,8 +49,8 @@ namespace Marchio
             Velocity = Vector2.zero;
             Hp = GameManager.I.PlayerMaxHp;
             Invuln = 0f;
-            LastMoveAngle = 0f;
-            visualYaw = IntroSpinDeg;
+            LastMoveAngle = GameplayStartHeadingDeg * Mathf.Deg2Rad;
+            visualYaw = GameplayStartYaw + IntroSpinDeg;
             ApplyTransform(float.PositiveInfinity);
         }
 
