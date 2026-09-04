@@ -117,8 +117,6 @@ namespace Marchio
         public void Cancel(LoopCancelReason reason)
         {
             if (!Drawing) return;
-            if (reason == LoopCancelReason.Release && points.Count > 1)
-                Gm.DeadTrails.Get().Init(points);
             Gm.Fx.Burst(Gm.Player.Pos, Gm.Config.trail, 6);
             Drawing = false;
             line.positionCount = 0;

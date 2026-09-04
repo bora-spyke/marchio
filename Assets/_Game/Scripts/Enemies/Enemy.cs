@@ -7,6 +7,7 @@ namespace Marchio
         [SerializeField] Transform visualRoot;
         [SerializeField] ParticleSystem hitParticle;
         [SerializeField] ParticleSystem deathParticle;
+        [SerializeField] SoulStone soulStonePrefab;
 
         const float DeathFxTimeoutS = 4f;
 
@@ -20,6 +21,7 @@ namespace Marchio
         public bool Dead { get; private set; }
         public Vector2 Velocity { get; private set; }
         public bool IgnoresBarriers => Type.ignoresBarriers;
+        public SoulStone SoulStonePrefab => soulStonePrefab;
 
         float steerJitter;
         float speedMult;
@@ -31,6 +33,7 @@ namespace Marchio
         float slowLeft;
         float burnDps;
         float burnLeft;
+        float stunLeft;
         float deathTimer;
 
         GameManager Gm => GameManager.I;
@@ -62,6 +65,7 @@ namespace Marchio
             slowLeft = 0f;
             burnDps = 0f;
             burnLeft = 0f;
+            stunLeft = 0f;
             deathTimer = 0f;
             Hp = type.hp * hpMult;
             MaxHp = Hp;
@@ -100,6 +104,11 @@ namespace Marchio
             {
                 slowFactor = Cfg.freezeSlowFactor;
                 slowLeft -= dt;
+            }
+            if (stunLeft > 0f)
+            {
+                slowFactor = 0f;
+                stunLeft -= dt;
             }
             Behave(dt, slowFactor);
             Velocity = (Pos - before) / dt;
@@ -168,6 +177,7 @@ namespace Marchio
             {
                 Gm.ShowDamage(Pos, dmg);
                 if (hitParticle != null) hitParticle.Play(true);
+                stunLeft = Mathf.Max(stunLeft, Cfg.hitStunS);
             }
             if (Hp <= 0f) { Kill(); return true; }
             return false;

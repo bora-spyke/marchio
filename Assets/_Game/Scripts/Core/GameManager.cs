@@ -29,6 +29,7 @@ namespace Marchio
         [SerializeField] Projectile playerProjectilePrefab;
         [SerializeField] Barrier barrierPrefab;
         [SerializeField] DeadTrail deadTrailPrefab;
+        [SerializeField] SoulStone soulStonePrefab;
 
         public GameConfig Config => config;
         public RunPreset Preset => preset;
@@ -47,6 +48,8 @@ namespace Marchio
         public ObjectPool<Projectile> PlayerProjectiles { get; private set; }
         public ObjectPool<Barrier> Barriers { get; private set; }
         public ObjectPool<DeadTrail> DeadTrails { get; private set; }
+        readonly Dictionary<SoulStone, ObjectPool<SoulStone>> soulStonePools = new Dictionary<SoulStone, ObjectPool<SoulStone>>();
+        public readonly List<ObjectPool<SoulStone>> SoulStonePools = new List<ObjectPool<SoulStone>>();
         public readonly List<Enemy> Enemies = new List<Enemy>();
 
         public GameMode Mode { get; private set; } = GameMode.Menu;
@@ -141,6 +144,7 @@ namespace Marchio
             waves.ApplySeparation(dt);
             TickEnemyProjectiles(dt);
             TickPlayerProjectiles(dt);
+            TickSoulStones(dt);
 
             if (Mode != GameMode.Play) return;
             if (Trophy.HasPending) ApplyUnlock(Trophy.ClaimNext());
@@ -267,6 +271,39 @@ namespace Marchio
             Run.AddScore(ScoreSource.Kill, en.Type.score);
             KillXP += en.Type.xp;
             UpdateMaxLoopLength();
+            var stonePrefab = en.SoulStonePrefab != null ? en.SoulStonePrefab : soulStonePrefab;
+            if (stonePrefab != null) SoulStonesFor(stonePrefab).Get().Init(en.Pos);
+        }
+
+        public ObjectPool<SoulStone> SoulStonesFor(SoulStone prefab)
+        {
+            if (prefab == null) prefab = soulStonePrefab;
+            if (!soulStonePools.TryGetValue(prefab, out var pool))
+            {
+                pool = new ObjectPool<SoulStone>(prefab, poolRoot, 4);
+                soulStonePools.Add(prefab, pool);
+                SoulStonePools.Add(pool);
+            }
+            return pool;
+        }
+
+        void TickSoulStones(float dt)
+        {
+            float pickupRadius = config.PlayerWidth * config.soulstonePickupRadiusMult;
+            for (int p = 0; p < SoulStonePools.Count; p++)
+            {
+                var pool = SoulStonePools[p];
+                for (int i = pool.Active.Count - 1; i >= 0; i--)
+                {
+                    var s = pool.Active[i];
+                    s.Tick(dt);
+                    if (Vector2.Distance(s.Pos, player.Pos) <= pickupRadius)
+                    {
+                        fx.Burst(s.Pos, config.trail, 8);
+                        pool.Release(s);
+                    }
+                }
+            }
         }
 
         void UpdateMaxLoopLength()
@@ -407,6 +444,7 @@ namespace Marchio
             PlayerProjectiles.ReleaseAll();
             Barriers.ReleaseAll();
             DeadTrails.ReleaseAll();
+            foreach (var pool in SoulStonePools) pool.ReleaseAll();
             Enemies.Clear();
             Combo = 0;
             Hitstop = 0f;

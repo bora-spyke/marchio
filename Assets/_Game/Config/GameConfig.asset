@@ -25,14 +25,13 @@ MonoBehaviour:
   closeRadiusMult: 0.5
   loopFlashMs: 380
   trailHitRadius: 6
-  maxLoopLengthMult: 18.4
+  maxLoopLengthMult: 30
   loopGrowthXPStep: 3
   loopGrowthPct: 0.06
   maxLoopLengthGrowthCapMult: 2
   comboLoopLengthStep: 0.1
   comboLoopLengthCapBonus: 1.5
   barrierDurationMs: 3000
-  barrierDps: 30
   deadTrailMs: 2500
   touchAutoResumeMs: 1000
   joystickRadius: 60
@@ -63,15 +62,14 @@ MonoBehaviour:
   autoAttackRangePx: 250
   spawnEnemies: 1
   enemySteerJitterRad: 0.4
-  enemyRetargetS: 1.5
   enemySpeedVariance: 0.2
   rangedPreferredDistJitter: 40
   enemySeparationForce: 220
   spawnPadPx: 34
-  enemyProjectileRadius: 5
+  enemyProjectileRadius: 3
   playerProjectileRadius: 4
   projectileDespawnPadPx: 40
-  projectileLifeS: 4
+  projectileLifeS: 3
   projectileFadeS: 0.6
   hitstopBaseMs: 50
   shakeBase: 3

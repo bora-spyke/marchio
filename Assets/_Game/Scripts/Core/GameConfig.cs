@@ -34,6 +34,9 @@ namespace Marchio
         public float barrierDurationMs = 3000f;
         public float deadTrailMs = 2500f;
 
+        [Header("Soul Stone")]
+        public float soulstonePickupRadiusMult = 2f; // pickup radius = player diameter * this
+
         [Header("Touch Input")]
         public float touchAutoResumeMs = 1000f;
         public float joystickRadius = 60f;
@@ -59,6 +62,7 @@ namespace Marchio
         public float burnDurationS = 3f;
         public float freezeDurationS = 2f;
         public float freezeSlowFactor = 0.5f;
+        public float hitStunS = 0.15f;
         public float healPerLevel = 5f;
         public float biggerMultiplierPerLevel = 0.5f;
 
