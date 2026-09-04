@@ -6,9 +6,21 @@ namespace Marchio
     {
         [SerializeField] Transform visualRoot;
         [SerializeField] Renderer visualRenderer;
+        [SerializeField] ParticleSystem hitParticle;
+        [SerializeField] ParticleSystem explosionParticle;
 
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         MaterialPropertyBlock mpb;
+
+        void Awake()
+        {
+            if (hitParticle == null)
+                foreach (var ps in GetComponentsInChildren<ParticleSystem>(true))
+                    if (ps.name.Contains("Hit")) { hitParticle = ps; break; }
+            if (explosionParticle == null)
+                foreach (var ps in GetComponentsInChildren<ParticleSystem>(true))
+                    if (ps.name.Contains("Explosion")) { explosionParticle = ps; break; }
+        }
 
         public Vector2 Pos { get; private set; }
         public Vector2 Velocity { get; private set; }
@@ -58,9 +70,14 @@ namespace Marchio
             gm.ResetCombo();
             gm.Run.Streak = 0;
             gm.Trail.Cancel(LoopCancelReason.Hit);
+            if (hitParticle != null) hitParticle.Play(true);
             gm.Fx.Burst(Pos, cfg.player, 10);
             gm.AddJuice(cfg.hitstopBaseMs, cfg.shakeBase * 1.5f);
-            if (Hp <= 0f) gm.Fail();
+            if (Hp <= 0f)
+            {
+                if (explosionParticle != null) explosionParticle.Play(true);
+                gm.Fail();
+            }
         }
 
         public void Heal(float amount)

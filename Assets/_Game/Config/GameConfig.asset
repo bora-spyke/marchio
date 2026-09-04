@@ -20,19 +20,23 @@ MonoBehaviour:
   playerDecel: 2900
   playerInvulnMs: 500
   playerContactDamage: 10
+  carTurnDegPerS: 420
   trailMinDist: 10
   minLoopLengthMult: 3
   closeRadiusMult: 0.5
   loopFlashMs: 380
   trailHitRadius: 6
-  maxLoopLengthMult: 30
+  maxLoopLengthMult: 45
   loopGrowthXPStep: 3
   loopGrowthPct: 0.06
   maxLoopLengthGrowthCapMult: 2
   comboLoopLengthStep: 0.1
   comboLoopLengthCapBonus: 1.5
   barrierDurationMs: 3000
-  deadTrailMs: 2500
+  soulstonePickupRadiusMult: 2
+  soulstoneSizePx: 12.75
+  soulstoneCollectS: 0.45
+  soulstoneCollectArcPx: 30
   touchAutoResumeMs: 1000
   joystickRadius: 60
   joystickDeadzone: 4
@@ -54,6 +58,7 @@ MonoBehaviour:
   burnDurationS: 3
   freezeDurationS: 2
   freezeSlowFactor: 0.5
+  hitStunS: 0.15
   healPerLevel: 5
   biggerMultiplierPerLevel: 0.5
   autoAttackCooldownMs: 600
@@ -81,11 +86,6 @@ MonoBehaviour:
   chaser: {r: 1, g: 0.18039216, b: 0.53333336, a: 1}
   fast: {r: 1, g: 0.6901961, b: 0.1254902, a: 1}
   ranged: {r: 0.627451, g: 0.41960785, b: 1, a: 1}
-  skin1: {r: 1, g: 0.84705883, b: 0.3019608, a: 1}
-  cartColorVariant: {r: 1, g: 0.47843137, b: 0.8509804, a: 1}
-  trailVariant: {r: 0.72156864, g: 1, b: 0.36078432, a: 1}
-  cart2: {r: 0.95686275, g: 0.96862745, b: 1, a: 1}
-  cart2ScaleMult: 1.25
   enemyProjectile: {r: 0.7882353, g: 0.54509807, b: 1, a: 1}
   playerProjectile: {r: 0.3019608, g: 0.8901961, b: 1, a: 1}
   electricBorderSpark: {r: 1, g: 0.9490196, b: 0.65882355, a: 1}
