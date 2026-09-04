@@ -14,21 +14,21 @@ namespace Marchio
         {
             Fill = new CardPool(new[]
             {
-                new CardDef { Title = "Fill Damage", Description = "+30% Fill damage.", Cap = 2, Accent = cfg.fast },
-                new CardDef { Title = "Burning Fill", Description = "Fill ignites enemies for 3s.", Cap = 2, Accent = cfg.chaser, IconClass = "card-icon--burning" },
-                new CardDef { Title = "Freeze Fill", Description = "Fill slows enemies by half for 2s.", Cap = 2, Accent = cfg.trail, IconClass = "card-icon--freeze" },
-                new CardDef { Title = "Electric Border", Description = "Enemies near the edge take damage too.", Cap = 2, Accent = cfg.electricBorderSpark },
-                new CardDef { Title = "Heal Fill", Description = "Fill kills restore 5 HP.", Cap = 2, Accent = cfg.ranged, IconClass = "card-icon--heal" },
-                new CardDef { Title = "Bigger Multiplier", Description = "Large-area multiplier grows.", Cap = 2, Accent = cfg.player }
+                new CardDef { Title = "Fill Damage", Description = "+30% Fill damage.", Cap = 2, Accent = cfg.fast, Enabled = false },
+                new CardDef { Title = "Burning Fill", Description = "Fill ignites enemies for 3s.", Cap = 4, Accent = cfg.chaser, IconClass = "card-icon--burning" },
+                new CardDef { Title = "Freeze Fill", Description = "Fill slows enemies by half for 2s.", Cap = 4, Accent = cfg.trail, IconClass = "card-icon--freeze" },
+                new CardDef { Title = "Electric Border", Description = "Enemies near the edge take damage too.", Cap = 2, Accent = cfg.electricBorderSpark, Enabled = false },
+                new CardDef { Title = "Heal Fill", Description = "Fill kills restore 5 HP.", Cap = 4, Accent = cfg.ranged, IconClass = "card-icon--heal" },
+                new CardDef { Title = "Bigger Multiplier", Description = "Large-area multiplier grows.", Cap = 2, Accent = cfg.player, Enabled = false }
             });
             Power = new CardPool(new[]
             {
-                new CardDef { Title = "Overload", Description = "Your shots hit 50% harder.", Cap = 3, Accent = cfg.fast },
-                new CardDef { Title = "Rapid Feed", Description = "Fire 50% more rounds.", Cap = 3, Accent = cfg.playerProjectile },
-                new CardDef { Title = "Live Wire", Description = "Your trail burns whatever touches it.", Cap = 2, Accent = cfg.trail },
-                new CardDef { Title = "Ricochet", Description = "Shots bounce to one more enemy.", Cap = 2, Accent = cfg.electricBorderSpark },
-                new CardDef { Title = "Devil's Bargain", Description = "Double damage. Lose 30% max health.", Cap = 1, Accent = cfg.hpBad, Distinct = true },
-                new CardDef { Title = "Iron Hull", Description = "+20% max health.", Cap = 2, Accent = cfg.ranged }
+                new CardDef { Title = "Overload", Description = "Your shots hit 50% harder.", Cap = 3, Accent = cfg.fast, Enabled = false },
+                new CardDef { Title = "Rapid Feed", Description = "Fire 50% more rounds.", Cap = 3, Accent = cfg.playerProjectile, Enabled = false },
+                new CardDef { Title = "Live Wire", Description = "Your trail burns whatever touches it.", Cap = 2, Accent = cfg.trail, Enabled = false },
+                new CardDef { Title = "Ricochet", Description = "Shots bounce to one more enemy.", Cap = 2, Accent = cfg.electricBorderSpark, Enabled = false },
+                new CardDef { Title = "Devil's Bargain", Description = "Double damage. Lose 30% max health.", Cap = 1, Accent = cfg.hpBad, Distinct = true, Enabled = false },
+                new CardDef { Title = "Iron Hull", Description = "+20% max health.", Cap = 2, Accent = cfg.ranged, Enabled = false }
             });
         }
 

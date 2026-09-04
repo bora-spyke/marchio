@@ -11,6 +11,7 @@ namespace Marchio
         public Color Accent;
         public bool Distinct;
         public string IconClass;
+        public bool Enabled = true;
     }
 
     public sealed class CardPool
@@ -51,7 +52,7 @@ namespace Marchio
         public void RollThree()
         {
             available.Clear();
-            for (int i = 0; i < defs.Length; i++) if (!IsCapped(i)) available.Add(i);
+            for (int i = 0; i < defs.Length; i++) if (defs[i].Enabled && !IsCapped(i)) available.Add(i);
             for (int i = available.Count - 1; i > 0; i--)
             {
                 int j = Random.Range(0, i + 1);
