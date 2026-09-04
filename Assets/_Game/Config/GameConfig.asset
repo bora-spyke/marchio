@@ -15,16 +15,19 @@ MonoBehaviour:
   referenceHeightPx: 844
   playerRadius: 15
   playerMaxHP: 100
-  playerSpeed: 550
+  playerSpeed: 480
   playerAccel: 2300
   playerDecel: 2900
   playerInvulnMs: 500
   playerContactDamage: 10
   carTurnDegPerS: 420
+  introTransitionS: 1.2
+  carMaxLeanDeg: 1.8
+  carLeanPerTurnSpeed: 0.015
+  carLeanSmoothDegPerS: 240
   trailMinDist: 10
   minLoopLengthMult: 3
   closeRadiusMult: 0.5
-  loopFlashMs: 380
   trailHitRadius: 6
   maxLoopLengthMult: 45
   loopGrowthXPStep: 3
@@ -32,7 +35,6 @@ MonoBehaviour:
   maxLoopLengthGrowthCapMult: 2
   comboLoopLengthStep: 0.1
   comboLoopLengthCapBonus: 1.5
-  barrierDurationMs: 3000
   soulstonePickupRadiusMult: 2
   soulstoneSizePx: 12.75
   soulstoneCollectS: 0.45
