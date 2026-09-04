@@ -6,6 +6,7 @@ namespace Marchio
     public sealed class CameraRig : MonoBehaviour
     {
         static readonly Plane Ground = new Plane(Vector3.up, Vector3.zero);
+        const float MaxPlaneDistance = 2500f;
 
         Camera cam;
         Vector3 offset;
@@ -106,7 +107,7 @@ namespace Marchio
         public Vector2 ScreenToPlane(Vector2 screen)
         {
             var ray = Cam.ScreenPointToRay(new Vector3(screen.x, screen.y, 0f));
-            if (!Ground.Raycast(ray, out float enter)) enter = Cam.farClipPlane;
+            if (!Ground.Raycast(ray, out float enter) || enter > MaxPlaneDistance) enter = MaxPlaneDistance;
             var w = ray.GetPoint(enter);
             return new Vector2(w.x, w.z);
         }

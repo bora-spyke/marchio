@@ -7,6 +7,8 @@ namespace Marchio
     {
         [SerializeField] Material material;
 
+        const int MaxTilesPerAxis = 40;
+
         readonly List<Transform> tiles = new List<Transform>();
         int columns;
         int rows;
@@ -28,8 +30,8 @@ namespace Marchio
             var gm = GameManager.I;
             float tile = gm.Config.groundTilePx;
             var half = gm.Cam.HalfExtents;
-            int needCols = Mathf.CeilToInt(half.x * 2f / tile) + 3;
-            int needRows = Mathf.CeilToInt(half.y * 2f / tile) + 3;
+            int needCols = Mathf.Min(MaxTilesPerAxis, Mathf.CeilToInt(half.x * 2f / tile) + 3);
+            int needRows = Mathf.Min(MaxTilesPerAxis, Mathf.CeilToInt(half.y * 2f / tile) + 3);
             if (needCols <= columns && needRows <= rows) return;
             columns = Mathf.Max(columns, needCols);
             rows = Mathf.Max(rows, needRows);

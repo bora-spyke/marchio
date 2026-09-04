@@ -112,7 +112,12 @@ namespace Marchio
         void SnapCameraToIntro()
         {
             var pose = player.IntroCameraPose;
-            if (pose != null) cameraRig.SnapTo(pose.position, pose.rotation);
+            if (pose != null)
+            {
+                var rot = pose.rotation;
+                if ((rot * Vector3.forward).y > -0.15f) rot = Quaternion.LookRotation(player.transform.position - pose.position, Vector3.up);
+                cameraRig.SnapTo(pose.position, rot);
+            }
             else cameraRig.Follow(player.Pos, 0f);
         }
 
