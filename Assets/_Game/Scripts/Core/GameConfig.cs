@@ -16,6 +16,7 @@ namespace Marchio
         public float playerDecel = 2900f;
         public float playerInvulnMs = 500f;
         public float playerContactDamage = 10f;
+        public float carTurnDegPerS = 420f;
 
         [Header("Trail / Loop")]
         public float trailMinDist = 7f;
@@ -32,10 +33,12 @@ namespace Marchio
 
         [Header("Barrier")]
         public float barrierDurationMs = 3000f;
-        public float deadTrailMs = 2500f;
 
         [Header("Soul Stone")]
-        public float soulstonePickupRadiusMult = 2f; // pickup radius = player diameter * this
+        public float soulstonePickupRadiusMult = 2f;
+        public float soulstoneSizePx = 34f;
+        public float soulstoneCollectS = 0.45f;
+        public float soulstoneCollectArcPx = 30f;
 
         [Header("Touch Input")]
         public float touchAutoResumeMs = 1000f;
@@ -100,11 +103,6 @@ namespace Marchio
         public Color chaser = Hex("#ff2e88");
         public Color fast = Hex("#ffb020");
         public Color ranged = Hex("#a06bff");
-        public Color skin1 = Hex("#ffd84d");
-        public Color cartColorVariant = Hex("#ff7ad9");
-        public Color trailVariant = Hex("#b8ff5c");
-        public Color cart2 = Hex("#f4f7ff");
-        public float cart2ScaleMult = 1.25f;
         public Color enemyProjectile = Hex("#c98bff");
         public Color playerProjectile = Hex("#4de3ff");
         public Color electricBorderSpark = Hex("#fff2a8");

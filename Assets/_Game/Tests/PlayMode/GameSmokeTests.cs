@@ -33,12 +33,10 @@ namespace Marchio.Tests
             Assert.IsNotNull(enemy, "a live enemy should exist");
             var pos = enemy.Pos;
             float scoreBefore = gm.Run.LevelScore;
-            float trophyBefore = gm.Trophy.Total;
             enemy.Kill();
             yield return null;
             Assert.IsTrue(enemy.Dead);
             Assert.Greater(gm.Run.LevelScore, scoreBefore, "kill should add level score");
-            Assert.Greater(gm.Trophy.Total, trophyBefore, "kill score banks to trophy road immediately");
             float wait = 0f;
             while (gm.Enemies.Contains(enemy) && wait < 6f) { wait += Time.deltaTime; yield return null; }
             Assert.IsFalse(gm.Enemies.Contains(enemy), "dead enemy released back to pool after its death particles finish");
@@ -53,7 +51,7 @@ namespace Marchio.Tests
 
             gm.Fail();
             Assert.AreEqual(GameMode.Fail, gm.Mode);
-            Assert.AreEqual(gm.Preset.freeRevives + gm.Trophy.ExtraRevives, gm.Run.RevivesLeft);
+            Assert.AreEqual(gm.Preset.freeRevives, gm.Run.RevivesLeft);
             gm.Revive();
             Assert.AreEqual(GameMode.Play, gm.Mode);
             Assert.AreEqual(0, gm.Enemies.Count, "revive restarts the level with a clear field");

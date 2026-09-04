@@ -4846,6 +4846,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1360101829369970020}
   - component: {fileID: 193702870670447795}
+  - component: {fileID: 2021489341613294694}
   m_Layer: 0
   m_Name: SoulStone-Purple
   m_TagString: Untagged
@@ -4929,3 +4930,20 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!114 &2021489341613294694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4263931243950854803}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8c410273231e864cad6ac15430f5095, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Marchio::Marchio.SoulStone
+  hoverHeight: 10
+  bobAmplitude: 4
+  bobSpeed: 3
+  wobbleDeg: 10
+  spawnPopS: 0.35

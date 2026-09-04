@@ -5516,7 +5516,7 @@ MonoBehaviour:
   enemyProjectilePrefab: {fileID: 1795060547283548827, guid: fa597dd4b894f44afa5455ed29e841cf, type: 3}
   playerProjectilePrefab: {fileID: 1314426356495512094, guid: 731961c9b9fdd41cfb72717124ae18cb, type: 3}
   barrierPrefab: {fileID: 1393564817872220168, guid: 1ac53fe7e25f24d529284da86ac25655, type: 3}
-  deadTrailPrefab: {fileID: 4258819883973536095, guid: 8c79a4e59c1be46689b9e6ada0db144d, type: 3}
+  soulStonePrefab: {fileID: 5747632873066698984, guid: 531657ceff8348442af098fb505132b9, type: 3}
 --- !u!4 &693961888
 Transform:
   m_ObjectHideFlags: 0

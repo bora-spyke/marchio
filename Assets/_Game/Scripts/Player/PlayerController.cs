@@ -15,6 +15,7 @@ namespace Marchio
         public float Hp { get; private set; }
         public float Invuln { get; private set; }
         public float LastMoveAngle { get; private set; }
+        float visualYaw;
 
         GameConfig Cfg => GameManager.I.Config;
 
@@ -25,38 +26,19 @@ namespace Marchio
             Hp = GameManager.I.PlayerMaxHp;
             Invuln = 0f;
             LastMoveAngle = 0f;
-            ApplyLook();
-            ApplyTransform();
+            visualYaw = 0f;
+            ApplyTransform(float.PositiveInfinity);
         }
 
         public void SetHp(float hp) => Hp = Mathf.Clamp(hp, 0f, GameManager.I.PlayerMaxHp);
 
         public void ClampHp() => Hp = Mathf.Min(Hp, GameManager.I.PlayerMaxHp);
 
-        public void ApplyLook()
-        {
-            var gm = GameManager.I;
-            if (visualRoot != null)
-                visualRoot.localScale = Vector3.one * (gm.Trophy.CartTier > 0 ? Cfg.cart2ScaleMult : 1f);
-        }
-
-        Color BodyColor
-        {
-            get
-            {
-                var t = GameManager.I.Trophy;
-                if (t.CartTier > 0) return Cfg.cart2;
-                if (t.Has(TrophyReward.CartColor)) return Cfg.cartColorVariant;
-                if (t.Has(TrophyReward.DamageBoost)) return Cfg.skin1;
-                return Cfg.player;
-            }
-        }
-
         public void Tick(float dt, in InputFrame inp)
         {
             var cfg = Cfg;
             if (Invuln > 0f) Invuln -= dt * 1000f;
-            var target = inp.Move * cfg.playerSpeed * GameManager.I.Trophy.SpeedMult;
+            var target = inp.Move * cfg.playerSpeed;
             bool idle = inp.Move.x == 0f && inp.Move.y == 0f;
             float accel = (idle ? cfg.playerDecel : cfg.playerAccel) * dt;
             Velocity = new Vector2(
@@ -64,7 +46,7 @@ namespace Marchio
                 Mathf.MoveTowards(Velocity.y, target.y, accel));
             Pos += Velocity * dt;
             if (Velocity.sqrMagnitude > 1f) LastMoveAngle = Mathf.Atan2(Velocity.y, Velocity.x);
-            ApplyTransform();
+            ApplyTransform(dt);
         }
 
         public void TakeDamage(float dmg)
@@ -86,17 +68,25 @@ namespace Marchio
             Hp = Mathf.Min(GameManager.I.PlayerMaxHp, Hp + amount);
         }
 
-        void ApplyTransform()
+        void ApplyTransform(float dt)
         {
             transform.position = PolygonMath.ToWorld(Pos);
             if (visualRoot != null)
-                visualRoot.rotation = Quaternion.Euler(0f, -LastMoveAngle * Mathf.Rad2Deg, 0f);
+            {
+                float targetYaw = -LastMoveAngle * Mathf.Rad2Deg;
+                visualYaw = Mathf.MoveTowardsAngle(visualYaw, targetYaw, Cfg.carTurnDegPerS * dt);
+                visualRoot.rotation = Quaternion.Euler(0f, visualYaw, 0f);
+            }
             if (visualRenderer != null)
             {
-                mpb ??= new MaterialPropertyBlock();
                 bool blink = Invuln > 0f && Mathf.FloorToInt(Invuln / 60f) % 2 == 0;
-                mpb.SetColor(BaseColorId, blink ? Color.white : BodyColor);
-                visualRenderer.SetPropertyBlock(mpb);
+                if (blink)
+                {
+                    mpb ??= new MaterialPropertyBlock();
+                    mpb.SetColor(BaseColorId, Color.white);
+                    visualRenderer.SetPropertyBlock(mpb);
+                }
+                else visualRenderer.SetPropertyBlock(null);
             }
         }
     }

@@ -33,7 +33,6 @@ namespace Marchio.Editor
             BuildProjectile("Projectile_Enemy", solid);
             BuildProjectile("Projectile_Player", solid);
             BuildLinePrefab<Barrier>("Barrier", line, cfg.loopEdge, 3f, true);
-            BuildLinePrefab<DeadTrail>("DeadTrail", line, cfg.trail, 3f, false);
             BuildPanelSettings();
             BuildEnemyTypes(cfg);
             BuildPresets();
@@ -281,10 +280,7 @@ namespace Marchio.Editor
             };
         }
 
-        static TrophyNode Node(string title, float threshold, bool macro, TrophyReward reward) =>
-            new TrophyNode { title = title, threshold = threshold, macro = macro, reward = reward };
-
-        static RunPreset Preset(string name, System.Action<RunPreset> defaults, TrophyNode[] nodes)
+        static RunPreset Preset(string name, System.Action<RunPreset> defaults)
         {
             var path = PresetsFolder + "/" + name + ".asset";
             var existing = AssetDatabase.LoadAssetAtPath<RunPreset>(path);
@@ -294,7 +290,6 @@ namespace Marchio.Editor
                 defaults(so);
                 AssetDatabase.CreateAsset(so, path);
             }
-            if (so.nodes == null || so.nodes.Length == 0) so.nodes = nodes;
             if (so.spawnPhases == null || so.spawnPhases.Length == 0) so.spawnPhases = DemoSpawnPhases();
             if (so.levels == null || so.levels.Length == 0) so.levels = DefaultLevels();
             EditorUtility.SetDirty(so);
@@ -303,53 +298,9 @@ namespace Marchio.Editor
 
         static void BuildPresets()
         {
-            Preset("DEMO", p => { p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
-            {
-                Node("Damage Boost + Skin", 70f, true, TrophyReward.DamageBoost),
-                Node("Cart Color", 160f, false, TrophyReward.CartColor),
-                Node("Max HP +10%", 330f, false, TrophyReward.MaxHpUp),
-                Node("Cart Speed Unlocked", 500f, true, TrophyReward.SpeedUnlock),
-                Node("+1 Revive", 700f, false, TrophyReward.ExtraRevive),
-                Node("Wider Trace", 950f, true, TrophyReward.TrailWiden),
-                Node("Trail Effect", 1250f, false, TrophyReward.TrailEffect),
-                Node("New Cart", 1550f, true, TrophyReward.NewCart)
-            });
-            Preset("DEMO_SHORT", p => { p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
-            {
-                Node("Damage Boost + Skin", 45f, true, TrophyReward.DamageBoost),
-                Node("Max HP +10%", 130f, false, TrophyReward.MaxHpUp),
-                Node("Cart Speed Unlocked", 320f, true, TrophyReward.SpeedUnlock),
-                Node("+1 Revive", 480f, false, TrophyReward.ExtraRevive),
-                Node("Wider Trace", 640f, true, TrophyReward.TrailWiden),
-                Node("New Cart", 1000f, true, TrophyReward.NewCart)
-            });
-            Preset("LIVE", p => { p.levelCount = 0; p.powerUpUnlockLevel = 4; p.fillUpgradeLastLevel = 999; }, LiveNodes());
-        }
-
-        static TrophyNode[] LiveNodes()
-        {
-            var fillers = new[] { TrophyReward.CartColor, TrophyReward.MaxHpUp, TrophyReward.ExtraRevive, TrophyReward.TrailEffect };
-            var macros = new[]
-            {
-                Node("Damage Boost + Skin", 90f, true, TrophyReward.DamageBoost),
-                Node("Cart Speed Unlocked", 700f, true, TrophyReward.SpeedUnlock),
-                Node("Wider Trace", 1500f, true, TrophyReward.TrailWiden),
-                Node("New Cart", 2600f, true, TrophyReward.NewCart)
-            };
-            var list = new System.Collections.Generic.List<TrophyNode>();
-            float prev = 0f;
-            for (int m = 0; m < macros.Length; m++)
-            {
-                for (int k = 1; k <= 4; k++)
-                {
-                    var reward = fillers[(m * 4 + k) % fillers.Length];
-                    float t = Mathf.Round(Mathf.Lerp(prev, macros[m].threshold, k / 5f));
-                    list.Add(Node(reward == TrophyReward.MaxHpUp ? "Max HP +10%" : reward == TrophyReward.ExtraRevive ? "+1 Revive" : reward == TrophyReward.CartColor ? "Cart Color" : "Trail Effect", t, false, reward));
-                }
-                list.Add(macros[m]);
-                prev = macros[m].threshold;
-            }
-            return list.ToArray();
+            Preset("DEMO", p => { p.levelCount = 4; p.powerUpUnlockLevel = 2; });
+            Preset("DEMO_SHORT", p => { p.levelCount = 4; p.powerUpUnlockLevel = 2; });
+            Preset("LIVE", p => { p.levelCount = 0; p.powerUpUnlockLevel = 4; p.fillUpgradeLastLevel = 999; });
         }
 
         static void BuildPanelSettings()
@@ -375,7 +326,6 @@ namespace Marchio.Editor
             var enemyProj = Prefab<Projectile>("Projectile_Enemy");
             var playerProj = Prefab<Projectile>("Projectile_Player");
             var barrier = Prefab<Barrier>("Barrier");
-            var deadTrail = Prefab<DeadTrail>("DeadTrail");
 
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
@@ -466,7 +416,6 @@ namespace Marchio.Editor
             Set(gm, "enemyProjectilePrefab", enemyProj);
             Set(gm, "playerProjectilePrefab", playerProj);
             Set(gm, "barrierPrefab", barrier);
-            Set(gm, "deadTrailPrefab", deadTrail);
 
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;

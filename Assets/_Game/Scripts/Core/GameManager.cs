@@ -28,7 +28,6 @@ namespace Marchio
         [SerializeField] Projectile enemyProjectilePrefab;
         [SerializeField] Projectile playerProjectilePrefab;
         [SerializeField] Barrier barrierPrefab;
-        [SerializeField] DeadTrail deadTrailPrefab;
         [SerializeField] SoulStone soulStonePrefab;
 
         public GameConfig Config => config;
@@ -40,14 +39,12 @@ namespace Marchio
         public UpgradeManager Upgrades => upgrades;
         public ParticleFx Fx => fx;
         public Run Run { get; private set; }
-        public TrophyRoad Trophy { get; private set; }
 
         readonly Dictionary<EnemyTypeSO, ObjectPool<Enemy>> enemyPools = new Dictionary<EnemyTypeSO, ObjectPool<Enemy>>();
         readonly Dictionary<Projectile, ObjectPool<Projectile>> enemyProjectilePools = new Dictionary<Projectile, ObjectPool<Projectile>>();
         public readonly List<ObjectPool<Projectile>> EnemyProjectilePools = new List<ObjectPool<Projectile>>();
         public ObjectPool<Projectile> PlayerProjectiles { get; private set; }
         public ObjectPool<Barrier> Barriers { get; private set; }
-        public ObjectPool<DeadTrail> DeadTrails { get; private set; }
         readonly Dictionary<SoulStone, ObjectPool<SoulStone>> soulStonePools = new Dictionary<SoulStone, ObjectPool<SoulStone>>();
         public readonly List<ObjectPool<SoulStone>> SoulStonePools = new List<ObjectPool<SoulStone>>();
         public readonly List<Enemy> Enemies = new List<Enemy>();
@@ -61,7 +58,6 @@ namespace Marchio
 
         public event Action<GameMode> ModeChanged;
         public event Action<Vector2, int> DamageText;
-        public event Action<TrophyNode> NodeUnlocked;
 
         float accumulator;
 
@@ -69,8 +65,7 @@ namespace Marchio
         {
             get
             {
-                float mult = Trophy.MaxHpMult;
-                mult += upgrades.Level(PowerId.IronHull) * preset.ironHullPerStack;
+                float mult = 1f + upgrades.Level(PowerId.IronHull) * preset.ironHullPerStack;
                 if (upgrades.Level(PowerId.DevilsBargain) > 0) mult -= preset.devilHpPenalty;
                 return Mathf.Max(1f, config.playerMaxHP * mult);
             }
@@ -80,7 +75,7 @@ namespace Marchio
         {
             get
             {
-                float mult = Trophy.DamageMult * (1f + upgrades.Level(PowerId.Overload) * preset.overloadPerStack);
+                float mult = 1f + upgrades.Level(PowerId.Overload) * preset.overloadPerStack;
                 if (upgrades.Level(PowerId.DevilsBargain) > 0) mult *= preset.devilDamageMult;
                 return mult;
             }
@@ -94,9 +89,7 @@ namespace Marchio
             Application.targetFrameRate = Application.platform == RuntimePlatform.WebGLPlayer ? -1 : 60;
             PlayerProjectiles = new ObjectPool<Projectile>(playerProjectilePrefab, poolRoot, 16);
             Barriers = new ObjectPool<Barrier>(barrierPrefab, poolRoot, 4);
-            DeadTrails = new ObjectPool<DeadTrail>(deadTrailPrefab, poolRoot, 4);
-            Trophy = new TrophyRoad(preset);
-            Run = new Run(preset, Trophy);
+            Run = new Run(preset);
             upgrades.Init(config);
             cameraRig.Configure(config);
             ResetRun();
@@ -129,8 +122,6 @@ namespace Marchio
             trail.TickFlash(dt);
             for (int i = Barriers.Active.Count - 1; i >= 0; i--)
                 if (!Barriers.Active[i].Tick(dt)) Barriers.Release(Barriers.Active[i]);
-            for (int i = DeadTrails.Active.Count - 1; i >= 0; i--)
-                if (!DeadTrails.Active[i].Tick(dt)) DeadTrails.Release(DeadTrails.Active[i]);
 
             if (Mode != GameMode.Play) return;
 
@@ -147,20 +138,8 @@ namespace Marchio
             TickSoulStones(dt);
 
             if (Mode != GameMode.Play) return;
-            if (Trophy.HasPending) ApplyUnlock(Trophy.ClaimNext());
             if (Run.LevelCleared) CompleteLevel();
             else if (Run.VictoryLapDone) FinishVictoryLap();
-        }
-
-        void ApplyUnlock(TrophyNode node)
-        {
-            player.ApplyLook();
-            player.ClampHp();
-            trail.ApplyLook();
-            if (node.reward == TrophyReward.ExtraRevive) Run.RevivesLeft++;
-            fx.Burst(player.Pos, config.electricBorderSpark, 40);
-            AddJuice(config.hitstopBaseMs * 2f, config.shakeBase);
-            NodeUnlocked?.Invoke(node);
         }
 
         public ObjectPool<Projectile> EnemyProjectilesFor(Projectile prefab)
@@ -251,7 +230,7 @@ namespace Marchio
         public float EffectiveMaxLoopLength()
         {
             float bonus = Mathf.Min(Combo * config.comboLoopLengthStep, config.comboLoopLengthCapBonus);
-            return MaxLoopLength * (1f + bonus) * Trophy.TrailLengthMult;
+            return MaxLoopLength * (1f + bonus);
         }
 
         public void AddCombo(int count) => Combo += count;
@@ -296,10 +275,11 @@ namespace Marchio
                 for (int i = pool.Active.Count - 1; i >= 0; i--)
                 {
                     var s = pool.Active[i];
-                    s.Tick(dt);
-                    if (Vector2.Distance(s.Pos, player.Pos) <= pickupRadius)
+                    if (!s.Collecting && Vector2.Distance(s.Pos, player.Pos) <= pickupRadius) s.BeginCollect();
+                    if (s.Tick(dt, player.Pos))
                     {
-                        fx.Burst(s.Pos, config.trail, 8);
+                        fx.Burst(s.Pos, config.trail, 10);
+                        AddJuice(0f, config.shakeBase * 0.3f);
                         pool.Release(s);
                     }
                 }
@@ -339,7 +319,7 @@ namespace Marchio
         public void StartRun()
         {
             ResetRun();
-            Run.Start(preset.freeRevives + Trophy.ExtraRevives);
+            Run.Start(preset.freeRevives);
             BeginLevel(1);
         }
 
@@ -362,7 +342,6 @@ namespace Marchio
                 player.Heal(PlayerMaxHp * preset.healAmount);
                 Run.HealedOnClear = true;
             }
-            Trophy.Flush();
             SetMode(GameMode.LevelClear);
         }
 
@@ -405,7 +384,6 @@ namespace Marchio
         public void Fail()
         {
             if (Mode != GameMode.Play) return;
-            Trophy.Flush();
             SetMode(GameMode.Fail);
         }
 
@@ -423,17 +401,8 @@ namespace Marchio
             SetMode(GameMode.Menu);
         }
 
-        public void ResetProgress()
-        {
-            if (Mode != GameMode.Menu) return;
-            Trophy.Reset();
-            ResetRun();
-            SetMode(GameMode.Menu);
-        }
-
         void FinishVictoryLap()
         {
-            Trophy.Flush();
             SetMode(GameMode.Victory);
         }
 
@@ -443,7 +412,6 @@ namespace Marchio
             foreach (var pool in EnemyProjectilePools) pool.ReleaseAll();
             PlayerProjectiles.ReleaseAll();
             Barriers.ReleaseAll();
-            DeadTrails.ReleaseAll();
             foreach (var pool in SoulStonePools) pool.ReleaseAll();
             Enemies.Clear();
             Combo = 0;
@@ -463,7 +431,7 @@ namespace Marchio
             player.ResetState();
             trail.ResetState();
             autoAttack.ResetState();
-            Run.Start(preset.freeRevives + Trophy.ExtraRevives);
+            Run.Start(preset.freeRevives);
         }
 
         void SetMode(GameMode mode)

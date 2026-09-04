@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7856120821911611356}
   - component: {fileID: 4909230820034613428}
+  - component: {fileID: 5323400507009503786}
   m_Layer: 0
   m_Name: SoulStone-Yellow
   m_TagString: Untagged
@@ -93,6 +94,23 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!114 &5323400507009503786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5626015057338773149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8c410273231e864cad6ac15430f5095, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Marchio::Marchio.SoulStone
+  hoverHeight: 10
+  bobAmplitude: 4
+  bobSpeed: 3
+  wobbleDeg: 10
+  spawnPopS: 0.35
 --- !u!1 &8443675293312996623
 GameObject:
   m_ObjectHideFlags: 0

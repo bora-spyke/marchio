@@ -3,17 +3,6 @@ using UnityEngine;
 
 namespace Marchio
 {
-    public enum TrophyReward { DamageBoost, CartColor, MaxHpUp, SpeedUnlock, ExtraRevive, TrailWiden, TrailEffect, NewCart }
-
-    [Serializable]
-    public struct TrophyNode
-    {
-        public string title;
-        public float threshold;
-        public bool macro;
-        public TrophyReward reward;
-    }
-
     [Serializable]
     public struct SpawnEntry
     {
@@ -79,23 +68,12 @@ namespace Marchio
         public float[] areaTierMult = { 1f, 1.5f, 2.5f, 4f };
         public float[] streakMult = { 1f, 1.2f, 1.4f, 1.6f };
 
-        [Header("Speed")]
-        public float speedPreStep2 = 0.72f;
-
         [Header("Victory lap spawning")]
         public float baseSpawnPerS = 0.8f;
         public SpawnPhase[] spawnPhases = Array.Empty<SpawnPhase>();
         public float rampPerSAfterLastPhase = 0.03f;
         public float spawnRampCapS = 90f;
         public float hpScalePerLevel = 0.06f;
-
-        [Header("Trophy Road")]
-        public TrophyNode[] nodes = Array.Empty<TrophyNode>();
-        public float step1DamageMult = 1.6f;
-        public float microHpBonus = 0.10f;
-        public float step3TrailWidthMult = 1.5f;
-        public float step3TrailLengthMult = 1.3f;
-        public float step4HpBonus = 0.25f;
 
         [Header("Power-ups")]
         public float overloadPerStack = 0.5f;

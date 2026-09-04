@@ -7,15 +7,13 @@ namespace Marchio
     public sealed class HudController : MonoBehaviour
     {
         VisualElement root;
-        VisualElement hpBar, hpFill, waveBar, waveFill, trailBar, trailFill, joystick, joystickKnob, stackRow, toast;
-        Label stageText, waveText, comboChip, drawText, toastText;
+        VisualElement hpBar, hpFill, trailBar, trailFill, joystick, joystickKnob, stackRow;
+        Label stageText, comboChip, drawText;
         DamageTextLayer damageLayer;
         InputReader input;
         int lastCombo = -1;
         int lastStackHash = -1;
         int lastLevel = -1;
-        int lastWave = -1;
-        bool pulse;
 
         void OnEnable()
         {
@@ -26,23 +24,13 @@ namespace Marchio
             hpFill = root.Q("hp-fill");
             stackRow = root.Q("stack-row");
             stageText = root.Q<Label>("stage-text");
-            waveBar = root.Q("wave-bar");
-            waveFill = root.Q("wave-fill");
-            waveText = root.Q<Label>("wave-text");
             comboChip = root.Q<Label>("combo-chip");
             drawText = root.Q<Label>("draw-text");
             trailBar = root.Q("trail-bar");
             trailFill = root.Q("trail-fill");
             joystick = root.Q("joystick");
             joystickKnob = root.Q("joystick-knob");
-            toast = root.Q("toast");
-            toastText = root.Q<Label>("toast-text");
             damageLayer = new DamageTextLayer(root.Q("damage-layer"));
-            root.schedule.Execute(() =>
-            {
-                pulse = !pulse;
-                waveBar.EnableInClassList("wave-bar--pulse", pulse && waveBar.ClassListContains("wave-bar--pressure"));
-            }).Every(350);
         }
 
         void Start()
@@ -51,7 +39,6 @@ namespace Marchio
             input = gm.GetComponent<InputReader>();
             gm.DamageText += damageLayer.Spawn;
             gm.ModeChanged += OnMode;
-            gm.NodeUnlocked += OnUnlock;
             OnMode(gm.Mode);
         }
 
@@ -61,21 +48,12 @@ namespace Marchio
             if (gm == null) return;
             gm.DamageText -= damageLayer.Spawn;
             gm.ModeChanged -= OnMode;
-            gm.NodeUnlocked -= OnUnlock;
         }
 
         void OnMode(GameMode mode)
         {
             root.style.display = mode == GameMode.Play ? DisplayStyle.Flex : DisplayStyle.None;
-            if (mode == GameMode.Play) { lastStackHash = -1; lastLevel = -1; lastWave = -1; }
-        }
-
-        void OnUnlock(TrophyNode node)
-        {
-            toastText.text = "UNLOCKED  ·  " + node.title.ToUpperInvariant();
-            toast.EnableInClassList("toast--macro", node.macro);
-            toast.AddToClassList("toast--on");
-            toast.schedule.Execute(() => toast.RemoveFromClassList("toast--on")).ExecuteLater(1900);
+            if (mode == GameMode.Play) { lastStackHash = -1; lastLevel = -1; }
         }
 
         void Update()
@@ -95,27 +73,6 @@ namespace Marchio
                 int total = gm.Preset.levelCount;
                 stageText.text = run.IsVictoryLap ? "VICTORY LAP" : total > 0 ? $"STAGE {run.Level}/{total}" : $"STAGE {run.Level}";
             }
-            if (run.IsVictoryLap)
-            {
-                float lap = Mathf.Clamp01(run.LevelTime / Mathf.Max(1f, gm.Preset.victoryLapDurationS));
-                waveFill.style.width = Length.Percent(lap * 100f);
-                waveBar.RemoveFromClassList("wave-bar--pressure");
-                if (lastWave != 0) { lastWave = 0; waveText.text = "ENJOY THE RIDE"; }
-            }
-            else
-            {
-                var waves = gm.Waves;
-                int count = Mathf.Max(1, waves.WaveCount);
-                int shown = Mathf.Min(waves.WaveIndex + 1, count);
-                waveFill.style.width = Length.Percent((waves.WaveIndex + waves.WaveProgress) / count * 100f);
-                waveBar.EnableInClassList("wave-bar--pressure", waves.WaveIndex >= count - 1);
-                if (shown != lastWave)
-                {
-                    lastWave = shown;
-                    waveText.text = $"WAVE {shown}/{count}";
-                }
-            }
-
             if (gm.Combo != lastCombo)
             {
                 lastCombo = gm.Combo;

@@ -161,7 +161,7 @@ namespace Marchio
             var cfg = Cfg;
             var player = gm.Player;
             var trail = gm.Trail;
-            float cutRadius = cfg.trailHitRadius * gm.Trophy.TrailWidthMult;
+            float cutRadius = cfg.trailHitRadius;
             int liveWire = gm.Upgrades.Level(PowerId.LiveWire);
             for (int i = gm.Enemies.Count - 1; i >= 0; i--)
             {

@@ -7,21 +7,13 @@ namespace Marchio.Tests
     public class RunTests
     {
         RunPreset preset;
-        TrophyRoad trophy;
         Run run;
 
         [SetUp]
         public void SetUp()
         {
             preset = ScriptableObject.CreateInstance<RunPreset>();
-            preset.nodes = new[]
-            {
-                new TrophyNode { title = "Step 1", threshold = 70f, macro = true, reward = TrophyReward.DamageBoost },
-                new TrophyNode { title = "Micro", threshold = 160f, macro = false, reward = TrophyReward.ExtraRevive },
-                new TrophyNode { title = "Step 2", threshold = 500f, macro = true, reward = TrophyReward.SpeedUnlock }
-            };
-            trophy = new TrophyRoad(preset, persist: false);
-            run = new Run(preset, trophy);
+            run = new Run(preset);
             run.Start(1);
             run.BeginLevel(1);
         }
@@ -30,25 +22,25 @@ namespace Marchio.Tests
         public void TearDown() => Object.DestroyImmediate(preset);
 
         [Test]
-        public void ScoreIsWeightedAndBankedImmediately()
+        public void ScoreIsWeightedBySource()
         {
             run.AddScore(ScoreSource.Kill, 10f);
             run.AddScore(ScoreSource.Area, 10f);
             Assert.AreEqual(10f, run.LevelScore, 1e-4f);
-            Assert.AreEqual(10f, trophy.Total, 1e-4f);
+            Assert.AreEqual(10f, run.RunScore, 1e-4f);
         }
 
         [Test]
-        public void CompletionBonusBanksButDeathDoesNot()
+        public void CompletionBonusAddsToRunScoreAndMissedBonusTracks()
         {
             run.AddScore(ScoreSource.Kill, 300f);
             float bonus = run.CompleteLevel();
             Assert.AreEqual(180f * 0.35f, bonus, 1e-3f);
-            Assert.AreEqual(180f + bonus, trophy.Total, 1e-3f);
+            Assert.AreEqual(180f + bonus, run.RunScore, 1e-3f);
             run.BeginLevel(2);
             run.AddScore(ScoreSource.Kill, 100f);
             Assert.AreEqual(60f * 0.35f, run.MissedBonus, 1e-3f);
-            Assert.AreEqual(180f + bonus + 60f, trophy.Total, 1e-3f);
+            Assert.AreEqual(180f + bonus + 60f, run.RunScore, 1e-3f);
         }
 
         [Test]
@@ -62,22 +54,6 @@ namespace Marchio.Tests
             Assert.AreEqual(1000f * 0.001f, run.AreaScore(1000f), 1e-4f);
             run.Streak = 9;
             Assert.AreEqual(30000f * 0.001f * 4f * 1.6f, run.AreaScore(30000f), 1e-3f);
-        }
-
-        [Test]
-        public void TrophyNodesBecomePendingWhenCrossedAndClaimInOrder()
-        {
-            Assert.IsFalse(trophy.HasPending);
-            trophy.Bank(200f);
-            Assert.IsTrue(trophy.HasPending);
-            Assert.AreEqual("Step 1", trophy.ClaimNext().title);
-            Assert.IsTrue(trophy.HasPending);
-            Assert.AreEqual("Micro", trophy.ClaimNext().title);
-            Assert.IsFalse(trophy.HasPending);
-            Assert.AreEqual(1.6f, trophy.DamageMult, 1e-4f);
-            Assert.AreEqual(1, trophy.ExtraRevives);
-            Assert.AreEqual(0.72f, trophy.SpeedMult, 1e-4f);
-            Assert.AreEqual(300f, trophy.RemainingToNext, 1e-4f);
         }
 
         [Test]

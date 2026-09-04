@@ -7,7 +7,6 @@ namespace Marchio
     public sealed class Run
     {
         readonly RunPreset preset;
-        readonly TrophyRoad trophy;
 
         public int Level { get; private set; }
         public float LevelScore { get; private set; }
@@ -19,10 +18,9 @@ namespace Marchio
         public float LastBonus { get; private set; }
         public bool HealedOnClear { get; set; }
 
-        public Run(RunPreset preset, TrophyRoad trophy)
+        public Run(RunPreset preset)
         {
             this.preset = preset;
-            this.trophy = trophy;
         }
 
         public bool IsVictoryLap => preset.IsVictoryLap(Level);
@@ -55,7 +53,6 @@ namespace Marchio
             float amount = raw * weight;
             LevelScore += amount;
             RunScore += amount;
-            trophy.Bank(amount);
             return amount;
         }
 
@@ -69,7 +66,6 @@ namespace Marchio
             LastLevelScore = LevelScore;
             LastBonus = LevelScore * preset.completionBonus;
             RunScore += LastBonus;
-            trophy.Bank(LastBonus);
             return LastBonus;
         }
 

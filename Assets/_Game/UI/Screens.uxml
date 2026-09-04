@@ -5,21 +5,12 @@
                 <ui:Label class="title title--hero" text="NEONLOOP" />
                 <ui:Label class="subtitle subtitle--tight" text="TRACE  ·  CLAIM  ·  SURVIVE" />
             </ui:VisualElement>
-            <ui:VisualElement class="card-panel">
-                <ui:VisualElement class="card-panel-head">
-                    <ui:Label class="panel-title" text="TROPHY ROAD" />
-                    <ui:Label name="main-claimed" class="panel-meta" text="0 / 10" />
-                </ui:VisualElement>
-                <ui:VisualElement name="main-trophy" />
-                <ui:VisualElement name="main-road" class="road" />
-            </ui:VisualElement>
             <ui:VisualElement class="spacer" />
             <ui:VisualElement name="main-buttons" class="buttons buttons--main" />
         </ui:VisualElement>
         <ui:VisualElement name="clear" class="overlay">
             <ui:Label name="clear-title" class="title-small" text="LEVEL 1 COMPLETE" />
             <ui:VisualElement name="clear-lines" class="panel" />
-            <ui:VisualElement name="clear-trophy" class="panel" />
             <ui:VisualElement name="clear-stack" class="stack-row panel" />
             <ui:Label name="clear-hp" class="hp-line" text="HP 100 / 100" />
             <ui:VisualElement name="clear-buttons" class="buttons" />
@@ -37,7 +28,6 @@
         <ui:VisualElement name="fail" class="overlay">
             <ui:Label class="title" text="RUN OVER" />
             <ui:Label name="fail-score" class="subtitle subtitle--tight" text="SCORE EARNED THIS RUN: 0" />
-            <ui:VisualElement name="fail-trophy" class="panel" />
             <ui:Label class="panel-title" text="YOUR BUILD" />
             <ui:VisualElement name="fail-stack" class="stack-row panel" />
             <ui:Label name="fail-bonus" class="missed" text="+35% BONUS MISSED" />
@@ -46,9 +36,6 @@
         <ui:VisualElement name="victory" class="overlay">
             <ui:Label class="title" text="VICTORY LAP" />
             <ui:Label name="victory-score" class="subtitle subtitle--tight" text="RUN SCORE: 0" />
-            <ui:VisualElement name="victory-trophy" class="panel" />
-            <ui:Label class="panel-title" text="UNLOCKED" />
-            <ui:VisualElement name="victory-rewards" class="rewards" />
             <ui:VisualElement name="victory-buttons" class="buttons" />
         </ui:VisualElement>
     </ui:VisualElement>

@@ -19,26 +19,12 @@ namespace Marchio
         Vector2 last;
         float flashT;
         float flashLife;
-        float baseWidth = -1f;
 
         public bool Drawing { get; private set; }
         public float PathLength { get; private set; }
         public IReadOnlyList<Vector2> Points => points;
 
         GameManager Gm => GameManager.I;
-
-        public void ApplyLook()
-        {
-            var gm = GameManager.I;
-            if (baseWidth < 0f) baseWidth = line.startWidth;
-            float w = baseWidth * gm.Trophy.TrailWidthMult;
-            line.startWidth = w;
-            line.endWidth = w;
-            var c = gm.Trophy.Has(TrophyReward.TrailEffect) ? gm.Config.trailVariant : gm.Config.trail;
-            c.a = line.startColor.a;
-            line.startColor = c;
-            line.endColor = c;
-        }
 
         public bool Touches(Vector2 pos, float radius)
         {
@@ -55,7 +41,6 @@ namespace Marchio
 
         public void ResetState()
         {
-            ApplyLook();
             Drawing = false;
             points.Clear();
             lengths.Clear();
@@ -97,7 +82,7 @@ namespace Marchio
             float minLen = cfg.MinLoopLength;
             if (PathLength >= minLen)
             {
-                int hit = FindSelfTouchIndex(pos, minLen, cfg.CloseRadius * Gm.Trophy.TrailWidthMult);
+                int hit = FindSelfTouchIndex(pos, minLen, cfg.CloseRadius);
                 if (hit >= 0) { Close(hit); return; }
             }
             RenderLine(pos);
