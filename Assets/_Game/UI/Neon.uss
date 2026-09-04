@@ -1,3 +1,8 @@
+.hud Label, .screens Label, .screens Button {
+    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
+    -unity-font-style: normal;
+}
+
 
 .hud {
     position: absolute;
@@ -20,7 +25,7 @@
 .stage-badge {
     width: 124px;
     height: 40px;
-    background-image: url("project://database/Assets/_aa/board.png?fileID=21300000&guid=66e6b52bf07eb4ac9858ab14fc08f49d&type=3#board");
+    background-image: url("project://database/Assets/_Game/UI/Sprites/board.png?fileID=21300000&guid=66e6b52bf07eb4ac9858ab14fc08f49d&type=3#board");
     -unity-slice-left: 65;
     -unity-slice-right: 65;
     -unity-slice-top: 0;
@@ -36,8 +41,7 @@
     translate: 0 -2px;
     padding: 0;
     margin: 0;
-    -unity-font: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy.otf?fileID=12800000&guid=c6abca83b4e5d4904a783b871d4bae95&type=3#EigerdalsNormHeavy");
-    -unity-font-definition: none;
+    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
     font-size: 19px;
     -unity-font-style: normal;
     color: #ffffff;
@@ -60,14 +64,14 @@
     top: 0;
     width: 42px;
     height: 41px;
-    background-image: url("project://database/Assets/_aa/heart.png?fileID=21300000&guid=226c31b52685643a9946f8a7689d2d9e&type=3#heart");
+    background-image: url("project://database/Assets/_Game/UI/Sprites/heart.png?fileID=21300000&guid=226c31b52685643a9946f8a7689d2d9e&type=3#heart");
 }
 
 .hp-track {
     margin-left: 21px;
     width: 166px;
     height: 25px;
-    background-image: url("project://database/Assets/_aa/Progress.png?fileID=21300000&guid=eea326ef6354946438d1b5d8d478d976&type=3#Progress");
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Progress.png?fileID=21300000&guid=eea326ef6354946438d1b5d8d478d976&type=3#Progress");
     -unity-slice-left: 75;
     -unity-slice-right: 75;
     -unity-slice-top: 0;
@@ -81,7 +85,7 @@
     height: 100%;
     width: 100%;
     min-width: 14px;
-    background-image: url("project://database/Assets/_aa/Progress Blue.png?fileID=21300000&guid=75d81d2a724454a0889ec10bf383fa13&type=3#Progress Blue");
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Progress Blue.png?fileID=21300000&guid=75d81d2a724454a0889ec10bf383fa13&type=3#Progress Blue");
     -unity-slice-left: 45;
     -unity-slice-right: 45;
     -unity-slice-top: 0;
@@ -263,8 +267,7 @@
     text-shadow: 0 0 18px #7dfcff;
     letter-spacing: 3px;
     margin-bottom: 10px;
-    -unity-font: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy.otf?fileID=12800000&guid=c6abca83b4e5d4904a783b871d4bae95&type=3#EigerdalsNormHeavy");
-    -unity-font-definition: none;
+    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
 }
 
 .title-small {
@@ -292,66 +295,6 @@
 
 .cta--pulse {
     opacity: 1;
-}
-
-.cards {
-    align-items: stretch;
-    width: 300px;
-    max-width: 90%;
-}
-
-.card {
-    flex-direction: row;
-    align-items: center;
-    height: 72px;
-    margin: 0 0 14px 0;
-    padding: 0 12px 0 14px;
-    border-radius: 10px;
-    border-width: 1.5px;
-    border-color: rgba(125, 252, 255, 0.28);
-    background-color: rgba(125, 252, 255, 0.05);
-    color: #eaf6ff;
-    opacity: 0;
-    translate: 0 18px;
-    transition-property: opacity, translate, scale, background-color;
-    transition-duration: 0.28s, 0.28s, 0.08s, 0.08s;
-    transition-timing-function: ease-out;
-}
-
-.card--in {
-    opacity: 1;
-    translate: 0 0;
-}
-
-.card:active {
-    scale: 0.96;
-    background-color: rgba(125, 252, 255, 0.16);
-}
-
-.card-badge {
-    width: 30px;
-    height: 30px;
-    border-radius: 15px;
-    margin-right: 14px;
-    flex-shrink: 0;
-}
-
-.card-text {
-    flex-grow: 1;
-    flex-shrink: 1;
-}
-
-.card-name {
-    font-size: 15px;
-    -unity-font-style: bold;
-    -unity-text-align: middle-left;
-}
-
-.card-desc {
-    font-size: 11px;
-    color: rgba(234, 246, 255, 0.65);
-    white-space: normal;
-    -unity-text-align: middle-left;
 }
 
 .wave-bar--pressure .stack-row {
@@ -573,27 +516,253 @@
     margin-bottom: 18px;
 }
 
-.missed {
-    font-size: 13px;
-    -unity-font-style: bold;
-    color: #ff4d6d;
-    margin: 6px 0 18px 0;
+.card--distinct 
+.font-hero {
+    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
+    -unity-font-style: normal;
+}
+
+.choose-prompt {
+    margin-top: 44px;
+    font-size: 19px;
+    color: #ffffff;
+    -unity-text-outline-width: 0.8px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.75);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.75);
+}
+
+.cards {
+    align-items: stretch;
+    width: 304px;
+    max-width: 90%;
+    margin-top: 24px;
+}
+
+.card {
+    position: relative;
+    height: 74px;
+    margin: 0 0 22px 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    opacity: 0;
+    translate: 0 18px;
+    transition-property: opacity, translate, scale;
+    transition-duration: 0.28s, 0.28s, 0.08s;
+    transition-timing-function: ease-out;
+}
+
+.card--in {
+    opacity: 1;
+    translate: 0 0;
+}
+
+.card:active {
+    scale: 0.96;
+}
+
+.card-bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Fill board.png?fileID=21300000&guid=1e3b07ade5b314a2ca103e62d838adff&type=3#Fill board");
+    -unity-slice-left: 0;
+    -unity-slice-right: 110;
+    -unity-slice-top: 0;
+    -unity-slice-bottom: 0;
+    -unity-slice-scale: 0.33px;
+}
+
+.card-bg--left {
+    left: 0;
+    scale: -1 1;
+}
+
+.card-bg--right {
+    right: 0;
+}
+
+.card-text {
+    position: absolute;
+    left: 60px;
+    right: 44px;
+    top: 0;
+    bottom: 0;
+    justify-content: center;
+}
+
+.card-name {
+    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
+    font-size: 18px;
+    color: #f7c948;
+    -unity-text-align: middle-left;
+    -unity-text-outline-width: 0.7px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.7);
+    text-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.7);
+}
+
+.card-desc {
+    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
+    font-size: 11px;
+    color: #ffffff;
+    white-space: normal;
+    -unity-text-align: middle-left;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+}
+
+.card-icon {
+    position: absolute;
+    left: -22px;
+    top: -6px;
+    width: 82px;
+    height: 84px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.card-icon--heal {
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Heal Fill icon.png?fileID=21300000&guid=5f73086b3ea2b4ea59797c065f36e280&type=3#Heal Fill icon");
+}
+
+.card-icon--burning {
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Burning Fill.png?fileID=21300000&guid=b0afa2c7f74d246659b7be42721f3001&type=3#Burning Fill");
+}
+
+.card-icon--freeze {
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Freeze Fill.png?fileID=21300000&guid=6983ed9c6091d47f7988bf69fc58ff27&type=3#Freeze Fill");
+}
+
+.card-badge {
+    position: absolute;
+    left: -8px;
+    top: 19px;
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    border-width: 3px;
+    border-color: #ffffff;
 }
 
 .card-stack {
-    font-size: 11px;
+    position: absolute;
+    right: 14px;
+    top: 7px;
+    font-size: 10px;
     -unity-font-style: bold;
-    color: rgba(234, 246, 255, 0.6);
-    margin-left: 8px;
-    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.85);
 }
 
-.card--distinct {
-    border-color: #ff4d6d;
-    background-color: rgba(255, 77, 109, 0.12);
+.card--distinct .card-name {
+    color: #ff8a8a;
 }
 
-.card--distinct .card-desc {
-    color: #ff8fa3;
+.popup {
+    width: 340px;
+    max-width: 94%;
+    padding-top: 34px;
 }
 
+.popup-body {
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Popup_Body.png?fileID=21300000&guid=60fa31a8134044130a7dfee8a3312af1&type=3#Popup_Body");
+    -unity-slice-left: 250;
+    -unity-slice-right: 250;
+    -unity-slice-top: 245;
+    -unity-slice-bottom: 245;
+    -unity-slice-scale: 0.33px;
+    padding: 48px 22px 26px 22px;
+    align-items: center;
+}
+
+.popup-header {
+    position: absolute;
+    top: 0;
+    left: 26px;
+    right: 26px;
+    height: 66px;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 8px;
+}
+
+.popup-header-bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Popup_Header.png?fileID=21300000&guid=68a9bef0dbb44479c8e012f8e519de6a&type=3#Popup_Header");
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.popup-header-bg--left {
+    left: 0;
+}
+
+.popup-header-bg--right {
+    right: 0;
+    scale: -1 1;
+}
+
+.popup-title {
+    font-size: 27px;
+    color: #ffffff;
+    -unity-text-outline-width: 0.9px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8);
+}
+
+.popup-inside {
+    width: 100%;
+    height: 190px;
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Popup_inside.png?fileID=21300000&guid=398729e133d024771bb0833f699f7ae5&type=3#Popup_inside");
+    -unity-slice-left: 130;
+    -unity-slice-right: 130;
+    -unity-slice-top: 125;
+    -unity-slice-bottom: 125;
+    -unity-slice-scale: 0.4px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+}
+
+.popup-heart {
+    width: 96px;
+    height: 88px;
+    background-image: url("project://database/Assets/_Game/UI/Sprites/heart.png?fileID=21300000&guid=226c31b52685643a9946f8a7689d2d9e&type=3#heart");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.popup-buttons {
+    align-items: center;
+}
+
+.btn--revive, .btn--retry {
+    width: 210px;
+    height: 54px;
+    margin: 0 0 14px 0;
+    padding: 0 0 4px 0;
+    border-radius: 16px;
+    border-width: 3px;
+    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
+    -unity-font-style: normal;
+    font-size: 21px;
+    color: #ffffff;
+    -unity-text-outline-width: 0.6px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.6);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+}
+
+.btn--revive {
+    background-color: #52d648;
+    border-color: #2f9b2b;
+    border-top-color: #9cf08f;
+}
+
+.btn--retry {
+    background-color: #2fb1ff;
+    border-color: #1f7fc4;
+    border-top-color: #9fdcff;
+}
+
+.btn--revive:active, .btn--retry:active {
+    scale: 0.96;
+}

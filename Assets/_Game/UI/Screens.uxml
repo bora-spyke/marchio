@@ -17,21 +17,28 @@
         </ui:VisualElement>
         <ui:VisualElement name="fill" class="overlay">
             <ui:Label name="fill-title" class="title-small" text="LEVEL 1 COMPLETE" />
-            <ui:Label class="subtitle" text="CHOOSE A FILL UPGRADE" />
             <ui:VisualElement name="fill-cards" class="cards" />
+            <ui:Label class="choose-prompt" text="Choose one to continue" />
         </ui:VisualElement>
         <ui:VisualElement name="power" class="overlay">
             <ui:Label name="power-title" class="title-small" text="LEVEL 2" />
-            <ui:Label class="subtitle" text="PICK A POWER-UP" />
             <ui:VisualElement name="power-cards" class="cards" />
+            <ui:Label class="choose-prompt" text="Choose one to continue" />
         </ui:VisualElement>
         <ui:VisualElement name="fail" class="overlay">
-            <ui:Label class="title" text="RUN OVER" />
-            <ui:Label name="fail-score" class="subtitle subtitle--tight" text="SCORE EARNED THIS RUN: 0" />
-            <ui:Label class="panel-title" text="YOUR BUILD" />
-            <ui:VisualElement name="fail-stack" class="stack-row panel" />
-            <ui:Label name="fail-bonus" class="missed" text="+35% BONUS MISSED" />
-            <ui:VisualElement name="fail-buttons" class="buttons" />
+            <ui:VisualElement class="popup">
+                <ui:VisualElement class="popup-body">
+                    <ui:VisualElement class="popup-inside">
+                        <ui:VisualElement class="popup-heart" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="fail-buttons" class="popup-buttons" />
+                </ui:VisualElement>
+                <ui:VisualElement class="popup-header">
+                    <ui:VisualElement class="popup-header-bg popup-header-bg--left" />
+                    <ui:VisualElement class="popup-header-bg popup-header-bg--right" />
+                    <ui:Label class="popup-title" text="RUN OVER" />
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="victory" class="overlay">
             <ui:Label class="title" text="VICTORY LAP" />

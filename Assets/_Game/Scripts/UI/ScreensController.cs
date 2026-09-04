@@ -7,8 +7,8 @@ namespace Marchio
     public sealed class ScreensController : MonoBehaviour
     {
         VisualElement root, main, clear, fill, power, fail, victory;
-        VisualElement clearLines, clearStack, failStack;
-        Label clearTitle, clearHp, fillTitle, powerTitle, failScore, failBonus, victoryScore;
+        VisualElement clearLines, clearStack;
+        Label clearTitle, clearHp, fillTitle, powerTitle, victoryScore;
         Button reviveBtn;
 
         GameManager Gm => GameManager.I;
@@ -35,11 +35,8 @@ namespace Marchio
             fillTitle = root.Q<Label>("fill-title");
             powerTitle = root.Q<Label>("power-title");
 
-            failScore = root.Q<Label>("fail-score");
-            failStack = root.Q("fail-stack");
-            failBonus = root.Q<Label>("fail-bonus");
-            reviveBtn = UiKit.Button(root.Q("fail-buttons"), "REVIVE", () => Gm.Revive(), "btn--primary");
-            UiKit.Button(root.Q("fail-buttons"), "RETRY", () => Gm.ToMenu(), "btn--ghost");
+            reviveBtn = UiKit.Button(root.Q("fail-buttons"), "Revive", () => Gm.Revive(), "btn--revive");
+            UiKit.Button(root.Q("fail-buttons"), "Retry", () => Gm.ToMenu(), "btn--retry");
 
             victoryScore = root.Q<Label>("victory-score");
             UiKit.Button(root.Q("victory-buttons"), "MAIN MENU", () => Gm.ToMenu(), "btn--primary");
@@ -68,11 +65,11 @@ namespace Marchio
             {
                 case GameMode.LevelClear: BuildClear(); break;
                 case GameMode.FillUpgrade:
-                    fillTitle.text = $"LEVEL {Gm.Run.Level} COMPLETE";
+                    fillTitle.text = $"STAGE {Gm.Run.Level} COMPLETE";
                     UiKit.FillCards(root.Q("fill-cards"), Gm.Upgrades.Fill, id => Gm.PickFill(id));
                     break;
                 case GameMode.PowerUp:
-                    powerTitle.text = $"LEVEL {Gm.Run.Level + 1}";
+                    powerTitle.text = $"STAGE {Gm.Run.Level + 1}";
                     UiKit.FillCards(root.Q("power-cards"), Gm.Upgrades.Power, id => Gm.PickPower(id));
                     break;
                 case GameMode.Fail: BuildFail(); break;
@@ -101,7 +98,7 @@ namespace Marchio
         {
             var gm = Gm;
             var run = gm.Run;
-            clearTitle.text = $"LEVEL {run.Level} COMPLETE";
+            clearTitle.text = $"STAGE {run.Level} COMPLETE";
             clearLines.Clear();
             UiKit.Line(clearLines, "LEVEL SCORE", out var scoreValue);
             var bonusRow = UiKit.Line(clearLines, $"+{gm.Preset.completionBonus * 100f:0}% COMPLETION BONUS", out var bonusValue);
@@ -120,15 +117,9 @@ namespace Marchio
 
         void BuildFail()
         {
-            var gm = Gm;
-            var run = gm.Run;
-            failScore.text = $"SCORE EARNED THIS RUN: {run.RunScore:0}";
-            failStack.RemoveFromClassList("stack-row--dark");
-            UiKit.FillStackRow(failStack, gm.Upgrades);
-            failStack.schedule.Execute(() => failStack.AddToClassList("stack-row--dark")).ExecuteLater(900);
-            failBonus.text = $"+{gm.Preset.completionBonus * 100f:0}% BONUS MISSED  ({run.MissedBonus:0})";
+            var run = Gm.Run;
             reviveBtn.style.display = run.RevivesLeft > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            reviveBtn.text = $"REVIVE  ({run.RevivesLeft} LEFT)";
+            reviveBtn.text = run.RevivesLeft > 1 ? $"Revive ({run.RevivesLeft})" : "Revive";
         }
     }
 }

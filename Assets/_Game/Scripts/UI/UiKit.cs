@@ -66,9 +66,14 @@ namespace Marchio
             var card = new Button(onClick);
             card.AddToClassList("card");
             if (def.Distinct) card.AddToClassList("card--distinct");
-            var badge = new VisualElement();
-            badge.AddToClassList("card-badge");
-            badge.style.backgroundColor = def.Accent;
+            var bgLeft = new VisualElement();
+            bgLeft.AddToClassList("card-bg");
+            bgLeft.AddToClassList("card-bg--left");
+            var bgRight = new VisualElement();
+            bgRight.AddToClassList("card-bg");
+            bgRight.AddToClassList("card-bg--right");
+            card.Add(bgLeft);
+            card.Add(bgRight);
             var text = new VisualElement();
             text.AddToClassList("card-text");
             var title = new Label(def.Title);
@@ -77,10 +82,23 @@ namespace Marchio
             desc.AddToClassList("card-desc");
             text.Add(title);
             text.Add(desc);
+            card.Add(text);
+            if (!string.IsNullOrEmpty(def.IconClass))
+            {
+                var icon = new VisualElement();
+                icon.AddToClassList("card-icon");
+                icon.AddToClassList(def.IconClass);
+                card.Add(icon);
+            }
+            else
+            {
+                var badge = new VisualElement();
+                badge.AddToClassList("card-badge");
+                badge.style.backgroundColor = def.Accent;
+                card.Add(badge);
+            }
             var stack = new Label(Roman(level + 1) + " / " + Roman(def.Cap));
             stack.AddToClassList("card-stack");
-            card.Add(badge);
-            card.Add(text);
             card.Add(stack);
             return card;
         }

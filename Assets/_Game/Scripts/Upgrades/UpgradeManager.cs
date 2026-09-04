@@ -15,10 +15,10 @@ namespace Marchio
             Fill = new CardPool(new[]
             {
                 new CardDef { Title = "Fill Damage", Description = "+30% Fill damage.", Cap = 2, Accent = cfg.fast },
-                new CardDef { Title = "Burning Fill", Description = "Fill ignites enemies for 3s.", Cap = 2, Accent = cfg.chaser },
-                new CardDef { Title = "Freeze Fill", Description = "Fill slows enemies by half for 2s.", Cap = 2, Accent = cfg.trail },
+                new CardDef { Title = "Burning Fill", Description = "Fill ignites enemies for 3s.", Cap = 2, Accent = cfg.chaser, IconClass = "card-icon--burning" },
+                new CardDef { Title = "Freeze Fill", Description = "Fill slows enemies by half for 2s.", Cap = 2, Accent = cfg.trail, IconClass = "card-icon--freeze" },
                 new CardDef { Title = "Electric Border", Description = "Enemies near the edge take damage too.", Cap = 2, Accent = cfg.electricBorderSpark },
-                new CardDef { Title = "Heal Fill", Description = "Fill kills restore 5 HP.", Cap = 2, Accent = cfg.ranged },
+                new CardDef { Title = "Heal Fill", Description = "Fill kills restore 5 HP.", Cap = 2, Accent = cfg.ranged, IconClass = "card-icon--heal" },
                 new CardDef { Title = "Bigger Multiplier", Description = "Large-area multiplier grows.", Cap = 2, Accent = cfg.player }
             });
             Power = new CardPool(new[]

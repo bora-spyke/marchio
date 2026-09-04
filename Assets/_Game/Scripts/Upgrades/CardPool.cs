@@ -10,6 +10,7 @@ namespace Marchio
         public int Cap;
         public Color Accent;
         public bool Distinct;
+        public string IconClass;
     }
 
     public sealed class CardPool
