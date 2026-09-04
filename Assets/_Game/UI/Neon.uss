@@ -736,10 +736,10 @@
 }
 
 .btn-shell {
-    width: 228px;
-    height: 70px;
+    width: 219px;
+    height: 61px;
     margin: 0 0 12px 0;
-    padding: 6px 6px 6px 6px;
+    padding: 1.5px 1.5px 1.5px 1.5px;
     background-image: url("project://database/Assets/_Game/UI/Sprites/Button_Back_darkSurface.png?fileID=21300000&guid=e499a8024ee79427f8db0d8ab896a696&type=3#Button_Back_darkSurface");
     -unity-slice-left: 142;
     -unity-slice-right: 142;
