@@ -13,13 +13,28 @@ namespace Marchio
 
         void Start()
         {
+            EnsureGrid();
+            Snap();
+        }
+
+        void LateUpdate()
+        {
+            EnsureGrid();
+            Snap();
+        }
+
+        void EnsureGrid()
+        {
             var gm = GameManager.I;
             float tile = gm.Config.groundTilePx;
             var half = gm.Cam.HalfExtents;
-            columns = Mathf.CeilToInt(half.x * 2f / tile) + 3;
-            rows = Mathf.CeilToInt(half.y * 2f / tile) + 3;
+            int needCols = Mathf.CeilToInt(half.x * 2f / tile) + 3;
+            int needRows = Mathf.CeilToInt(half.y * 2f / tile) + 3;
+            if (needCols <= columns && needRows <= rows) return;
+            columns = Mathf.Max(columns, needCols);
+            rows = Mathf.Max(rows, needRows);
             var mesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
-            for (int i = 0; i < columns * rows; i++)
+            while (tiles.Count < columns * rows)
             {
                 var go = new GameObject("Tile");
                 go.transform.SetParent(transform, false);
@@ -32,10 +47,7 @@ namespace Marchio
                 r.receiveShadows = false;
                 tiles.Add(go.transform);
             }
-            Snap();
         }
-
-        void LateUpdate() => Snap();
 
         void Snap()
         {
