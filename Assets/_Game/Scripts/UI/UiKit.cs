@@ -35,6 +35,14 @@ namespace Marchio
             return b;
         }
 
+        public static Button ShellButton(VisualElement parent, string text, Action onClick, string btnClass)
+        {
+            var shell = new VisualElement();
+            shell.AddToClassList("btn-shell");
+            parent.Add(shell);
+            return Button(shell, text, onClick, btnClass);
+        }
+
         public static VisualElement Line(VisualElement parent, string name, out Label value)
         {
             var row = new VisualElement();

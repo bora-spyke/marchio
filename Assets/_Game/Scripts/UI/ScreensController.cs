@@ -35,8 +35,8 @@ namespace Marchio
             fillTitle = root.Q<Label>("fill-title");
             powerTitle = root.Q<Label>("power-title");
 
-            reviveBtn = UiKit.Button(root.Q("fail-buttons"), "Revive", () => Gm.Revive(), "btn--revive");
-            UiKit.Button(root.Q("fail-buttons"), "Retry", () => Gm.ToMenu(), "btn--retry");
+            reviveBtn = UiKit.ShellButton(root.Q("fail-buttons"), "Revive", () => Gm.Revive(), "btn--revive");
+            UiKit.ShellButton(root.Q("fail-buttons"), "Retry", () => Gm.ToMenu(), "btn--retry");
 
             victoryScore = root.Q<Label>("victory-score");
             UiKit.Button(root.Q("victory-buttons"), "MAIN MENU", () => Gm.ToMenu(), "btn--primary");
@@ -118,7 +118,7 @@ namespace Marchio
         void BuildFail()
         {
             var run = Gm.Run;
-            reviveBtn.style.display = run.RevivesLeft > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            reviveBtn.parent.style.display = run.RevivesLeft > 0 ? DisplayStyle.Flex : DisplayStyle.None;
             reviveBtn.text = run.RevivesLeft > 1 ? $"Revive ({run.RevivesLeft})" : "Revive";
         }
     }
