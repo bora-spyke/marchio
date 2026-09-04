@@ -351,23 +351,8 @@
 }
 
 .overlay--main {
-    justify-content: space-between;
-    padding: 0 22px 70px 22px;
+    justify-content: flex-end;
     background-color: rgba(0, 0, 0, 0);
-}
-
-.main-hero {
-    align-items: center;
-    margin-top: 54px;
-    margin-bottom: 18px;
-}
-
-.title--hero {
-    font-size: 44px;
-    letter-spacing: 6px;
-    margin-bottom: 4px;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(125, 252, 255, 0.35);
 }
 
 .spacer {
@@ -377,35 +362,8 @@
 .buttons--main {
     width: 100%;
     flex-direction: column;
-    align-items: stretch;
-}
-
-.buttons--main .btn--primary {
-    height: 58px;
-    margin: 0 0 6px 0;
-    border-radius: 29px;
-    border-width: 0;
-    background-color: #7dfcff;
-    color: #05121a;
-    font-size: 20px;
-    letter-spacing: 4px;
-    -unity-text-align: middle-center;
-}
-
-.buttons--main .btn--primary:active {
-    background-color: #b9fdff;
-    scale: 0.97;
-}
-
-.buttons--main .btn--ghost {
-    align-self: center;
-    border-width: 0;
-    background-color: rgba(0, 0, 0, 0);
-    color: rgba(234, 246, 255, 0.4);
-    font-size: 11px;
-    letter-spacing: 2px;
-    padding: 6px 12px;
-    margin: 0;
+    align-items: center;
+    margin-bottom: 90px;
 }
 
 .safe {
@@ -777,4 +735,41 @@
     -unity-text-outline-width: 0.5px;
     -unity-text-outline-color: rgba(0, 0, 0, 0.75);
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75);
+}
+
+.btn-shell--play {
+    width: 190px;
+    height: 92px;
+    padding: 5px 5px 6px 5px;
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Green_Button_White_Frame.png?fileID=21300000&guid=c97c2b239d9004ad38c102db2f74cffa&type=3#Green_Button_White_Frame");
+    -unity-slice-left: 150;
+    -unity-slice-right: 150;
+    -unity-slice-top: 152;
+    -unity-slice-bottom: 152;
+    -unity-slice-scale: 0.2px;
+}
+
+.screens .btn--play {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0 0 8px 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Green_Button.png?fileID=21300000&guid=1046c0f6f739a42ffaa7b897ec4dd45d&type=3#Green_Button");
+    -unity-slice-left: 128;
+    -unity-slice-right: 128;
+    -unity-slice-top: 130;
+    -unity-slice-bottom: 130;
+    -unity-slice-scale: 0.2px;
+    font-size: 30px;
+    -unity-font-style: bold;
+    color: #ffffff;
+    -unity-text-outline-width: 0.7px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.65);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+
+.screens .btn--play:active {
+    scale: 0.96;
 }

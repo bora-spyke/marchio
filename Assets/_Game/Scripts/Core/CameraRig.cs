@@ -36,10 +36,10 @@ namespace Marchio
             Follow(Vector2.zero, 0f);
         }
 
-        public void SnapAlongViewLine(Vector2 target, float distance)
+        public void SnapTo(Vector3 position)
         {
             transitionT = -1f;
-            transform.position = new Vector3(target.x, 0f, target.y) + offset.normalized * distance;
+            transform.position = position;
             transform.rotation = startRotation;
             halfExtents = MeasureHalfExtents();
         }

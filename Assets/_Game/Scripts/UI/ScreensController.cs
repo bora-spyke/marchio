@@ -24,7 +24,7 @@ namespace Marchio
             victory = root.Q("victory");
             foreach (var overlay in new[] { main, clear, fill, power, fail, victory }) SafeArea.Apply(overlay);
 
-            UiKit.Button(root.Q("main-buttons"), "PLAY", () => Gm.StartRun(), "btn--primary");
+            UiKit.ShellButton(root.Q("main-buttons"), "Play", () => Gm.StartRun(), "btn--play", "btn-shell--play");
 
             clearTitle = root.Q<Label>("clear-title");
             clearLines = root.Q("clear-lines");
