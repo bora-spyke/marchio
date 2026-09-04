@@ -65,10 +65,12 @@
   ["touchstart", "touchmove", "touchend", "gesturestart", "contextmenu", "dblclick"].forEach(function (t) {
     document.addEventListener(t, function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
   });
+  var shownAt = Date.now(), minShowMs = 2000;
   createUnityInstance(canvas, config, function (p) {
     fill.style.width = Math.round(p * 100) + "%";
   }).then(function () {
-    loading.style.display = "none";
+    var wait = Math.max(0, minShowMs - (Date.now() - shownAt));
+    setTimeout(function () { loading.style.display = "none"; }, wait);
   }).catch(function (message) {
     hint.textContent = message;
   });
