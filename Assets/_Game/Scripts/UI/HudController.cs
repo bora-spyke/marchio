@@ -7,8 +7,8 @@ namespace Marchio
     public sealed class HudController : MonoBehaviour
     {
         VisualElement root;
-        VisualElement hpBar, hpFill, trailBar, trailFill, joystick, joystickKnob, stackRow;
-        Label stageText, waveInfo, comboChip, drawText;
+        VisualElement hpBar, hpFill, joystick, joystickKnob, stackRow;
+        Label stageText, waveInfo, comboChip;
         int lastWaveKey = -1;
         DamageTextLayer damageLayer;
         InputReader input;
@@ -27,9 +27,6 @@ namespace Marchio
             stageText = root.Q<Label>("stage-text");
             waveInfo = root.Q<Label>("wave-info");
             comboChip = root.Q<Label>("combo-chip");
-            drawText = root.Q<Label>("draw-text");
-            trailBar = root.Q("trail-bar");
-            trailFill = root.Q("trail-fill");
             joystick = root.Q("joystick");
             joystickKnob = root.Q("joystick-knob");
             damageLayer = new DamageTextLayer(root.Q("damage-layer"));
@@ -89,16 +86,6 @@ namespace Marchio
                 comboChip.text = $"COMBO x{gm.Combo}";
                 comboChip.EnableInClassList("combo-chip--on", gm.Combo > 0);
                 if (gm.Combo > 0) Pop(comboChip);
-            }
-
-            bool drawing = gm.Trail.Drawing;
-            drawText.EnableInClassList("draw-text--on", drawing);
-            trailBar.EnableInClassList("trail-bar--on", drawing);
-            if (drawing)
-            {
-                float frac = Mathf.Clamp01(gm.Trail.PathLength / gm.EffectiveMaxLoopLength());
-                trailFill.style.width = Length.Percent(frac * 100f);
-                trailFill.EnableInClassList("trail-fill--hot", frac > 0.85f);
             }
 
             UpdateStack(gm);

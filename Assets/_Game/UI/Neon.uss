@@ -119,14 +119,6 @@
     margin-top: 0;
 }
 
-.top-center {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 70px;
-    align-items: center;
-}
-
 .bar {
     border-radius: 7px;
     overflow: hidden;
@@ -160,42 +152,6 @@
 .combo-chip--on {
     opacity: 1;
     scale: 1;
-}
-
-.draw-text {
-    color: #7dfcff;
-    font-size: 13px;
-    -unity-font-style: bold;
-    margin-top: 2px;
-    opacity: 0;
-    transition-property: opacity;
-    transition-duration: 0.1s;
-}
-
-.draw-text--on {
-    opacity: 1;
-}
-
-.trail-bar {
-    width: 120px;
-    height: 4px;
-    margin-top: 4px;
-    background-color: rgba(255, 255, 255, 0.15);
-    opacity: 0;
-}
-
-.trail-bar--on {
-    opacity: 1;
-}
-
-.trail-fill {
-    height: 100%;
-    width: 0;
-    background-color: #7dfcff;
-}
-
-.trail-fill--hot {
-    background-color: #ff4d6d;
 }
 
 .damage-layer {

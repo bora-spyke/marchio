@@ -23,6 +23,7 @@ namespace Marchio
         [SerializeField] UpgradeManager upgrades;
         [SerializeField] ParticleFx fx;
         [SerializeField] Transform poolRoot;
+        [SerializeField] GameObject modelGhosts;
 
         [Header("Pooled prefabs")]
         [SerializeField] Projectile enemyProjectilePrefab;
@@ -441,6 +442,7 @@ namespace Marchio
         void SetMode(GameMode mode)
         {
             Mode = mode;
+            if (modelGhosts != null) modelGhosts.SetActive(mode == GameMode.Menu);
             ModeChanged?.Invoke(mode);
         }
     }

@@ -18,6 +18,9 @@ namespace Marchio
         public float playerContactDamage = 10f;
         public float carTurnDegPerS = 420f;
         public float introTransitionS = 1.2f;
+        public float carMaxLeanDeg = 1.8f;
+        public float carLeanPerTurnSpeed = 0.015f;
+        public float carLeanSmoothDegPerS = 240f;
 
         [Header("Trail / Loop")]
         public float trailMinDist = 7f;

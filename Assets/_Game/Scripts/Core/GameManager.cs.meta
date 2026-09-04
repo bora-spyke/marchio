@@ -1,2 +1,26 @@
 fileFormatVersion: 2
 guid: 57061bc9db7d24eab9619216849f0c9f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - config: {instanceID: 0}
+  - preset: {instanceID: 0}
+  - cameraRig: {instanceID: 0}
+  - input: {instanceID: 0}
+  - player: {instanceID: 0}
+  - trail: {instanceID: 0}
+  - autoAttack: {instanceID: 0}
+  - waves: {instanceID: 0}
+  - upgrades: {instanceID: 0}
+  - fx: {instanceID: 0}
+  - poolRoot: {instanceID: 0}
+  - modelGhosts: {fileID: 6983758295087502239, guid: 4edcd17a4bcaca743b9ea341cd2e3428, type: 3}
+  - enemyProjectilePrefab: {instanceID: 0}
+  - playerProjectilePrefab: {instanceID: 0}
+  - soulStonePrefab: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

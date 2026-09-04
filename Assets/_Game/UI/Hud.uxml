@@ -21,12 +21,6 @@
         <ui:VisualElement name="top-right" class="top-right" picking-mode="Ignore">
             <ui:Label name="combo-chip" class="combo-chip" text="COMBO x1" picking-mode="Ignore" />
         </ui:VisualElement>
-        <ui:VisualElement name="top-center" class="top-center" picking-mode="Ignore">
-            <ui:Label name="draw-text" class="draw-text" text="TRACING" picking-mode="Ignore" />
-            <ui:VisualElement name="trail-bar" class="trail-bar" picking-mode="Ignore">
-                <ui:VisualElement name="trail-fill" class="trail-fill" picking-mode="Ignore" />
-            </ui:VisualElement>
-        </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="damage-layer" class="damage-layer" picking-mode="Ignore" />
         <ui:VisualElement name="joystick" class="joystick" picking-mode="Ignore">

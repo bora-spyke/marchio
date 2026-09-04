@@ -40,6 +40,7 @@ namespace Marchio
         public float Invuln { get; private set; }
         public float LastMoveAngle { get; private set; }
         float visualYaw;
+        float leanDeg;
 
         GameConfig Cfg => GameManager.I.Config;
 
@@ -103,8 +104,21 @@ namespace Marchio
             if (visualRoot != null)
             {
                 float targetYaw = -LastMoveAngle * Mathf.Rad2Deg;
+                float prevYaw = visualYaw;
                 if (!float.IsPositiveInfinity(dt)) visualYaw = Mathf.MoveTowardsAngle(visualYaw, targetYaw, Cfg.carTurnDegPerS * dt);
-                visualRoot.rotation = Quaternion.Euler(0f, visualYaw, 0f);
+
+                if (float.IsPositiveInfinity(dt))
+                {
+                    leanDeg = 0f;
+                }
+                else
+                {
+                    float turnRate = dt > 0f ? Mathf.DeltaAngle(prevYaw, visualYaw) / dt : 0f;
+                    float targetLean = Mathf.Clamp(-turnRate * Cfg.carLeanPerTurnSpeed, -Cfg.carMaxLeanDeg, Cfg.carMaxLeanDeg);
+                    leanDeg = Mathf.MoveTowards(leanDeg, targetLean, Cfg.carLeanSmoothDegPerS * dt);
+                }
+
+                visualRoot.rotation = Quaternion.Euler(0f, visualYaw, 0f) * Quaternion.Euler(leanDeg, 0f, 0f);
             }
             if (visualRenderer != null)
             {
