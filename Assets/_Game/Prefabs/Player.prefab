@@ -54194,7 +54194,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Marchio::Marchio.PlayerController
   visualRoot: {fileID: 8208337147590316519}
   visualRenderer: {fileID: 6999270023479059869}
-  hitParticle: {fileID: 0}
+  hitParticle: {fileID: 2032530435707088259}
+  explosionParticle: {fileID: 8427749756508138009}
 --- !u!114 &8220802207479124073
 MonoBehaviour:
   m_ObjectHideFlags: 0

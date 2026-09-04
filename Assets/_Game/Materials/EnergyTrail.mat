@@ -26,7 +26,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _DangerT: 0
-    - _DangerThreshold: 0.55
+    - _DangerThreshold: 0.75
     - _EdgeSoftness: 0.359
     - _GlowIntensity: 5
     - _GradientPower: 2
@@ -34,7 +34,6 @@ Material:
     - _NoiseScale: 0.25
     - _NoiseSpeed: 0.03
     - _ShimmerAmount: 0.092
-    - _TrailEndU: 1
     m_Colors:
     - _CoreColor: {r: 0.9, g: 0.98, b: 1, a: 1}
     - _DangerColor: {r: 1, g: 0.15, b: 0.1, a: 1}

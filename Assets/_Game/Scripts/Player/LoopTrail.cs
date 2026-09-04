@@ -12,7 +12,6 @@ namespace Marchio
         [SerializeField] Transform emitter;
 
         static readonly int DangerTId = Shader.PropertyToID("_DangerT");
-        static readonly int TrailEndUId = Shader.PropertyToID("_TrailEndU");
 
         readonly List<Vector2> points = new List<Vector2>(256);
         readonly List<float> lengths = new List<float>(256);
@@ -153,9 +152,6 @@ namespace Marchio
 
             float lifeT = Mathf.Clamp01(PathLength / Gm.EffectiveMaxLoopLength());
             line.material.SetFloat(DangerTId, lifeT);
-
-            float totalLength = PathLength + Vector2.Distance(last, head);
-            line.material.SetFloat(TrailEndUId, totalLength * line.textureScale.x);
         }
 
         static void SetLineAlpha(LineRenderer lr, float a)

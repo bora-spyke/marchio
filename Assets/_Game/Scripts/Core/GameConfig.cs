@@ -33,7 +33,7 @@ namespace Marchio
 
         [Header("Soul Stone")]
         public float soulstonePickupRadiusMult = 2f;
-        public float soulstoneSizePx = 34f;
+        public float soulstoneSizePx = 17f;
         public float soulstoneCollectS = 0.45f;
         public float soulstoneCollectArcPx = 30f;
 
