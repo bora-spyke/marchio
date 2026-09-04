@@ -22,7 +22,6 @@ namespace Marchio
         public float trailMinDist = 7f;
         public float minLoopLengthMult = 3f;
         public float closeRadiusMult = 0.5f;
-        public float loopFlashMs = 380f;
         public float trailHitRadius = 6f;
         public float maxLoopLengthMult = 18.4f;
         public int loopGrowthXPStep = 3;

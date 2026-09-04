@@ -8,7 +8,6 @@ namespace Marchio
     public sealed class LoopTrail : MonoBehaviour
     {
         [SerializeField] LineRenderer line;
-        [SerializeField] LineRenderer flashLine;
         [SerializeField] Transform emitter;
 
         static readonly int DangerTId = Shader.PropertyToID("_DangerT");
@@ -17,8 +16,7 @@ namespace Marchio
         readonly List<float> lengths = new List<float>(256);
         readonly List<Vector2> polyBuffer = new List<Vector2>(256);
         Vector2 last;
-        float flashT;
-        float flashLife;
+        ParticleSystem[] emitterParticles = System.Array.Empty<ParticleSystem>();
 
         public bool Drawing { get; private set; }
         public float PathLength { get; private set; }
@@ -48,9 +46,8 @@ namespace Marchio
             points.Clear();
             lengths.Clear();
             PathLength = 0f;
-            flashLife = 0f;
             line.positionCount = 0;
-            flashLine.positionCount = 0;
+            StopEmitterParticles();
         }
 
         public void Tick(float dt, bool draw)
@@ -61,6 +58,7 @@ namespace Marchio
             if (draw && !Drawing)
             {
                 Drawing = true;
+                StartEmitterParticles();
                 points.Clear();
                 lengths.Clear();
                 points.Add(pos);
@@ -108,6 +106,7 @@ namespace Marchio
             Gm.Fx.Burst(Gm.Player.Pos, Gm.Config.trail, 6);
             Drawing = false;
             line.positionCount = 0;
+            StopEmitterParticles();
         }
 
         void Close(int hitIndex)
@@ -118,29 +117,23 @@ namespace Marchio
             line.positionCount = 0;
             if (polyBuffer.Count < 3) return;
             LoopDamage.Resolve(polyBuffer);
-            ShowFlash(polyBuffer);
+            StopEmitterParticles();
         }
 
-        void ShowFlash(List<Vector2> poly)
+        void Awake()
         {
-            flashT = 0f;
-            flashLife = Gm.Config.loopFlashMs / 1000f;
-            flashLine.positionCount = poly.Count;
-            for (int i = 0; i < poly.Count; i++) flashLine.SetPosition(i, PolygonMath.ToWorld(poly[i], 1.5f));
-            SetLineAlpha(flashLine, 1f);
+            emitterParticles = line.GetComponentsInChildren<ParticleSystem>(true);
+            StopEmitterParticles();
         }
 
-        public void TickFlash(float dt)
+        void StartEmitterParticles()
         {
-            if (flashLife <= 0f) return;
-            flashT += dt;
-            if (flashT >= flashLife)
-            {
-                flashLife = 0f;
-                flashLine.positionCount = 0;
-                return;
-            }
-            SetLineAlpha(flashLine, 1f - flashT / flashLife);
+            for (int i = 0; i < emitterParticles.Length; i++) emitterParticles[i].Play(true);
+        }
+
+        void StopEmitterParticles()
+        {
+            for (int i = 0; i < emitterParticles.Length; i++) emitterParticles[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
         void RenderLine(Vector2 head)
@@ -154,12 +147,5 @@ namespace Marchio
             line.material.SetFloat(DangerTId, lifeT);
         }
 
-        static void SetLineAlpha(LineRenderer lr, float a)
-        {
-            var c = lr.startColor;
-            c.a = a;
-            lr.startColor = c;
-            lr.endColor = c;
-        }
     }
 }

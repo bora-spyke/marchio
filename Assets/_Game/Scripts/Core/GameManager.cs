@@ -116,7 +116,6 @@ namespace Marchio
                 return;
             }
             if (Shake > 0f) Shake = Mathf.Max(0f, Shake - dt * 20f);
-            trail.TickFlash(dt);
 
             if (Mode != GameMode.Play) return;
 

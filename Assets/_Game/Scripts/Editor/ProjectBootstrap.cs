@@ -164,11 +164,9 @@ namespace Marchio.Editor
             emitter.transform.SetParent(visual.transform, false);
             emitter.transform.localPosition = new Vector3(-cfg.playerRadius, 1f, 0f);
             var trailLine = Line("Trail", root.transform, line, cfg.trail, 4f, false, true);
-            var flashLine = Line("Flash", root.transform, line, cfg.loopEdge, 3f, true, true);
             Set(pc, "visualRoot", visual.transform);
             Set(pc, "visualRenderer", body.GetComponent<MeshRenderer>());
             Set(trail, "line", trailLine);
-            Set(trail, "flashLine", flashLine);
             Set(trail, "emitter", emitter.transform);
             SavePrefab(root);
         }
