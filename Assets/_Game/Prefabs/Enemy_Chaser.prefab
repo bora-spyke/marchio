@@ -4888,7 +4888,7 @@ MonoBehaviour:
   visualRoot: {fileID: 6611904597247506295}
   hitParticle: {fileID: 7907154640371161344}
   deathParticle: {fileID: 4104101139096728578}
-  soulStonePrefab: {fileID: 5747632873066698984, guid: 531657ceff8348442af098fb505132b9, type: 3}
+  soulStonePrefab: {fileID: 5323400507009503786, guid: 2f5db4118fd933a46899dea6035cc6ab, type: 3}
 --- !u!1 &8784400379197053380
 GameObject:
   m_ObjectHideFlags: 0
