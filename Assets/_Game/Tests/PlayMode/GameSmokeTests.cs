@@ -19,7 +19,10 @@ namespace Marchio.Tests
             Assert.AreEqual(GameMode.Menu, gm.Mode);
 
             gm.OnScreenTap();
-            Assert.AreEqual(GameMode.Play, gm.Mode);
+            Assert.AreEqual(GameMode.Intro, gm.Mode);
+            float intro = 0f;
+            while (gm.Mode == GameMode.Intro && intro < 5f) { intro += Time.deltaTime; yield return null; }
+            Assert.AreEqual(GameMode.Play, gm.Mode, "intro camera transition should hand over to play");
             Assert.AreEqual(1, gm.Run.Level);
             Assert.Greater(gm.Waves.WaveCount, 0, "level 1 should have configured waves");
 

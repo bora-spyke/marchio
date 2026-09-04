@@ -6,6 +6,9 @@ namespace Marchio
     {
         [SerializeField] Transform visualRoot;
         [SerializeField] Renderer visualRenderer;
+        [SerializeField] Transform introCameraPose;
+
+        public Transform IntroCameraPose => introCameraPose;
         [SerializeField] ParticleSystem hitParticle;
         [SerializeField] ParticleSystem explosionParticle;
 

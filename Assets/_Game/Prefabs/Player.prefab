@@ -4944,7 +4944,7 @@ ParticleSystem:
   emitterVelocityMode: 1
   looping: 1
   prewarm: 0
-  playOnAwake: 1
+  playOnAwake: 0
   useUnscaledTime: 0
   autoRandomSeed: 1
   startDelay:
@@ -29503,7 +29503,7 @@ ParticleSystem:
   emitterVelocityMode: 1
   looping: 1
   prewarm: 0
-  playOnAwake: 1
+  playOnAwake: 0
   useUnscaledTime: 0
   autoRandomSeed: 1
   startDelay:
@@ -39309,6 +39309,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &4486697646557408785
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5795635870046135651}
+  m_Layer: 0
+  m_Name: IntroCameraPose
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5795635870046135651
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4486697646557408785}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 880, z: -900}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7238595000105476479}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4622235239068669801
 GameObject:
   m_ObjectHideFlags: 0
@@ -39335,13 +39366,13 @@ Transform:
   m_GameObject: {fileID: 4622235239068669801}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -37.8, y: 44.6, z: 2.32}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8679107303016094358}
   - {fileID: 1790369894421017570}
-  m_Father: {fileID: 7238595000105476479}
+  m_Father: {fileID: 524483289883680976}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!120 &992763381050711943
 LineRenderer:
@@ -54175,9 +54206,9 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8208337147590316519}
-  - {fileID: 1250982505270098293}
   - {fileID: 8211898076019346260}
   - {fileID: 1252565480617220042}
+  - {fileID: 5795635870046135651}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2946324982983928700
@@ -54194,6 +54225,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Marchio::Marchio.PlayerController
   visualRoot: {fileID: 8208337147590316519}
   visualRenderer: {fileID: 6999270023479059869}
+  introCameraPose: {fileID: 5795635870046135651}
   hitParticle: {fileID: 2032530435707088259}
   explosionParticle: {fileID: 8427749756508138009}
 --- !u!114 &8220802207479124073
@@ -54221,8 +54253,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Marchio::Marchio.LoopTrail
   line: {fileID: 992763381050711943}
-  flashLine: {fileID: 1114936747991079863}
-  emitter: {fileID: 0}
+  emitter: {fileID: 524483289883680976}
 --- !u!1 &6649456962951987874
 GameObject:
   m_ObjectHideFlags: 0
@@ -59117,6 +59148,38 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!1 &6936894197177127069
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 524483289883680976}
+  m_Layer: 0
+  m_Name: TrailEmitter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &524483289883680976
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6936894197177127069}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -16, y: 23, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1250982505270098293}
+  m_Father: {fileID: 8208337147590316519}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7665154977478975821
 GameObject:
   m_ObjectHideFlags: 0
@@ -78882,6 +78945,7 @@ Transform:
   - {fileID: 774996667575804746}
   - {fileID: 7341842776917690551}
   - {fileID: 6949586193316443365}
+  - {fileID: 524483289883680976}
   m_Father: {fileID: 7238595000105476479}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &5803936630611629983

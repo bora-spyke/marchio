@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Marchio
 {
-    public enum GameMode { Menu, Play, LevelClear, FillUpgrade, PowerUp, Fail, Victory }
+    public enum GameMode { Menu, Intro, Play, LevelClear, FillUpgrade, PowerUp, Fail, Victory }
 
     public sealed class GameManager : MonoBehaviour
     {
@@ -105,7 +105,15 @@ namespace Marchio
 
         void LateUpdate()
         {
+            if (Mode == GameMode.Menu || Mode == GameMode.Intro) return;
             cameraRig.Follow(player.Pos, Shake);
+        }
+
+        void SnapCameraToIntro()
+        {
+            var pose = player.IntroCameraPose;
+            if (pose != null) cameraRig.SnapLookingAt(pose.position, player.transform.position);
+            else cameraRig.Follow(player.Pos, 0f);
         }
 
         void Step(float dt)
@@ -117,6 +125,11 @@ namespace Marchio
             }
             if (Shake > 0f) Shake = Mathf.Max(0f, Shake - dt * 20f);
 
+            if (Mode == GameMode.Intro)
+            {
+                if (cameraRig.TickTransition(dt, player.Pos)) SetMode(GameMode.Play);
+                return;
+            }
             if (Mode != GameMode.Play) return;
 
             Run.LevelTime += dt;
@@ -299,10 +312,10 @@ namespace Marchio
         {
             ResetRun();
             Run.Start(preset.freeRevives);
-            BeginLevel(1);
+            BeginLevel(1, true);
         }
 
-        void BeginLevel(int level)
+        void BeginLevel(int level, bool intro = false)
         {
             ClearField();
             Run.BeginLevel(level);
@@ -310,7 +323,12 @@ namespace Marchio
             trail.ResetState();
             autoAttack.ResetState();
             player.ClampHp();
-            SetMode(GameMode.Play);
+            if (intro)
+            {
+                cameraRig.BeginTransitionToGameplay(config.introTransitionS);
+                SetMode(GameMode.Intro);
+            }
+            else SetMode(GameMode.Play);
         }
 
         void CompleteLevel()
@@ -410,6 +428,7 @@ namespace Marchio
             trail.ResetState();
             autoAttack.ResetState();
             Run.Start(preset.freeRevives);
+            SnapCameraToIntro();
         }
 
         void SetMode(GameMode mode)

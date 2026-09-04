@@ -343,10 +343,10 @@
     opacity: 0.18;
 }
 
-.toast--macro .overlay--main {
-    justify-content: flex-start;
-    padding: 0 22px 18px 22px;
-    background-color: rgba(4, 7, 16, 0.9);
+.overlay--main {
+    justify-content: space-between;
+    padding: 0 22px 70px 22px;
+    background-color: rgba(0, 0, 0, 0);
 }
 
 .main-hero {
@@ -361,30 +361,6 @@
     margin-bottom: 4px;
     -unity-text-outline-width: 1px;
     -unity-text-outline-color: rgba(125, 252, 255, 0.35);
-}
-
-.card-panel {
-    width: 100%;
-    padding: 14px 16px 10px 16px;
-    border-radius: 18px;
-    border-width: 1.5px;
-    border-color: rgba(255, 216, 77, 0.35);
-    background-color: rgba(255, 216, 77, 0.05);
-    margin-bottom: 12px;
-}
-
-.card-panel-head {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.panel-meta {
-    font-size: 11px;
-    -unity-font-style: bold;
-    letter-spacing: 1px;
-    color: #ffd84d;
 }
 
 .spacer {

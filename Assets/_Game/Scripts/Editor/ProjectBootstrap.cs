@@ -160,6 +160,10 @@ namespace Marchio.Editor
             var nose = Primitive("Nose", PrimitiveType.Cube, solid, visual.transform);
             nose.transform.localScale = new Vector3(cfg.playerRadius * 0.8f, 6f, 6f);
             nose.transform.localPosition = new Vector3(cfg.playerRadius * 0.9f, 0f, 0f);
+            var introPose = new GameObject("IntroCameraPose");
+            introPose.transform.SetParent(root.transform, false);
+            introPose.transform.localPosition = new Vector3(0f, 880f, -900f);
+            Set(pc, "introCameraPose", introPose.transform);
             var emitter = new GameObject("TrailEmitter");
             emitter.transform.SetParent(visual.transform, false);
             emitter.transform.localPosition = new Vector3(-cfg.playerRadius, 1f, 0f);

@@ -12,6 +12,12 @@ namespace Marchio
         Quaternion startRotation;
         Vector2 halfExtents;
         bool cached;
+        Vector3 fromPos;
+        Quaternion fromRot;
+        float transitionT = -1f;
+        float transitionDuration;
+
+        public bool Transitioning => transitionT >= 0f;
 
         public Camera Cam => cam != null ? cam : cam = GetComponent<Camera>();
         public Vector2 Center { get; private set; }
@@ -31,8 +37,42 @@ namespace Marchio
             Follow(Vector2.zero, 0f);
         }
 
+        public void SnapLookingAt(Vector3 position, Vector3 lookAt)
+        {
+            transitionT = -1f;
+            transform.position = position;
+            transform.rotation = Quaternion.LookRotation(lookAt - position, Vector3.up);
+            halfExtents = MeasureHalfExtents();
+        }
+
+        public void BeginTransitionToGameplay(float duration)
+        {
+            fromPos = transform.position;
+            fromRot = transform.rotation;
+            transitionDuration = Mathf.Max(0.01f, duration);
+            transitionT = 0f;
+        }
+
+        public bool TickTransition(float dt, Vector2 target)
+        {
+            if (!Transitioning) return true;
+            transitionT += dt;
+            float u = Mathf.Clamp01(transitionT / transitionDuration);
+            float eased = u * u * (3f - 2f * u);
+            var toPos = new Vector3(target.x, 0f, target.y) + offset;
+            transform.position = Vector3.Lerp(fromPos, toPos, eased);
+            transform.rotation = Quaternion.Slerp(fromRot, startRotation, eased);
+            halfExtents = MeasureHalfExtents();
+            if (u < 1f) return false;
+            transitionT = -1f;
+            Follow(target, 0f);
+            return true;
+        }
+
         public void Follow(Vector2 target, float shake)
         {
+            if (Transitioning) return;
+            transform.rotation = startRotation;
             Center = target;
             var jitter = shake > 0f ? Random.insideUnitCircle * shake : Vector2.zero;
             transform.position = new Vector3(target.x + jitter.x, 0f, target.y + jitter.y) + offset;
