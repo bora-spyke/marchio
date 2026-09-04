@@ -72,15 +72,15 @@ namespace Marchio
             if (run.Level != lastLevel)
             {
                 lastLevel = run.Level;
-                int total = gm.Preset.levelCount;
-                stageText.text = run.IsVictoryLap ? "VICTORY LAP" : total > 0 ? $"STAGE {run.Level}/{total}" : $"STAGE {run.Level}";
+                stageText.text = run.IsVictoryLap ? "VICTORY LAP" : "";
             }
             var waves = gm.Waves;
             int waveKey = run.IsVictoryLap ? -2 : waves.WaveIndex * 1000 + waves.RemainingInWave;
             if (waveKey != lastWaveKey)
             {
                 lastWaveKey = waveKey;
-                waveInfo.text = run.IsVictoryLap ? "VICTORY LAP" : $"WAVE {Mathf.Min(waves.WaveIndex + 1, Mathf.Max(1, waves.WaveCount))}/{waves.WaveCount}  ·  {waves.RemainingInWave} LEFT";
+                if (!run.IsVictoryLap) stageText.text = $"WAVE {Mathf.Min(waves.WaveIndex + 1, Mathf.Max(1, waves.WaveCount))}/{waves.WaveCount}";
+                waveInfo.text = run.IsVictoryLap ? "" : $"{waves.RemainingInWave} LEFT";
             }
 
             if (gm.Combo != lastCombo)

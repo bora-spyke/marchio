@@ -52,9 +52,12 @@
 }
 
 .hp-group {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    translate: -50% 0;
     flex-direction: row;
     align-items: center;
-    margin-left: 13px;
     height: 41px;
 }
 
@@ -108,8 +111,12 @@
 .top-right {
     position: absolute;
     right: 14px;
-    top: 70px;
+    top: 58px;
     align-items: flex-end;
+}
+
+.top-right .combo-chip {
+    margin-top: 0;
 }
 
 .top-center {
