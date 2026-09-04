@@ -112,7 +112,7 @@ namespace Marchio
         void SnapCameraToIntro()
         {
             var pose = player.IntroCameraPose;
-            if (pose != null) cameraRig.SnapTo(pose.position);
+            if (pose != null) cameraRig.SnapTo(pose.position, pose.rotation);
             else cameraRig.Follow(player.Pos, 0f);
         }
 
