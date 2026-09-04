@@ -778,3 +778,7 @@
 .btn--revive:active, .btn--retry:active {
     scale: 0.96;
 }
+
+.screens .popup-title, .screens .btn--revive, .screens .btn--retry {
+    -unity-font-style: bold;
+}
