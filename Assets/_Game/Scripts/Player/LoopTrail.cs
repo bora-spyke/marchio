@@ -28,6 +28,7 @@ namespace Marchio
         GameManager Gm => GameManager.I;
 
         Vector2 Head => emitter != null ? PolygonMath.ToPlane(emitter.position) : Gm.Player.Pos;
+        float LineHeight => emitter != null ? emitter.position.y : 1f;
 
         public bool Touches(Vector2 pos, float radius)
         {
@@ -145,9 +146,10 @@ namespace Marchio
 
         void RenderLine(Vector2 head)
         {
+            float y = LineHeight;
             line.positionCount = points.Count + 1;
-            for (int i = 0; i < points.Count; i++) line.SetPosition(i, PolygonMath.ToWorld(points[i], 1f));
-            line.SetPosition(points.Count, PolygonMath.ToWorld(head, 1f));
+            for (int i = 0; i < points.Count; i++) line.SetPosition(i, PolygonMath.ToWorld(points[i], y));
+            line.SetPosition(points.Count, PolygonMath.ToWorld(head, y));
 
             float lifeT = Mathf.Clamp01(PathLength / Gm.EffectiveMaxLoopLength());
             line.material.SetFloat(DangerTId, lifeT);
