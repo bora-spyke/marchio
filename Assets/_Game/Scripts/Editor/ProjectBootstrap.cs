@@ -294,9 +294,9 @@ namespace Marchio.Editor
                 defaults(so);
                 AssetDatabase.CreateAsset(so, path);
             }
-            so.nodes = nodes;
-            so.spawnPhases = DemoSpawnPhases();
-            so.levels = DefaultLevels();
+            if (so.nodes == null || so.nodes.Length == 0) so.nodes = nodes;
+            if (so.spawnPhases == null || so.spawnPhases.Length == 0) so.spawnPhases = DemoSpawnPhases();
+            if (so.levels == null || so.levels.Length == 0) so.levels = DefaultLevels();
             EditorUtility.SetDirty(so);
             return so;
         }
