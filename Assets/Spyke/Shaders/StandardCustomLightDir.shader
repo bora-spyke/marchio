@@ -80,18 +80,25 @@ Shader "Spyke/StandardCustomLightDir"
         _StencilRef ("Stencil Ref", Int) = 1
     }
 
-    // Ported from the Built-in Render Pipeline to URP (see git history for the CGPROGRAM/surf() original).
-    // Same feature set: one directional main light (URP's GetMainLight, soft realtime shadows), skybox SH
-    // ambient, skybox reflection probe (no probe blending/box projection — this project uses only the sky
-    // probe), plus the same 3 additive fake lights + fake specular light the original had. The PBR shading
-    // itself is a hand-rolled minimalist Cook-Torrance BRDF (same family as Unity's own mobile BRDF) instead
-    // of URP's BRDFData/LightingPhysicallyBased, so this file has no dependency on URP-internal API surface
-    // that could shift between package versions.
+    // Hand-written vertex/fragment passes. This shader used to be a `#pragma surface` shader, which made
+    // Unity generate ForwardBase + ForwardAdd + Deferred + Meta with the full multi_compile_fwdbase /
+    // multi_compile_fwdadd_fullshadows keyword sets — 660k variants for a shader that can only ever be
+    // rendered one way. The Game scene has exactly one realtime directional light with soft shadows,
+    // skybox ambient and the skybox reflection probe — no lightmaps, no baked light probes, no fog, no
+    // point/spot lights, forward only. So the passes below run the same math the surface shader ran on
+    // that setup (same UNITY_BRDF_PBS, same DiffuseAndSpecularFromMetallic, same SH ambient, same
+    // reflection-probe sampling) with the dead paths deleted instead of keyworded. Note that none of the
+    // kept features needed a keyword: the variants were pure surface-shader codegen.
+    //
+    // Variants: forward = instancing(2) x SHADOWS_SCREEN(2), shadow caster = instancing(2).
+
     SubShader
     {
-        Tags { "RenderType"="Opaque" "Queue"="Geometry" "RenderPipeline"="UniversalPipeline" }
+        Tags { "RenderType"="Opaque" "Queue"="Geometry" }
         LOD 300
 
+        // Property-driven blend state — opaque by default (One/Zero, ZWrite On), or alpha-fade when a
+        // material switches its blend factors + render queue. Alpha is _Color.a * _MainTex.a.
         Blend [_SrcBlend] [_DstBlend]
         ZWrite [_ZWrite]
         Stencil
@@ -104,177 +111,196 @@ Shader "Spyke/StandardCustomLightDir"
         Pass
         {
             Name "FORWARD"
-            Tags { "LightMode" = "UniversalForward" }
+            Tags { "LightMode" = "ForwardBase" }
 
-            HLSLPROGRAM
-            #pragma vertex vert
+            CGPROGRAM
+            #pragma vertex   vert
             #pragma fragment frag
             #pragma target 3.0
 
+            // Per-instance tint (see the Props buffer below): blocks share mesh + material and are batched
+            // by GPU instancing (Built-in RP has no SRP Batcher).
             #pragma multi_compile_instancing
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_SCREEN
-            #pragma multi_compile _ _SHADOWS_SOFT
+            // Realtime directional shadows — the only lighting keyword this shader compiles.
+            #pragma multi_compile _ SHADOWS_SCREEN
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            // Skybox ambient (SH) as a plain define instead of the LIGHTPROBE_SH keyword: it is what gates
+            // UNITY_SHOULD_SAMPLE_SH inside ShadeSHPerVertex/ShadeSHPerPixel, and ambient is always wanted,
+            // so there is no reason to pay a variant for it.
+            #define LIGHTPROBE_SH 1
 
-            TEXTURE2D(_MainTex);       SAMPLER(sampler_MainTex);
-            TEXTURE2D(_MetallicMap);   SAMPLER(sampler_MetallicMap);
-            TEXTURE2D(_SmoothnessMap); SAMPLER(sampler_SmoothnessMap);
-            TEXTURE2D(_BumpMap);       SAMPLER(sampler_BumpMap);
-            TEXTURE2D(_OcclusionMap);  SAMPLER(sampler_OcclusionMap);
-            TEXTURE2D(_EmissionMap);   SAMPLER(sampler_EmissionMap);
+            #include "UnityCG.cginc"
+            #include "UnityPBSLighting.cginc"
+            #include "AutoLight.cginc"
 
-            CBUFFER_START(UnityPerMaterial)
-                float4 _MainTex_ST;
-                float4 _MetallicMap_ST;
-                float4 _SmoothnessMap_ST;
-                float4 _BumpMap_ST;
-                float4 _OcclusionMap_ST;
-                float4 _EmissionMap_ST;
+            sampler2D _MainTex;
+            sampler2D _MetallicMap;
+            sampler2D _SmoothnessMap;
+            sampler2D _BumpMap;
+            sampler2D _OcclusionMap;
+            sampler2D _EmissionMap;
 
-                half    _Metallic;
-                half    _Glossiness;
-                half    _BumpScale;
-                half    _OcclusionStrength;
-                half4   _OcclusionColor;
+            // Tiling/offset is applied per map in the fragment shader rather than interpolated per map:
+            // 6 extra float2 interpolators would blow the target 3.0 budget, and only a couple of materials
+            // use non-default tiling at all.
+            float4 _MainTex_ST;
+            float4 _MetallicMap_ST;
+            float4 _SmoothnessMap_ST;
+            float4 _BumpMap_ST;
+            float4 _OcclusionMap_ST;
+            float4 _EmissionMap_ST;
 
-                float   _SpecularHighlights;
-                float   _GlossyReflections;
-                float   _OrthoSpecular;
-                float   _UseCustomLightDir;
-                float   _LightYaw;
-                float   _LightPitch;
-                half4   _CustomLightColor;
+            half    _Metallic;
+            half    _Glossiness;
+            half    _BumpScale;
+            half    _OcclusionStrength;
+            fixed4  _OcclusionColor;
 
-                float   _UseCustomLight2;
-                float   _LightYaw2;
-                float   _LightPitch2;
-                half4   _CustomLightColor2;
+            float   _SpecularHighlights;
+            float   _GlossyReflections;
+            float   _OrthoSpecular;
+            float   _UseCustomLightDir;
+            float   _LightYaw;
+            float   _LightPitch;
+            fixed4  _CustomLightColor;
 
-                float   _UseCustomLight3;
-                float   _LightYaw3;
-                float   _LightPitch3;
-                half4   _CustomLightColor3;
+            float   _UseCustomLight2;
+            float   _LightYaw2;
+            float   _LightPitch2;
+            fixed4  _CustomLightColor2;
 
-                float   _UseCustomSpec4;
-                float   _SpecYaw4;
-                float   _SpecPitch4;
-                half4   _CustomSpecColor4;
-            CBUFFER_END
+            float   _UseCustomLight3;
+            float   _LightYaw3;
+            float   _LightPitch3;
+            fixed4  _CustomLightColor3;
 
-            // Per-instance tint: blocks share mesh + material and are batched by GPU instancing.
+            float   _UseCustomSpec4;
+            float   _SpecYaw4;
+            float   _SpecPitch4;
+            fixed4  _CustomSpecColor4;
+
+            // Per-instance tint (set per-renderer via MaterialPropertyBlock in KnockOutBlockView.ApplyTint).
             UNITY_INSTANCING_BUFFER_START(Props)
-                UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
-                UNITY_DEFINE_INSTANCED_PROP(half4, _EmissionColor)
-                UNITY_DEFINE_INSTANCED_PROP(half4, _SpecularColor)
+                UNITY_DEFINE_INSTANCED_PROP(fixed4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(fixed4, _EmissionColor)
+                UNITY_DEFINE_INSTANCED_PROP(fixed4, _SpecularColor)
                 // In the instancing buffer, not a plain uniform, so a per-instance MaterialPropertyBlock write
                 // does not break batching. NOTE: anything written per instance must carry the WHOLE buffer —
                 // unsupplied members read as zero, which is what once blacked out untinted blocks.
                 UNITY_DEFINE_INSTANCED_PROP(float, _ClipBelowY)
             UNITY_INSTANCING_BUFFER_END(Props)
 
-            struct CustomSurfaceData
+            // Surface description, filled in the fragment shader before shading. Normal is WORLD space
+            // (the surface-shader framework used to do the tangent→world conversion for us).
+            struct SurfaceData
             {
-                half3 Albedo;
-                half3 Normal;
-                half3 Emission;
-                half  Metallic;
-                half  Smoothness;
-                half  Occlusion;
-                half  Alpha;
-                half3 SpecularTint; // per-instance tint from the _SpecularColor instancing buffer
+                fixed3 Albedo;
+                fixed3 Normal;
+                half3  Emission;
+                half   Metallic;
+                half   Smoothness;
+                half   Occlusion;
+                fixed  Alpha;
+                half3  SpecularTint; // per-instance tint from the _SpecularColor instancing buffer
             };
 
             float3 AnglesToDir(float yawDeg, float pitchDeg)
             {
-                float y = yawDeg   * PI / 180.0;
-                float p = pitchDeg * PI / 180.0;
+                float y = yawDeg   * UNITY_PI / 180.0;
+                float p = pitchDeg * UNITY_PI / 180.0;
                 return float3(cos(p) * sin(y),
                               sin(p),
                               cos(p) * cos(y));
             }
 
-            half3 DiffuseAndSpecularFromMetallic(half3 albedo, half metallic, out half3 specColor, out half oneMinusReflectivity)
+            half4 ShadeCustomStandard(SurfaceData s, half3 viewDir, UnityGI gi)
             {
-                half3 kDielectricSpec = half3(0.04, 0.04, 0.04);
-                specColor = lerp(kDielectricSpec, albedo, metallic);
-                oneMinusReflectivity = (1.0 - 0.04) * (1.0 - metallic);
-                return albedo * oneMinusReflectivity;
-            }
+                if (_SpecularHighlights < 0.5)
+                    s.Smoothness = 0;
 
-            // Minimalist Cook-Torrance term — same family as Unity's own mobile BRDF approximation, hand-rolled
-            // so this shader does not depend on URP's internal BRDFData/LightingPhysicallyBased API surface.
-            half3 BRDF(half3 diffColor, half3 specColor, half smoothness,
-                       half3 normalWS, half3 viewDirWS, half3 lightDirWS, half3 lightColor, half nl)
-            {
-                half3 halfDir = normalize(lightDirWS + viewDirWS);
-                half nh = saturate(dot(normalWS, halfDir));
-                half lh = saturate(dot(lightDirWS, halfDir));
-
-                half roughness = max(1.0 - smoothness, 0.002);
-                half a2 = roughness * roughness * roughness * roughness;
-
-                half d = nh * nh * (a2 - 1.0) + 1.00001;
-                half specularTerm = a2 / (max(0.1, lh * lh) * (roughness + 0.5) * (d * d) * 4.0);
-                specularTerm = max(0, specularTerm);
-
-                return (diffColor + specularTerm * specColor) * lightColor * nl;
-            }
-
-            half3 SampleReflectionProbe(half3 reflectVectorWS, half perceptualRoughness)
-            {
-                half mip = perceptualRoughness * (1.7 - 0.7 * perceptualRoughness) * 6.0;
-                half4 encodedIrradiance = SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, reflectVectorWS, mip);
-                return DecodeHDREnvironment(encodedIrradiance, unity_SpecCube0_HDR);
-            }
-
-            half3 ShadeCustomStandard(CustomSurfaceData s, half3 viewDir,
-                                       half3 mainLightDir, half3 mainLightColor, half mainNdotL,
-                                       half3 indirectDiffuse, half3 indirectSpecular)
-            {
                 // Ortho mode: use the camera's constant view direction for all fragments.
-                // UNITY_MATRIX_V row 2 xyz = -cameraForward = surface->camera direction for ortho cameras.
-                // Identical for every fragment -> no position-dependent specular variation.
+                // UNITY_MATRIX_V row 2 xyz = -cameraForward = surface→camera direction for ortho cameras.
+                // Identical for every fragment → no position-dependent specular variation.
                 half3 v = _OrthoSpecular > 0.5
                     ? normalize(half3(UNITY_MATRIX_V[2][0], UNITY_MATRIX_V[2][1], UNITY_MATRIX_V[2][2]))
                     : viewDir;
 
-                half smoothness = _SpecularHighlights < 0.5 ? 0 : s.Smoothness;
-
-                half3 specColor;
-                half oneMinusRefl;
-                half3 diffColor = DiffuseAndSpecularFromMetallic(s.Albedo, s.Metallic, /*out*/ specColor, /*out*/ oneMinusRefl);
-                specColor *= s.SpecularTint;
-
-                half3 result = diffColor * indirectDiffuse;
-                result += specColor * indirectSpecular;
-                result += BRDF(diffColor, specColor, smoothness, s.Normal, v, mainLightDir, mainLightColor, mainNdotL);
+                // Main light, with _SpecularColor injected onto the specular term.
+                half mainOneMinusRefl;
+                half3 mainSpecColor;
+                half3 mainAlbedo = DiffuseAndSpecularFromMetallic(s.Albedo, s.Metallic, /*out*/ mainSpecColor, /*out*/ mainOneMinusRefl);
+                half3 instanceSpecularColor = s.SpecularTint;
+                mainSpecColor *= instanceSpecularColor;
+                half4 result = UNITY_BRDF_PBS(mainAlbedo, mainSpecColor, mainOneMinusRefl, s.Smoothness, s.Normal, v, gi.light, gi.indirect);
+                result.a = s.Alpha;
 
                 // Second custom light — additive BRDF contribution, no GI, no shadows
                 if (_UseCustomLight2 > 0.5)
                 {
-                    half3 dir2 = AnglesToDir(_LightYaw2, _LightPitch2);
-                    half nl2 = max(0, dot(s.Normal, dir2));
-                    result += BRDF(diffColor, specColor, smoothness, s.Normal, v, dir2, _CustomLightColor2.rgb, nl2);
+                    half oneMinusRefl2;
+                    half3 specColor2;
+                    half3 diffColor2 = DiffuseAndSpecularFromMetallic(
+                        s.Albedo, s.Metallic, /*out*/ specColor2, /*out*/ oneMinusRefl2);
+                    specColor2 *= instanceSpecularColor;
+
+                    UnityLight light2;
+                    light2.dir   = AnglesToDir(_LightYaw2, _LightPitch2);
+                    light2.color = _CustomLightColor2.rgb;
+                    light2.ndotl = max(0, dot(s.Normal, light2.dir));
+
+                    UnityIndirect noIndirect2;
+                    noIndirect2.diffuse  = 0;
+                    noIndirect2.specular = 0;
+
+                    result.rgb += UNITY_BRDF_PBS(
+                        diffColor2, specColor2, oneMinusRefl2, s.Smoothness,
+                        s.Normal, v, light2, noIndirect2).rgb;
                 }
 
                 // Third custom light
                 if (_UseCustomLight3 > 0.5)
                 {
-                    half3 dir3 = AnglesToDir(_LightYaw3, _LightPitch3);
-                    half nl3 = max(0, dot(s.Normal, dir3));
-                    result += BRDF(diffColor, specColor, 0, s.Normal, v, dir3, _CustomLightColor3.rgb, nl3);
+                    half oneMinusRefl3;
+                    half3 specColor3;
+                    half3 diffColor3 = DiffuseAndSpecularFromMetallic(
+                        s.Albedo, s.Metallic, /*out*/ specColor3, /*out*/ oneMinusRefl3);
+                    specColor3 *= instanceSpecularColor;
+
+                    UnityLight light3;
+                    light3.dir   = AnglesToDir(_LightYaw3, _LightPitch3);
+                    light3.color = _CustomLightColor3.rgb;
+                    light3.ndotl = max(0, dot(s.Normal, light3.dir));
+
+                    UnityIndirect noIndirect3;
+                    noIndirect3.diffuse  = 0;
+                    noIndirect3.specular = 0;
+
+                    result.rgb += UNITY_BRDF_PBS(
+                        diffColor3, specColor3, oneMinusRefl3, 0,
+                        s.Normal, v, light3, noIndirect3).rgb;
                 }
 
                 // Custom Spec 4 — specular-only additive contribution, no diffuse, no GI, no shadows
                 if (_UseCustomSpec4 > 0.5)
                 {
-                    half3 dir4 = AnglesToDir(_SpecYaw4, _SpecPitch4);
-                    half nl4 = max(0, dot(s.Normal, dir4));
-                    result += BRDF(half3(0, 0, 0), specColor, smoothness, s.Normal, v, dir4, _CustomSpecColor4.rgb, nl4);
+                    half oneMinusReflSpec4;
+                    half3 specColorSpec4;
+                    DiffuseAndSpecularFromMetallic(
+                        s.Albedo, s.Metallic, /*out*/ specColorSpec4, /*out*/ oneMinusReflSpec4);
+                    specColorSpec4 *= instanceSpecularColor;
+
+                    UnityLight spec4;
+                    spec4.dir   = AnglesToDir(_SpecYaw4, _SpecPitch4);
+                    spec4.color = _CustomSpecColor4.rgb;
+                    spec4.ndotl = max(0, dot(s.Normal, spec4.dir));
+
+                    UnityIndirect noIndirectSpec4;
+                    noIndirectSpec4.diffuse  = 0;
+                    noIndirectSpec4.specular = 0;
+
+                    result.rgb += UNITY_BRDF_PBS(
+                        half3(0,0,0), specColorSpec4, oneMinusReflSpec4, s.Smoothness,
+                        s.Normal, v, spec4, noIndirectSpec4).rgb;
                 }
 
                 return result;
@@ -291,15 +317,18 @@ Shader "Spyke/StandardCustomLightDir"
 
             struct v2f
             {
-                float4 pos         : SV_POSITION;
-                // .xy = _MainTex UV transformed in the vertex shader; .zw = raw UV0 for the other maps.
-                float4 uv          : TEXCOORD0;
-                float3 worldPos    : TEXCOORD1;
-                float3 tspace0     : TEXCOORD2;
-                float3 tspace1     : TEXCOORD3;
-                float3 tspace2     : TEXCOORD4;
-                half3  ambient     : TEXCOORD5;
-                float4 shadowCoord : TEXCOORD6;
+                float4 pos      : SV_POSITION;
+                // .xy = _MainTex UV transformed in the vertex shader (matches what the surface shader
+                // interpolated, bit for bit, even at extreme tiling); .zw = raw UV0 for the other maps.
+                float4 uv       : TEXCOORD0;
+                float3 worldPos : TEXCOORD1;
+                // Rows of the tangent→world matrix. Full float, like the surface shader's tSpace0..2: at
+                // half precision the reconstructed normal drifts enough to move specular highlights.
+                float3 tspace0  : TEXCOORD2;
+                float3 tspace1  : TEXCOORD3;
+                float3 tspace2  : TEXCOORD4;
+                half3  ambient  : TEXCOORD5; // SH L2 per vertex, L0/L1 finished per pixel
+                UNITY_SHADOW_COORDS(6)
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -310,19 +339,21 @@ Shader "Spyke/StandardCustomLightDir"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
 
-                VertexPositionInputs posInputs = GetVertexPositionInputs(v.vertex.xyz);
-                VertexNormalInputs normInputs = GetVertexNormalInputs(v.normal, v.tangent);
+                o.pos      = UnityObjectToClipPos(v.vertex);
+                o.uv       = float4(TRANSFORM_TEX(v.uv, _MainTex), v.uv);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
 
-                o.pos = posInputs.positionCS;
-                o.worldPos = posInputs.positionWS;
-                o.uv = float4(TRANSFORM_TEX(v.uv, _MainTex), v.uv);
+                float3 worldNormal  = UnityObjectToWorldNormal(v.normal);
+                float3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
+                float  tangentSign  = v.tangent.w * unity_WorldTransformParams.w;
+                float3 worldBinorm  = cross(worldNormal, worldTangent) * tangentSign;
+                o.tspace0 = float3(worldTangent.x, worldBinorm.x, worldNormal.x);
+                o.tspace1 = float3(worldTangent.y, worldBinorm.y, worldNormal.y);
+                o.tspace2 = float3(worldTangent.z, worldBinorm.z, worldNormal.z);
 
-                o.tspace0 = float3(normInputs.tangentWS.x, normInputs.bitangentWS.x, normInputs.normalWS.x);
-                o.tspace1 = float3(normInputs.tangentWS.y, normInputs.bitangentWS.y, normInputs.normalWS.y);
-                o.tspace2 = float3(normInputs.tangentWS.z, normInputs.bitangentWS.z, normInputs.normalWS.z);
+                o.ambient = ShadeSHPerVertex(worldNormal, half3(0, 0, 0));
 
-                o.ambient = SampleSH(normInputs.normalWS);
-                o.shadowCoord = TransformWorldToShadowCoord(posInputs.positionWS);
+                UNITY_TRANSFER_SHADOW(o, v.uv);
                 return o;
             }
 
@@ -331,134 +362,145 @@ Shader "Spyke/StandardCustomLightDir"
                 UNITY_SETUP_INSTANCE_ID(i);
 
                 // World-Y clip mask (#283). Hides a generator wave while it is still under the platform slab.
+                // v2f already carries worldPos for the lighting, so this costs no extra interpolator. Default
+                // -99999 => always positive => never discards, so every other material is unaffected.
                 clip(i.worldPos.y - UNITY_ACCESS_INSTANCED_PROP(Props, _ClipBelowY));
 
-                CustomSurfaceData s;
+                // --- surface (was surf()) ---
+                SurfaceData s;
 
-                half4 c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv.xy) * UNITY_ACCESS_INSTANCED_PROP(Props, _Color);
+                fixed4 c = tex2D(_MainTex, i.uv.xy) * UNITY_ACCESS_INSTANCED_PROP(Props, _Color);
                 s.Albedo = c.rgb;
                 s.Alpha  = c.a;
 
-                half4 mm = SAMPLE_TEXTURE2D(_MetallicMap,   sampler_MetallicMap,   i.uv.zw * _MetallicMap_ST.xy   + _MetallicMap_ST.zw);
-                half4 sm = SAMPLE_TEXTURE2D(_SmoothnessMap, sampler_SmoothnessMap, i.uv.zw * _SmoothnessMap_ST.xy + _SmoothnessMap_ST.zw);
+                fixed4 mm    = tex2D(_MetallicMap,   i.uv.zw * _MetallicMap_ST.xy   + _MetallicMap_ST.zw);
+                fixed4 sm    = tex2D(_SmoothnessMap, i.uv.zw * _SmoothnessMap_ST.xy + _SmoothnessMap_ST.zw);
                 s.Metallic   = mm.r * _Metallic;
                 s.Smoothness = sm.r * _Glossiness;
 
-                half4 packedNormal = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, i.uv.zw * _BumpMap_ST.xy + _BumpMap_ST.zw);
-                half3 tangentNormal = UnpackNormalScale(packedNormal, _BumpScale);
-                s.Normal = normalize(half3(dot(i.tspace0, tangentNormal),
+                half3 tangentNormal = UnpackScaleNormal(
+                    tex2D(_BumpMap, i.uv.zw * _BumpMap_ST.xy + _BumpMap_ST.zw), _BumpScale);
+                s.Normal = normalize(float3(dot(i.tspace0, tangentNormal),
                                             dot(i.tspace1, tangentNormal),
                                             dot(i.tspace2, tangentNormal)));
 
-                half occ = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, i.uv.zw * _OcclusionMap_ST.xy + _OcclusionMap_ST.zw).g;
-                s.Occlusion = lerp(1.0, occ, _OcclusionStrength);
+                half occ    = tex2D(_OcclusionMap, i.uv.zw * _OcclusionMap_ST.xy + _OcclusionMap_ST.zw).g;
+                s.Occlusion = LerpOneTo(occ, _OcclusionStrength);
 
-                s.Emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, i.uv.zw * _EmissionMap_ST.xy + _EmissionMap_ST.zw).rgb
+                s.Emission = tex2D(_EmissionMap, i.uv.zw * _EmissionMap_ST.xy + _EmissionMap_ST.zw).rgb
                            * UNITY_ACCESS_INSTANCED_PROP(Props, _EmissionColor).rgb;
                 s.SpecularTint = UNITY_ACCESS_INSTANCED_PROP(Props, _SpecularColor).rgb;
 
-                half3 viewDirWS = normalize(GetWorldSpaceViewDir(i.worldPos));
+                // --- lighting inputs (was LightingCustomStandard_GI + the framework's GI setup) ---
+                half3 worldViewDir = normalize(UnityWorldSpaceViewDir(i.worldPos));
+                UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 
-                Light mainLight = GetMainLight(i.shadowCoord);
-                half3 lightDir   = mainLight.direction;
-                half3 lightColor = mainLight.color * mainLight.shadowAttenuation * mainLight.distanceAttenuation;
+                UnityGI gi;
+                ResetUnityGI(gi);
+
+                gi.light.dir   = _WorldSpaceLightPos0.xyz;
+                gi.light.color = _LightColor0.rgb * atten;
                 if (_UseCustomLightDir > 0.5)
                 {
                     // Custom direction, still attenuated by the scene light's shadows.
-                    lightDir   = AnglesToDir(_LightYaw, _LightPitch);
-                    lightColor = _CustomLightColor.rgb * mainLight.shadowAttenuation;
+                    gi.light.dir   = AnglesToDir(_LightYaw, _LightPitch);
+                    gi.light.color = _CustomLightColor.rgb * atten;
                 }
-                half nl = max(0, dot(s.Normal, lightDir));
+                gi.light.ndotl = max(0, dot(s.Normal, gi.light.dir));
 
-                // Indirect diffuse = skybox ambient SH with colored occlusion (replaces Unity's grayscale
-                // occlusion with a tintable one).
-                half3 indirectDiffuse = i.ambient * lerp(_OcclusionColor.rgb, half3(1, 1, 1), s.Occlusion);
+                // Indirect diffuse = skybox ambient SH with colored occlusion (Unity's own GI applies a
+                // grayscale occlusion; this replaces it with a tintable one).
+                gi.indirect.diffuse = ShadeSHPerPixel(s.Normal, i.ambient, i.worldPos)
+                                    * lerp(_OcclusionColor.rgb, half3(1, 1, 1), s.Occlusion);
 
-                // Indirect specular = the skybox reflection probe.
-                half3 reflectVector = reflect(-viewDirWS, s.Normal);
-                half perceptualRoughness = 1.0 - s.Smoothness;
-                half3 indirectSpecular = SampleReflectionProbe(reflectVector, perceptualRoughness) * _GlossyReflections * s.Occlusion;
+                // Indirect specular = the reflection probe (the skybox probe when a scene has none of its
+                // own). This is the same cubemap sampling LightingStandard_GI did, and it costs no
+                // variants: UNITY_SPECCUBE_* are platform config defines, not shader keywords.
+                Unity_GlossyEnvironmentData glossIn = UnityGlossyEnvironmentSetup(
+                    s.Smoothness, worldViewDir, s.Normal,
+                    lerp(unity_ColorSpaceDielectricSpec.rgb, s.Albedo, s.Metallic));
 
-                half3 col = ShadeCustomStandard(s, viewDirWS, lightDir, lightColor, nl, indirectDiffuse, indirectSpecular);
-                col += s.Emission;
+                UnityGIInput giInput;
+                UNITY_INITIALIZE_OUTPUT(UnityGIInput, giInput);
+                giInput.worldPos     = i.worldPos;
+                giInput.worldViewDir = worldViewDir;
+                giInput.probeHDR[0]  = unity_SpecCube0_HDR;
+                giInput.probeHDR[1]  = unity_SpecCube1_HDR;
+                #if defined(UNITY_SPECCUBE_BLENDING) || defined(UNITY_SPECCUBE_BOX_PROJECTION)
+                    giInput.boxMin[0] = unity_SpecCube0_BoxMin;
+                #endif
+                #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+                    giInput.boxMax[0]        = unity_SpecCube0_BoxMax;
+                    giInput.probePosition[0] = unity_SpecCube0_ProbePosition;
+                    giInput.boxMin[1]        = unity_SpecCube1_BoxMin;
+                    giInput.boxMax[1]        = unity_SpecCube1_BoxMax;
+                    giInput.probePosition[1] = unity_SpecCube1_ProbePosition;
+                #endif
 
-                return half4(col, s.Alpha);
+                gi.indirect.specular = UnityGI_IndirectSpecular(giInput, s.Occlusion, glossIn)
+                                     * _GlossyReflections;
+
+                half4 col = ShadeCustomStandard(s, worldViewDir, gi);
+                col.rgb += s.Emission;
+                return col;
             }
-            ENDHLSL
+            ENDCG
         }
 
         // Casts into the directional light's shadow map (and into the camera depth texture). No keywords:
-        // point-light shadows can't happen here, and fade materials cast opaque shadows exactly as before.
+        // SHADOWS_CUBE (point-light shadows) can't happen here, and the fade materials cast opaque shadows
+        // exactly as they did under the surface shader.
         Pass
         {
             Name "ShadowCaster"
             Tags { "LightMode" = "ShadowCaster" }
 
             // Override the SubShader's property-driven state: a shadow caster must write depth and must not
-            // blend. Without this, every fade material (_ZWrite = 0) silently stops casting shadows.
+            // blend. Without this, every fade material (_ZWrite = 0) silently stops casting shadows — the
+            // surface-shader codegen emitted its own state here for the same reason.
             ZWrite On
             ZTest LEqual
             Blend Off
 
-            HLSLPROGRAM
-            #pragma vertex vertShadow
+            CGPROGRAM
+            #pragma vertex   vertShadow
             #pragma fragment fragShadow
             #pragma target 3.0
             #pragma multi_compile_instancing
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+            #include "UnityCG.cginc"
 
             // The FORWARD pass's Props buffer, member for member. The clip plane is a per-instance property,
             // so this pass has to declare it too — and it declares the WHOLE buffer so the instancing layout
             // and per-batch instance count stay identical to FORWARD's.
             UNITY_INSTANCING_BUFFER_START(Props)
-                UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
-                UNITY_DEFINE_INSTANCED_PROP(half4, _EmissionColor)
-                UNITY_DEFINE_INSTANCED_PROP(half4, _SpecularColor)
+                UNITY_DEFINE_INSTANCED_PROP(fixed4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(fixed4, _EmissionColor)
+                UNITY_DEFINE_INSTANCED_PROP(fixed4, _SpecularColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ClipBelowY)
             UNITY_INSTANCING_BUFFER_END(Props)
 
-            float3 _LightDirection; // set by URP's shadow-caster render pass
-
-            struct appdataShadow
-            {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
             struct v2fShadow
             {
-                float4 pos      : SV_POSITION;
-                float3 worldPos : TEXCOORD0; // only for the world-Y clip mask
+                V2F_SHADOW_CASTER;
+                float3 worldPos : TEXCOORD1; // only for the world-Y clip mask
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            v2fShadow vertShadow(appdataShadow v)
+            v2fShadow vertShadow(appdata_base v)
             {
                 v2fShadow o;
                 UNITY_INITIALIZE_OUTPUT(v2fShadow, o);
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
-
-                float3 positionWS = TransformObjectToWorld(v.vertex.xyz);
-                float3 normalWS = TransformObjectToWorldNormal(v.normal);
-
-                float4 positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
-                #if UNITY_REVERSED_Z
-                    positionCS.z = min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
-                #else
-                    positionCS.z = max(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
-                #endif
-
-                o.pos = positionCS;
-                // Unbiased world position: the mask must cut at the same world Y FORWARD cuts at.
-                o.worldPos = positionWS;
+                TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
+                // Unbiased world position — TRANSFER_SHADOW_CASTER_NORMALOFFSET pushes the vertex along its
+                // normal for the depth it writes, and the mask must cut at the same world Y FORWARD cuts at.
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 return o;
             }
 
-            half4 fragShadow(v2fShadow i) : SV_Target
+            float4 fragShadow(v2fShadow i) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(i);
 
@@ -466,9 +508,9 @@ Shader "Spyke/StandardCustomLightDir"
                 // formation still hidden under the platform slab keeps casting its shadow.
                 clip(i.worldPos.y - UNITY_ACCESS_INSTANCED_PROP(Props, _ClipBelowY));
 
-                return 0;
+                SHADOW_CASTER_FRAGMENT(i)
             }
-            ENDHLSL
+            ENDCG
         }
     }
 }
