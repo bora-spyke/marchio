@@ -1,22 +1,68 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Marchio
 {
     public sealed class WaveManager : MonoBehaviour
     {
-        float spawnAccumulator;
+        readonly List<EnemyTypeSO> spawnQueue = new List<EnemyTypeSO>(64);
+        LevelConfig level;
+        float spawnTimer;
+        float clearTimer;
+        float lapAccumulator;
+        int waveTotal;
+
+        public int WaveIndex { get; private set; }
+        public int WaveCount { get; private set; }
 
         GameManager Gm => GameManager.I;
         GameConfig Cfg => GameManager.I.Config;
 
+        public float WaveProgress
+        {
+            get
+            {
+                if (waveTotal <= 0) return 0f;
+                return Mathf.Clamp01(1f - (spawnQueue.Count + LiveEnemies()) / (float)waveTotal);
+            }
+        }
+
         public void ResetState()
         {
-            spawnAccumulator = 0f;
+            spawnQueue.Clear();
+            level = null;
+            spawnTimer = 0f;
+            clearTimer = 0f;
+            lapAccumulator = 0f;
+            waveTotal = 0;
+            WaveIndex = 0;
+            WaveCount = 0;
         }
 
         public void BeginLevel()
         {
-            spawnAccumulator = 0f;
+            ResetState();
+            var run = Gm.Run;
+            if (run.IsVictoryLap || Gm.Preset.levels.Length == 0) return;
+            level = Gm.Preset.LevelFor(run.Level);
+            WaveCount = level.waves.Length;
+            if (WaveCount > 0) StartWave(0);
+        }
+
+        void StartWave(int index)
+        {
+            WaveIndex = index;
+            spawnQueue.Clear();
+            foreach (var s in level.waves[index].spawns)
+                for (int i = 0; i < s.count; i++) if (s.type != null) spawnQueue.Add(s.type);
+            for (int i = spawnQueue.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (spawnQueue[i], spawnQueue[j]) = (spawnQueue[j], spawnQueue[i]);
+            }
+            waveTotal = spawnQueue.Count;
+            spawnTimer = 0f;
+            clearTimer = 0f;
         }
 
         float HpMult => 1f + (Gm.Run.Level - 1) * Gm.Preset.hpScalePerLevel;
@@ -25,16 +71,48 @@ namespace Marchio
         {
             if (!Cfg.spawnEnemies) return;
             var run = Gm.Run;
-            var preset = Gm.Preset;
-            float rate = preset.baseSpawnPerS * preset.SpawnRateMult(run.LevelTime);
-            if (run.IsVictoryLap) rate *= preset.victoryLapDensity;
-            spawnAccumulator += rate * dt;
-            while (spawnAccumulator >= 1f)
+            if (run.IsVictoryLap) { TickVictoryLap(dt); return; }
+            if (level == null || run.LevelCleared) return;
+
+            if (spawnQueue.Count > 0)
             {
-                spawnAccumulator -= 1f;
-                var type = PickType(preset, run.LevelTime);
+                spawnTimer -= dt;
+                if (spawnTimer <= 0f)
+                {
+                    spawnTimer = level.waves[WaveIndex].spawnIntervalS;
+                    var type = spawnQueue[spawnQueue.Count - 1];
+                    spawnQueue.RemoveAt(spawnQueue.Count - 1);
+                    Spawn(type, SpawnPoint(), HpMult);
+                }
+                return;
+            }
+
+            if (LiveEnemies() > 0) { clearTimer = 0f; return; }
+            clearTimer += dt;
+            if (clearTimer < Gm.Preset.waveClearDelayS) return;
+            if (WaveIndex + 1 < WaveCount) StartWave(WaveIndex + 1);
+            else { WaveIndex = WaveCount; run.LevelCleared = true; }
+        }
+
+        void TickVictoryLap(float dt)
+        {
+            var preset = Gm.Preset;
+            float rate = preset.baseSpawnPerS * preset.SpawnRateMult(Gm.Run.LevelTime) * preset.victoryLapDensity;
+            lapAccumulator += rate * dt;
+            while (lapAccumulator >= 1f)
+            {
+                lapAccumulator -= 1f;
+                var type = PickType(preset, Gm.Run.LevelTime);
                 if (type != null) Spawn(type, SpawnPoint(), HpMult);
             }
+        }
+
+        int LiveEnemies()
+        {
+            int n = 0;
+            var list = Gm.Enemies;
+            for (int i = 0; i < list.Count; i++) if (!list[i].Dead) n++;
+            return n;
         }
 
         static EnemyTypeSO PickType(RunPreset preset, float levelTime)
@@ -106,7 +184,6 @@ namespace Marchio
                     if (en.Dead) continue;
                 }
 
-                // ponytail: enemies no longer cut the open trail; touching it only applies Live Wire burn
                 if (liveWire > 0 && trail.Touches(en.Pos, en.Radius + cutRadius))
                     en.ApplyBurn(gm.Preset.liveWireBurnDps * liveWire, cfg.burnDurationS);
 

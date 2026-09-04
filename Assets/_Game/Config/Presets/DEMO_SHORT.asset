@@ -12,8 +12,88 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e785bd6034ca94a07acb4b68c6f6bb33, type: 3}
   m_Name: DEMO_SHORT
   m_EditorClassIdentifier: Marchio::Marchio.RunPreset
-  baseThreshold: 110
-  scoreCurveMultiplier: 1.4
+  levels:
+  - waves:
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 4
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 5
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 5
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 2
+      spawnIntervalS: 0.35
+  - waves:
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 6
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 6
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 2
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 5
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 3
+      - type: {fileID: 11400000, guid: 9ed1b69b1291c444cae3e9a22b360609, type: 2}
+        count: 2
+      spawnIntervalS: 0.35
+  - waves:
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 7
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 2
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 6
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 3
+      - type: {fileID: 11400000, guid: 9ed1b69b1291c444cae3e9a22b360609, type: 2}
+        count: 2
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 8
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 3
+      - type: {fileID: 11400000, guid: 9ed1b69b1291c444cae3e9a22b360609, type: 2}
+        count: 3
+      spawnIntervalS: 0.35
+  - waves:
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 8
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 3
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 8
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 4
+      - type: {fileID: 11400000, guid: 9ed1b69b1291c444cae3e9a22b360609, type: 2}
+        count: 3
+      spawnIntervalS: 0.35
+    - spawns:
+      - type: {fileID: 11400000, guid: d63d797b27f58430d92e39e57edd9029, type: 2}
+        count: 10
+      - type: {fileID: 11400000, guid: d0010b995091f45078b3a79f76c85a05, type: 2}
+        count: 5
+      - type: {fileID: 11400000, guid: 9ed1b69b1291c444cae3e9a22b360609, type: 2}
+        count: 4
+      spawnIntervalS: 0.35
+  waveClearDelayS: 1
   levelCount: 4
   victoryLapDurationS: 30
   victoryLapDensity: 0.35
@@ -24,7 +104,6 @@ MonoBehaviour:
   reviveHp: 0.5
   powerUpUnlockLevel: 2
   fillUpgradeLastLevel: 4
-  thresholdPressureFrac: 0.85
   scoreWeightKill: 0.6
   scoreWeightArea: 0.4
   areaScorePerPx2: 0.001

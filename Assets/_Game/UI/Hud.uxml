@@ -19,10 +19,10 @@
             <ui:Label name="combo-chip" class="combo-chip" text="COMBO x1" picking-mode="Ignore" />
         </ui:VisualElement>
         <ui:VisualElement name="top-center" class="top-center" picking-mode="Ignore">
-            <ui:VisualElement name="threshold-bar" class="bar threshold-bar" picking-mode="Ignore">
-                <ui:VisualElement name="threshold-fill" class="bar-fill threshold-fill" picking-mode="Ignore" />
+            <ui:VisualElement name="wave-bar" class="bar wave-bar" picking-mode="Ignore">
+                <ui:VisualElement name="wave-fill" class="bar-fill wave-fill" picking-mode="Ignore" />
             </ui:VisualElement>
-            <ui:Label name="threshold-text" class="threshold-text" text="180 TO GO" picking-mode="Ignore" />
+            <ui:Label name="wave-text" class="wave-text" text="WAVE 1/3" picking-mode="Ignore" />
             <ui:Label name="draw-text" class="draw-text" text="TRACING" picking-mode="Ignore" />
             <ui:VisualElement name="trail-bar" class="trail-bar" picking-mode="Ignore">
                 <ui:VisualElement name="trail-fill" class="trail-fill" picking-mode="Ignore" />

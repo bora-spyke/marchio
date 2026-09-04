@@ -21,7 +21,7 @@ namespace Marchio.Tests
             gm.OnScreenTap();
             Assert.AreEqual(GameMode.Play, gm.Mode);
             Assert.AreEqual(1, gm.Run.Level);
-            Assert.Greater(gm.Run.Threshold, 0f);
+            Assert.Greater(gm.Waves.WaveCount, 0, "level 1 should have configured waves");
 
             float t = 0f;
             while (t < 4f) { t += Time.deltaTime; yield return null; }

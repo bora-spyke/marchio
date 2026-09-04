@@ -263,6 +263,24 @@ namespace Marchio.Editor
 
         static SpawnWeight W(EnemyTypeSO type, float weight) => new SpawnWeight { type = type, weight = weight };
 
+        static SpawnEntry E(EnemyTypeSO type, int count) => new SpawnEntry { type = type, count = count };
+
+        static WaveConfig Wave(params SpawnEntry[] spawns) => new WaveConfig { spawns = spawns };
+
+        static LevelConfig[] DefaultLevels()
+        {
+            var c = Type("Chaser");
+            var f = Type("Fast");
+            var r = Type("Ranged");
+            return new[]
+            {
+                new LevelConfig { waves = new[] { Wave(E(c, 4)), Wave(E(c, 5)), Wave(E(c, 5), E(f, 2)) } },
+                new LevelConfig { waves = new[] { Wave(E(c, 6)), Wave(E(c, 6), E(f, 2)), Wave(E(c, 5), E(f, 3), E(r, 2)) } },
+                new LevelConfig { waves = new[] { Wave(E(c, 7), E(f, 2)), Wave(E(c, 6), E(f, 3), E(r, 2)), Wave(E(c, 8), E(f, 3), E(r, 3)) } },
+                new LevelConfig { waves = new[] { Wave(E(c, 8), E(f, 3)), Wave(E(c, 8), E(f, 4), E(r, 3)), Wave(E(c, 10), E(f, 5), E(r, 4)) } }
+            };
+        }
+
         static TrophyNode Node(string title, float threshold, bool macro, TrophyReward reward) =>
             new TrophyNode { title = title, threshold = threshold, macro = macro, reward = reward };
 
@@ -278,13 +296,14 @@ namespace Marchio.Editor
             }
             so.nodes = nodes;
             so.spawnPhases = DemoSpawnPhases();
+            so.levels = DefaultLevels();
             EditorUtility.SetDirty(so);
             return so;
         }
 
         static void BuildPresets()
         {
-            Preset("DEMO", p => { p.baseThreshold = 180f; p.scoreCurveMultiplier = 1.35f; p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
+            Preset("DEMO", p => { p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
             {
                 Node("Damage Boost + Skin", 70f, true, TrophyReward.DamageBoost),
                 Node("Cart Color", 160f, false, TrophyReward.CartColor),
@@ -295,7 +314,7 @@ namespace Marchio.Editor
                 Node("Trail Effect", 1250f, false, TrophyReward.TrailEffect),
                 Node("New Cart", 1550f, true, TrophyReward.NewCart)
             });
-            Preset("DEMO_SHORT", p => { p.baseThreshold = 110f; p.scoreCurveMultiplier = 1.4f; p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
+            Preset("DEMO_SHORT", p => { p.levelCount = 4; p.powerUpUnlockLevel = 2; }, new[]
             {
                 Node("Damage Boost + Skin", 45f, true, TrophyReward.DamageBoost),
                 Node("Max HP +10%", 130f, false, TrophyReward.MaxHpUp),
@@ -304,7 +323,7 @@ namespace Marchio.Editor
                 Node("Wider Trace", 640f, true, TrophyReward.TrailWiden),
                 Node("New Cart", 1000f, true, TrophyReward.NewCart)
             });
-            Preset("LIVE", p => { p.baseThreshold = 240f; p.scoreCurveMultiplier = 1.15f; p.levelCount = 0; p.powerUpUnlockLevel = 4; p.fillUpgradeLastLevel = 999; }, LiveNodes());
+            Preset("LIVE", p => { p.levelCount = 0; p.powerUpUnlockLevel = 4; p.fillUpgradeLastLevel = 999; }, LiveNodes());
         }
 
         static TrophyNode[] LiveNodes()

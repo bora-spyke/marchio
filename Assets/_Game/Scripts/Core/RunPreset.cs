@@ -15,6 +15,31 @@ namespace Marchio
     }
 
     [Serializable]
+    public struct SpawnEntry
+    {
+        public EnemyTypeSO type;
+        public int count;
+    }
+
+    [Serializable]
+    public sealed class WaveConfig
+    {
+        public SpawnEntry[] spawns = Array.Empty<SpawnEntry>();
+        public float spawnIntervalS = 0.35f;
+
+        public int Total
+        {
+            get { int n = 0; foreach (var s in spawns) n += s.count; return n; }
+        }
+    }
+
+    [Serializable]
+    public sealed class LevelConfig
+    {
+        public WaveConfig[] waves = Array.Empty<WaveConfig>();
+    }
+
+    [Serializable]
     public struct SpawnWeight
     {
         public EnemyTypeSO type;
@@ -33,8 +58,8 @@ namespace Marchio
     public sealed class RunPreset : ScriptableObject
     {
         [Header("Levels")]
-        public float baseThreshold = 180f;
-        public float scoreCurveMultiplier = 1.35f;
+        public LevelConfig[] levels = Array.Empty<LevelConfig>();
+        public float waveClearDelayS = 1f;
         public int levelCount = 4;
         public float victoryLapDurationS = 30f;
         public float victoryLapDensity = 0.35f;
@@ -45,7 +70,6 @@ namespace Marchio
         public float reviveHp = 0.5f;
         public int powerUpUnlockLevel = 2;
         public int fillUpgradeLastLevel = 4;
-        public float thresholdPressureFrac = 0.85f;
 
         [Header("Score")]
         public float scoreWeightKill = 0.6f;
@@ -58,7 +82,7 @@ namespace Marchio
         [Header("Speed")]
         public float speedPreStep2 = 0.72f;
 
-        [Header("Spawning")]
+        [Header("Victory lap spawning")]
         public float baseSpawnPerS = 0.8f;
         public SpawnPhase[] spawnPhases = Array.Empty<SpawnPhase>();
         public float rampPerSAfterLastPhase = 0.03f;
@@ -82,7 +106,7 @@ namespace Marchio
         public float devilHpPenalty = 0.3f;
         public float ironHullPerStack = 0.2f;
 
-        public float Threshold(int level) => baseThreshold * Mathf.Pow(scoreCurveMultiplier, level - 1);
+        public LevelConfig LevelFor(int level) => levels[Mathf.Clamp(level - 1, 0, levels.Length - 1)];
         public bool IsVictoryLap(int level) => levelCount > 0 && level > levelCount;
 
         public float AreaMultiplier(float areaPx2)

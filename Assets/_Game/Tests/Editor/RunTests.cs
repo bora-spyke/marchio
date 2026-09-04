@@ -30,16 +30,6 @@ namespace Marchio.Tests
         public void TearDown() => Object.DestroyImmediate(preset);
 
         [Test]
-        public void ThresholdFollowsCurve()
-        {
-            Assert.AreEqual(180f, preset.Threshold(1), 1e-3f);
-            Assert.AreEqual(243f, preset.Threshold(2), 1e-3f);
-            Assert.AreEqual(328.05f, preset.Threshold(3), 1e-2f);
-            Assert.IsTrue(preset.IsVictoryLap(5));
-            Assert.IsFalse(preset.IsVictoryLap(4));
-        }
-
-        [Test]
         public void ScoreIsWeightedAndBankedImmediately()
         {
             run.AddScore(ScoreSource.Kill, 10f);
@@ -52,7 +42,6 @@ namespace Marchio.Tests
         public void CompletionBonusBanksButDeathDoesNot()
         {
             run.AddScore(ScoreSource.Kill, 300f);
-            Assert.IsTrue(run.ThresholdReached);
             float bonus = run.CompleteLevel();
             Assert.AreEqual(180f * 0.35f, bonus, 1e-3f);
             Assert.AreEqual(180f + bonus, trophy.Total, 1e-3f);
@@ -89,6 +78,20 @@ namespace Marchio.Tests
             Assert.AreEqual(1, trophy.ExtraRevives);
             Assert.AreEqual(0.72f, trophy.SpeedMult, 1e-4f);
             Assert.AreEqual(300f, trophy.RemainingToNext, 1e-4f);
+        }
+
+        [Test]
+        public void LevelForClampsToLastConfiguredLevel()
+        {
+            var a = new LevelConfig { waves = new[] { new WaveConfig { spawns = new[] { new SpawnEntry { count = 4 } } } } };
+            var b = new LevelConfig { waves = new[] { new WaveConfig(), new WaveConfig() } };
+            preset.levels = new[] { a, b };
+            Assert.AreSame(a, preset.LevelFor(1));
+            Assert.AreSame(b, preset.LevelFor(2));
+            Assert.AreSame(b, preset.LevelFor(7));
+            Assert.AreEqual(4, a.waves[0].Total);
+            Assert.IsTrue(preset.IsVictoryLap(5));
+            Assert.IsFalse(preset.IsVictoryLap(4));
         }
 
         [Test]

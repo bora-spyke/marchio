@@ -23,7 +23,7 @@ namespace Marchio
         [Header("Steering")]
         [Tooltip("Seconds between move/facing target updates")]
         public float retargetS = 1.5f;
-        public float turnDegPerS = 540f;
+        public float turnDegPerS = 270f;
 
         [Header("Firing")]
         public bool fires = true;

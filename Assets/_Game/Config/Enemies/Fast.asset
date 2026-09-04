@@ -15,7 +15,6 @@ MonoBehaviour:
   displayName: Fast
   prefab: {fileID: 2357029309093345841, guid: 9cf9ae5a40d174b649ffba692f53f675, type: 3}
   behavior: 0
-  color: {r: 1, g: 0.6901961, b: 0.1254902, a: 1}
   hp: 30
   speed: 150
   radius: 12
@@ -23,7 +22,10 @@ MonoBehaviour:
   xp: 1
   score: 8
   ignoresBarriers: 0
+  retargetS: 1
+  turnDegPerS: 270
   fires: 1
+  projectilePrefab: {fileID: 1795060547283548827, guid: 7a3859d64be0485d8ec6f1adbcce1323, type: 3}
   fireIntervalMs: 1700
   projectileSpeed: 320
   projectileDamage: 5
@@ -32,6 +34,3 @@ MonoBehaviour:
   preferredDist: 190
   preferredDistJitter: 40
   retreatFraction: 0.7
-  projectilePrefab: {fileID: 1795060547283548827, guid: 7a3859d64be0485d8ec6f1adbcce1323, type: 3}
-  retargetS: 1
-  turnDegPerS: 540

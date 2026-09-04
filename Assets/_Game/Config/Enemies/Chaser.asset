@@ -15,7 +15,6 @@ MonoBehaviour:
   displayName: Chaser
   prefab: {fileID: 7664372054549846782, guid: 15bec91b7294548afaaf9175335e337a, type: 3}
   behavior: 0
-  color: {r: 1, g: 0.18039216, b: 0.53333336, a: 1}
   hp: 50
   speed: 90
   radius: 14
@@ -23,7 +22,10 @@ MonoBehaviour:
   xp: 1
   score: 8
   ignoresBarriers: 0
+  retargetS: 1.5
+  turnDegPerS: 270
   fires: 1
+  projectilePrefab: {fileID: 1795060547283548827, guid: 3aec60b392a947cabccd8c2dfe2eabc3, type: 3}
   fireIntervalMs: 1900
   projectileSpeed: 220
   projectileDamage: 5
@@ -32,6 +34,3 @@ MonoBehaviour:
   preferredDist: 190
   preferredDistJitter: 40
   retreatFraction: 0.7
-  projectilePrefab: {fileID: 1795060547283548827, guid: 3aec60b392a947cabccd8c2dfe2eabc3, type: 3}
-  retargetS: 1.5
-  turnDegPerS: 540

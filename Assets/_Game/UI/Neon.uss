@@ -354,7 +354,7 @@
     -unity-text-align: middle-left;
 }
 
-.threshold-bar {
+.wave-bar {
     width: 200px;
     max-width: 60%;
     height: 10px;
@@ -364,25 +364,25 @@
     transition-duration: 0.25s;
 }
 
-.threshold-fill {
+.wave-fill {
     background-color: #7dfcff;
     width: 0;
 }
 
-.threshold-bar--pressure {
+.wave-bar--pressure {
     border-color: rgba(255, 176, 32, 0.8);
 }
 
-.threshold-bar--pressure .threshold-fill {
+.wave-bar--pressure .wave-fill {
     background-color: #ffb020;
 }
 
-.threshold-bar--pulse {
+.wave-bar--pulse {
     border-color: rgba(255, 77, 109, 1);
     background-color: rgba(255, 77, 109, 0.25);
 }
 
-.threshold-text {
+.wave-text {
     font-size: 11px;
     -unity-font-style: bold;
     margin-top: 3px;

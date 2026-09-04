@@ -11,7 +11,6 @@ namespace Marchio
 
         public int Level { get; private set; }
         public float LevelScore { get; private set; }
-        public float Threshold { get; private set; }
         public float LevelTime { get; set; }
         public int Streak { get; set; }
         public int RevivesLeft { get; set; }
@@ -27,9 +26,7 @@ namespace Marchio
         }
 
         public bool IsVictoryLap => preset.IsVictoryLap(Level);
-        public float Progress => Threshold > 0f ? Mathf.Clamp01(LevelScore / Threshold) : 0f;
-        public float Remaining => Mathf.Max(0f, Threshold - LevelScore);
-        public bool ThresholdReached => !IsVictoryLap && Threshold > 0f && LevelScore >= Threshold;
+        public bool LevelCleared { get; set; }
         public bool VictoryLapDone => IsVictoryLap && LevelTime >= preset.victoryLapDurationS;
         public float MissedBonus => LevelScore * preset.completionBonus;
 
@@ -49,7 +46,7 @@ namespace Marchio
             LevelTime = 0f;
             Streak = 0;
             HealedOnClear = false;
-            Threshold = IsVictoryLap ? 0f : preset.Threshold(level);
+            LevelCleared = false;
         }
 
         public float AddScore(ScoreSource source, float raw)

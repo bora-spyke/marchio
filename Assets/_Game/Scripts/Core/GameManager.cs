@@ -144,7 +144,7 @@ namespace Marchio
 
             if (Mode != GameMode.Play) return;
             if (Trophy.HasPending) ApplyUnlock(Trophy.ClaimNext());
-            if (Run.ThresholdReached) CompleteLevel();
+            if (Run.LevelCleared) CompleteLevel();
             else if (Run.VictoryLapDone) FinishVictoryLap();
         }
 

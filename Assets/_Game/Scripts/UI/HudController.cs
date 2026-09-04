@@ -7,14 +7,14 @@ namespace Marchio
     public sealed class HudController : MonoBehaviour
     {
         VisualElement root;
-        VisualElement hpBar, hpFill, thresholdBar, thresholdFill, trailBar, trailFill, joystick, joystickKnob, stackRow, toast;
-        Label stageText, thresholdText, comboChip, drawText, toastText;
+        VisualElement hpBar, hpFill, waveBar, waveFill, trailBar, trailFill, joystick, joystickKnob, stackRow, toast;
+        Label stageText, waveText, comboChip, drawText, toastText;
         DamageTextLayer damageLayer;
         InputReader input;
         int lastCombo = -1;
         int lastStackHash = -1;
         int lastLevel = -1;
-        int lastRemaining = -1;
+        int lastWave = -1;
         bool pulse;
 
         void OnEnable()
@@ -26,9 +26,9 @@ namespace Marchio
             hpFill = root.Q("hp-fill");
             stackRow = root.Q("stack-row");
             stageText = root.Q<Label>("stage-text");
-            thresholdBar = root.Q("threshold-bar");
-            thresholdFill = root.Q("threshold-fill");
-            thresholdText = root.Q<Label>("threshold-text");
+            waveBar = root.Q("wave-bar");
+            waveFill = root.Q("wave-fill");
+            waveText = root.Q<Label>("wave-text");
             comboChip = root.Q<Label>("combo-chip");
             drawText = root.Q<Label>("draw-text");
             trailBar = root.Q("trail-bar");
@@ -41,7 +41,7 @@ namespace Marchio
             root.schedule.Execute(() =>
             {
                 pulse = !pulse;
-                thresholdBar.EnableInClassList("threshold-bar--pulse", pulse && thresholdBar.ClassListContains("threshold-bar--pressure"));
+                waveBar.EnableInClassList("wave-bar--pulse", pulse && waveBar.ClassListContains("wave-bar--pressure"));
             }).Every(350);
         }
 
@@ -67,7 +67,7 @@ namespace Marchio
         void OnMode(GameMode mode)
         {
             root.style.display = mode == GameMode.Play ? DisplayStyle.Flex : DisplayStyle.None;
-            if (mode == GameMode.Play) { lastStackHash = -1; lastLevel = -1; lastRemaining = -1; }
+            if (mode == GameMode.Play) { lastStackHash = -1; lastLevel = -1; lastWave = -1; }
         }
 
         void OnUnlock(TrophyNode node)
@@ -98,19 +98,21 @@ namespace Marchio
             if (run.IsVictoryLap)
             {
                 float lap = Mathf.Clamp01(run.LevelTime / Mathf.Max(1f, gm.Preset.victoryLapDurationS));
-                thresholdFill.style.width = Length.Percent(lap * 100f);
-                thresholdBar.RemoveFromClassList("threshold-bar--pressure");
-                if (lastRemaining != 0) { lastRemaining = 0; thresholdText.text = "ENJOY THE RIDE"; }
+                waveFill.style.width = Length.Percent(lap * 100f);
+                waveBar.RemoveFromClassList("wave-bar--pressure");
+                if (lastWave != 0) { lastWave = 0; waveText.text = "ENJOY THE RIDE"; }
             }
             else
             {
-                thresholdFill.style.width = Length.Percent(run.Progress * 100f);
-                thresholdBar.EnableInClassList("threshold-bar--pressure", run.Progress >= gm.Preset.thresholdPressureFrac);
-                int remaining = Mathf.CeilToInt(run.Remaining);
-                if (remaining != lastRemaining)
+                var waves = gm.Waves;
+                int count = Mathf.Max(1, waves.WaveCount);
+                int shown = Mathf.Min(waves.WaveIndex + 1, count);
+                waveFill.style.width = Length.Percent((waves.WaveIndex + waves.WaveProgress) / count * 100f);
+                waveBar.EnableInClassList("wave-bar--pressure", waves.WaveIndex >= count - 1);
+                if (shown != lastWave)
                 {
-                    lastRemaining = remaining;
-                    thresholdText.text = $"{remaining} TO GO";
+                    lastWave = shown;
+                    waveText.text = $"WAVE {shown}/{count}";
                 }
             }
 
