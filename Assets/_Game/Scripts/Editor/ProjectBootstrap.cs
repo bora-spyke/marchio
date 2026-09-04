@@ -274,7 +274,7 @@ namespace Marchio.Editor
             var r = Type("Ranged");
             return new[]
             {
-                new LevelConfig { waves = new[] { Wave(E(c, 4)), Wave(E(c, 5)), Wave(E(c, 5), E(f, 2)) } },
+                new LevelConfig { waves = new[] { Wave(E(c, 6)), Wave(E(c, 6), E(f, 3)), Wave(E(c, 5), E(f, 3), E(r, 2)), Wave(E(c, 7), E(f, 4), E(r, 2)), Wave(E(c, 8), E(f, 4), E(r, 3)), Wave(E(c, 8), E(f, 5), E(r, 3)) } },
                 new LevelConfig { waves = new[] { Wave(E(c, 6)), Wave(E(c, 6), E(f, 2)), Wave(E(c, 5), E(f, 3), E(r, 2)) } },
                 new LevelConfig { waves = new[] { Wave(E(c, 7), E(f, 2)), Wave(E(c, 6), E(f, 3), E(r, 2)), Wave(E(c, 8), E(f, 3), E(r, 3)) } },
                 new LevelConfig { waves = new[] { Wave(E(c, 8), E(f, 3)), Wave(E(c, 8), E(f, 4), E(r, 3)), Wave(E(c, 10), E(f, 5), E(r, 4)) } }
