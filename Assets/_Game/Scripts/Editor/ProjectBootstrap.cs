@@ -161,12 +161,16 @@ namespace Marchio.Editor
             var nose = Primitive("Nose", PrimitiveType.Cube, solid, visual.transform);
             nose.transform.localScale = new Vector3(cfg.playerRadius * 0.8f, 6f, 6f);
             nose.transform.localPosition = new Vector3(cfg.playerRadius * 0.9f, 0f, 0f);
+            var emitter = new GameObject("TrailEmitter");
+            emitter.transform.SetParent(visual.transform, false);
+            emitter.transform.localPosition = new Vector3(-cfg.playerRadius, 1f, 0f);
             var trailLine = Line("Trail", root.transform, line, cfg.trail, 4f, false, true);
             var flashLine = Line("Flash", root.transform, line, cfg.loopEdge, 3f, true, true);
             Set(pc, "visualRoot", visual.transform);
             Set(pc, "visualRenderer", body.GetComponent<MeshRenderer>());
             Set(trail, "line", trailLine);
             Set(trail, "flashLine", flashLine);
+            Set(trail, "emitter", emitter.transform);
             SavePrefab(root);
         }
 

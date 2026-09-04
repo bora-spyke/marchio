@@ -9,6 +9,7 @@ namespace Marchio
     {
         [SerializeField] LineRenderer line;
         [SerializeField] LineRenderer flashLine;
+        [SerializeField] Transform emitter;
 
         static readonly int DangerTId = Shader.PropertyToID("_DangerT");
         static readonly int TrailEndUId = Shader.PropertyToID("_TrailEndU");
@@ -25,6 +26,8 @@ namespace Marchio
         public IReadOnlyList<Vector2> Points => points;
 
         GameManager Gm => GameManager.I;
+
+        Vector2 Head => emitter != null ? PolygonMath.ToPlane(emitter.position) : Gm.Player.Pos;
 
         public bool Touches(Vector2 pos, float radius)
         {
@@ -53,7 +56,7 @@ namespace Marchio
         public void Tick(float dt, bool draw)
         {
             var cfg = Gm.Config;
-            var pos = Gm.Player.Pos;
+            var pos = Head;
 
             if (draw && !Drawing)
             {
