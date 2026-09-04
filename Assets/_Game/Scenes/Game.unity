@@ -350,6 +350,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Enemy_Ranged
       objectReference: {fileID: 0}
+    - target: {fileID: 309964627315377473, guid: cc419aa925962465986b839633536ba7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3717874316514046127, guid: cc419aa925962465986b839633536ba7, type: 3}
       propertyPath: m_LocalPosition.x
       value: -29.62
@@ -15388,6 +15392,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Enemy_Fast
       objectReference: {fileID: 0}
+    - target: {fileID: 4853138250093622826, guid: 9cf9ae5a40d174b649ffba692f53f675, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8623439581101753953, guid: 9cf9ae5a40d174b649ffba692f53f675, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.89596
@@ -16117,6 +16125,10 @@ PrefabInstance:
     - target: {fileID: 7968138542192293668, guid: 15bec91b7294548afaaf9175335e337a, type: 3}
       propertyPath: m_Name
       value: Enemy_Chaser
+      objectReference: {fileID: 0}
+    - target: {fileID: 7968138542192293668, guid: 15bec91b7294548afaaf9175335e337a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

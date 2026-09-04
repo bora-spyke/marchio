@@ -32,7 +32,6 @@ namespace Marchio
 
         [Header("Barrier")]
         public float barrierDurationMs = 3000f;
-        public float barrierDps = 30f;
         public float deadTrailMs = 2500f;
 
         [Header("Touch Input")]

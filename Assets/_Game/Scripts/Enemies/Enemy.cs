@@ -188,7 +188,6 @@ namespace Marchio
             burnLeft = Mathf.Max(burnLeft, duration);
         }
 
-        public void ApplyBarrierDamage(float dmg) => ApplyDamage(dmg, false);
 
         public void Kill()
         {

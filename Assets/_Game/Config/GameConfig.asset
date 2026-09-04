@@ -15,12 +15,12 @@ MonoBehaviour:
   referenceHeightPx: 844
   playerRadius: 15
   playerMaxHP: 100
-  playerSpeed: 320
+  playerSpeed: 550
   playerAccel: 2300
   playerDecel: 2900
   playerInvulnMs: 500
   playerContactDamage: 10
-  trailMinDist: 7
+  trailMinDist: 10
   minLoopLengthMult: 3
   closeRadiusMult: 0.5
   loopFlashMs: 380
@@ -57,36 +57,22 @@ MonoBehaviour:
   freezeSlowFactor: 0.5
   healPerLevel: 5
   biggerMultiplierPerLevel: 0.5
-  autoAttackCooldownMs: 450
-  autoAttackDamage: 13
+  autoAttackCooldownMs: 600
+  autoAttackDamage: 10
   autoAttackProjectileSpeed: 340
+  autoAttackRangePx: 250
   spawnEnemies: 1
   enemySteerJitterRad: 0.4
+  enemyRetargetS: 1.5
   enemySpeedVariance: 0.2
   rangedPreferredDistJitter: 40
   enemySeparationForce: 220
   spawnPadPx: 34
-  bossDashContactDamage: 30
-  bossAttackCooldownMs: 2200
-  bossDashTelegraphMs: 550
-  bossDashSpeed: 480
-  bossDashDurationMs: 450
-  bossBurstTelegraphMs: 450
-  bossBurstCount: 12
-  bossBurstProjSpeed: 170
-  bossBurstProjDamage: 16
-  bossBurstRecoverMs: 300
-  bossHomingTelegraphMs: 500
-  bossHomingSpeed: 210
-  bossHomingTurnRate: 2.6
-  bossHomingDamage: 16
-  bossHomingLifeS: 2
-  bossHomingRecoverMs: 350
   enemyProjectileRadius: 5
   playerProjectileRadius: 4
-  bossBurstProjectileRadius: 6
-  bossHomingProjectileRadius: 7
   projectileDespawnPadPx: 40
+  projectileLifeS: 4
+  projectileFadeS: 0.6
   hitstopBaseMs: 50
   shakeBase: 3
   bg: {r: 0.019607844, g: 0.02745098, b: 0.050980393, a: 1}
@@ -97,7 +83,6 @@ MonoBehaviour:
   chaser: {r: 1, g: 0.18039216, b: 0.53333336, a: 1}
   fast: {r: 1, g: 0.6901961, b: 0.1254902, a: 1}
   ranged: {r: 0.627451, g: 0.41960785, b: 1, a: 1}
-  breaker: {r: 0.22352941, g: 1, b: 0.53333336, a: 1}
   skin1: {r: 1, g: 0.84705883, b: 0.3019608, a: 1}
   cartColorVariant: {r: 1, g: 0.47843137, b: 0.8509804, a: 1}
   trailVariant: {r: 0.72156864, g: 1, b: 0.36078432, a: 1}

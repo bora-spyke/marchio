@@ -176,12 +176,9 @@ namespace Marchio
 
                 if (!en.IgnoresBarriers)
                 {
-                    bool touching = false;
                     var barriers = gm.Barriers.Active;
                     for (int b = 0; b < barriers.Count; b++)
-                        if (barriers[b].PushOut(en, dt)) touching = true;
-                    if (touching) en.ApplyBarrierDamage(cfg.barrierDps * dt);
-                    if (en.Dead) continue;
+                        barriers[b].PushOut(en, dt);
                 }
 
                 if (liveWire > 0 && trail.Touches(en.Pos, en.Radius + cutRadius))
