@@ -736,15 +736,18 @@
 }
 
 .btn--revive, .btn--retry {
-    width: 210px;
-    height: 54px;
+    width: 216px;
+    height: 58px;
     margin: 0 0 14px 0;
-    padding: 0 0 4px 0;
-    border-radius: 16px;
-    border-width: 3px;
-    -unity-font-definition: url("project://database/Assets/_Game/Fonts/EigerdalsNormHeavy%20SDF.asset?fileID=11400000&guid=60c70ae7553fa4383ba3534dd23d4ebb&type=2#EigerdalsNormHeavy SDF");
-    -unity-font-style: normal;
-    font-size: 21px;
+    padding: 0 0 6px 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    -unity-slice-left: 129;
+    -unity-slice-right: 129;
+    -unity-slice-top: 130;
+    -unity-slice-bottom: 130;
+    -unity-slice-scale: 0.2px;
+    font-size: 22px;
     color: #ffffff;
     -unity-text-outline-width: 0.6px;
     -unity-text-outline-color: rgba(0, 0, 0, 0.6);
@@ -752,15 +755,11 @@
 }
 
 .btn--revive {
-    background-color: #52d648;
-    border-color: #2f9b2b;
-    border-top-color: #9cf08f;
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Green_Button.png?fileID=21300000&guid=1046c0f6f739a42ffaa7b897ec4dd45d&type=3#Green_Button");
 }
 
 .btn--retry {
-    background-color: #2fb1ff;
-    border-color: #1f7fc4;
-    border-top-color: #9fdcff;
+    background-image: url("project://database/Assets/_Game/UI/Sprites/Blue_Button.png?fileID=21300000&guid=3682a020ebe4f4973b3986fe4b4d8b21&type=3#Blue_Button");
 }
 
 .btn--revive:active, .btn--retry:active {
